@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TTTN2025 API Portal</title>
+    <link rel="stylesheet" href="/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <header class="hero">
+        <div class="container hero__content">
+            <div>
+                <p class="hero__eyebrow">TTTN 2025 • Node.js REST API</p>
+                <h1>Quản trị sản phẩm &amp; giỏ hàng dễ dàng</h1>
+                <p class="hero__subtitle">
+                    Bộ API phục vụ đồ án tốt nghiệp: đăng ký, đăng nhập, quản lý sản phẩm và giỏ hàng với chuẩn RESTful,
+                    bảo vệ bằng JWT.
+                </p>
+                <div class="hero__actions">
+                    <a class="btn primary" href="#quick-start">Bắt đầu ngay</a>
+                    <a class="btn ghost" href="#api-list">Xem danh sách API</a>
+                </div>
+                <ul class="hero__stats">
+                    <li>
+                        <strong>03</strong>
+                        <span>Module chính</span>
+                    </li>
+                    <li>
+                        <strong>08+</strong>
+                        <span>Endpoint bảo vệ JWT</span>
+                    </li>
+                    <li>
+                        <strong>24/7</strong>
+                        <span>Sẵn sàng thử nghiệm</span>
+                    </li>
+                </ul>
+            </div>
+            <div class="hero__card">
+                <p class="hero__card-title">Thông tin máy chủ</p>
+                <ul>
+                    <li>
+                        <span>Base URL</span>
+                        <code>http://localhost:5000</code>
+                    </li>
+                    <li>
+                        <span>API công khai</span>
+                        <code>GET /api/products</code>
+                    </li>
+                    <li>
+                        <span>API yêu cầu token</span>
+                        <code>Authorization: Bearer &lt;JWT&gt;</code>
+                    </li>
+                    <li>
+                        <span>Database</span>
+                        <code>MySQL (tttn2025)</code>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <section id="quick-start" class="section">
+            <div class="container">
+                <div class="section__header">
+                    <p class="eyebrow">QUICK START</p>
+                    <h2>3 bước sử dụng API</h2>
+                    <p>Thử nghiệm nhanh với Postman hoặc bất kỳ HTTP client nào.</p>
+                </div>
+                <div class="steps">
+                    <article>
+                        <p class="step__number">01</p>
+                        <h3>Đăng nhập / Đăng ký</h3>
+                        <p>Tạo tài khoản qua <code>POST /api/register</code> và nhận token bằng <code>POST /api/login</code>.</p>
+                    </article>
+                    <article>
+                        <p class="step__number">02</p>
+                        <h3>Gọi API</h3>
+                        <p>Truy vấn sản phẩm, thêm giỏ hàng, cập nhật dữ liệu thông qua các endpoint RESTful.</p>
+                    </article>
+                    <article>
+                        <p class="step__number">03</p>
+                        <h3>Quản trị</h3>
+                        <p>Dùng token admin để thêm, sửa, xoá sản phẩm hoặc thao tác giỏ hàng.</p>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <section id="api-list" class="section section--alt">
+            <div class="container">
+                <div class="section__header">
+                    <p class="eyebrow">API OVERVIEW</p>
+                    <h2>Danh sách endpoint chính</h2>
+                    <p>Các module lõi hiện có trong dự án.</p>
+                </div>
+                <div class="api-grid">
+                    <article>
+                        <h3>Authentication</h3>
+                        <ul>
+                            <li><code>POST /api/register</code> — Đăng ký tài khoản</li>
+                            <li><code>POST /api/login</code> — Nhận JWT</li>
+                        </ul>
+                    </article>
+                    <article>
+                        <h3>Products</h3>
+                        <ul>
+                            <li><code>GET /api/products</code> — Danh sách sản phẩm</li>
+                            <li><code>POST /api/products</code> — Thêm sản phẩm (admin)</li>
+                            <li><code>PUT /api/products/:id</code> — Cập nhật</li>
+                            <li><code>DELETE /api/products/:id</code> — Xoá</li>
+                        </ul>
+                    </article>
+                    <article>
+                        <h3>Cart</h3>
+                        <ul>
+                            <li><code>GET /api/cart</code> — Lấy giỏ hàng</li>
+                            <li><code>POST /api/cart/items</code> — Thêm sản phẩm</li>
+                            <li><code>PUT /api/cart/items/:itemId</code> — Sửa số lượng</li>
+                            <li><code>DELETE /api/cart</code> — Làm trống giỏ</li>
+                        </ul>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="container tips">
+                <div>
+                    <p class="eyebrow">BEST PRACTICES</p>
+                    <h2>Lưu ý khi sử dụng API</h2>
+                    <ul class="tips__list">
+                        <li>Luôn gửi header <code>Authorization: Bearer &lt;token&gt;</code> cho các endpoint private.</li>
+                        <li>Token có hiệu lực 100 ngày. Khi hết hạn, đăng nhập lại để lấy token mới.</li>
+                        <li>Đối với thao tác admin (POST/PUT/DELETE sản phẩm) cần role <code>admin</code>.</li>
+                        <li>Giỏ hàng tự động khởi tạo khi user thêm sản phẩm đầu tiên.</li>
+                    </ul>
+                </div>
+                <div class="tips__card">
+                    <h3>Dùng Postman?</h3>
+                    <ol>
+                        <li>Đăng nhập và copy token.</li>
+                        <li>Tạo collection với biến môi trường <code>{{base_url}}</code>.</li>
+                        <li>Thiết lập header mặc định <code>Authorization</code>.</li>
+                        <li>Tận dụng file <code>HUONG_DAN_TEST_API.md</code> để tham khảo payload.</li>
+                    </ol>
+                </div>
+            </div>
+        </section>
+
+        <section class="cta">
+            <div class="container cta__content">
+                <div>
+                    <p class="eyebrow">READY TO BUILD?</p>
+                    <h2>Bắt đầu mở Postman và thử nghiệm ngay!</h2>
+                    <p>API được xây dựng cho đồ án tốt nghiệp, dễ hiểu, dễ mở rộng và sẵn sàng tích hợp giao diện quản trị.</p>
+                </div>
+                <div class="cta__actions">
+                    <a class="btn primary" href="/HUONG_DAN_TEST_API.md" target="_blank">Xem tài liệu test</a>
+                    <a class="btn ghost" href="mailto:support@example.com">Liên hệ hỗ trợ</a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container footer__content">
+            <p>© 2025 Đồ án TTTN. Xây dựng bằng Node.js, Express &amp; MySQL.</p>
+            <ul>
+                <li><a href="/HUONG_DAN_TEST_API.md" target="_blank">Tài liệu API</a></li>
+                <li><a href="/HUONG_DAN_TEST_CART_API.txt" target="_blank">Cart API Guide</a></li>
+                <li><a href="https://www.postman.com/" target="_blank" rel="noopener">Postman</a></li>
+            </ul>
+        </div>
+    </footer>
+</body>
+
+</html>
+

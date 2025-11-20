@@ -1,0 +1,33 @@
+// ============================================
+// HƯỚNG DẪN CẬP NHẬT server.js
+// ============================================
+
+// Bước 1: Thêm import cart router
+// Tìm dòng:
+// const productRouter = require('./routes/product');
+//
+// Thêm ngay sau đó:
+const cartRouter = require('./routes/cart');
+
+// ============================================
+// Bước 2: Thêm route cho cart
+// Tìm dòng:
+// app.use('/api/products', productRouter);
+//
+// Thêm ngay sau đó:
+app.use('/api/cart', cartRouter);
+
+// ============================================
+// Bước 3: Cập nhật log khi khởi động server
+// Tìm phần console.log trong app.listen()
+// Có thể thêm:
+console.log(`GET Giỏ hàng: http://localhost:${PORT}/api/cart`);
+console.log(`POST Thêm vào giỏ: http://localhost:${PORT}/api/cart/items`);
+
+// ============================================
+// LƯU Ý:
+// - Tất cả routes trong cart.js đã có authenticateToken
+// - Không cần thêm middleware ở server.js
+// - Cart routes đều là PRIVATE (cần token)
+
+

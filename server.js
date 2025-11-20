@@ -2,6 +2,8 @@
 
 // 1. "require" (nhập) thư viện express đã cài đặt
 const express = require('express');
+// Hỗ trợ làm việc với đường dẫn hệ thống
+const path = require('path');
 // Nhập thư viện mysql2 và sử dụng bản hỗ trợ "Promises"
 const mysql = require('mysql2/promise');
 // ***** NHẬP THƯ VIỆN CẦN THIẾT CHO MIDDLEWARE *****
@@ -25,7 +27,9 @@ const JWT_SECRET = 'HhGg78@!kYpQzXcVbNmL1o2P3oI4U5yT6rE7wQ8aZ9sX0cVkGjH';
 // ****************************
 
 // Middleware giúp Express đọc dữ liệu JSON
-app.use(express.json()); 
+app.use(express.json());
+// Phục vụ file tĩnh trong thư mục public
+app.use(express.static(path.join(__dirname, 'public')));
 
 // 2. Tạo một "Connection Pool" (Bể kết nối)
 const pool = mysql.createPool({
@@ -51,7 +55,7 @@ app.locals.jwt = jwt; // <--- ĐÃ THÊM: Lưu trữ đối tượng jwt vào ap
 // API Endpoints cho Homepage (GET /)
 app.get('/', (req, res) => {
     console.log('Yêu cầu GET: /');
-    res.send('<h1>Chào mừng đến với Back-end API (Node.js/Express)</h1><p>Vui lòng truy cập <a href="/api/products">/api/products</a> để xem danh sách sản phẩm.</p>');
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // Gắn router xác thực vào đường dẫn /api (chứa /register và /login)
