@@ -4,7 +4,6 @@ const router = express.Router();
 const bcrypt = require('bcrypt'); // Sử dụng bcrypt tiêu chuẩn
 const jwt = require('jsonwebtoken');
 
-// API ĐĂNG KÝ (REGISTER) - GET để hiển thị hướng dẫn
 router.get('/register', (req, res) => {
     res.status(405).json({ 
         message: 'Phương thức GET không được hỗ trợ. Vui lòng sử dụng POST.',

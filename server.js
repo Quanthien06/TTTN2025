@@ -1,7 +1,7 @@
 // server.js
 
 // 1. "require" (nhập) thư viện express đã cài đặt
-const express = require('express');
+const express = require('express');  // gọi  path để truyền FE
 // Hỗ trợ làm việc với đường dẫn hệ thống
 const path = require('path');
 // Nhập thư viện mysql2 và sử dụng bản hỗ trợ "Promises"
@@ -13,6 +13,7 @@ const jwt = require('jsonwebtoken');
 // Đảm bảo bạn đã tạo thư mục routes/
 const authRouter = require('./routes/auth');
 const productRouter = require('./routes/product');
+const cartRouter = require('./routes/cart');
 // Import middleware xác thực
 const authenticateToken = require('./middleware/auth'); 
 
@@ -64,14 +65,20 @@ app.use('/api', authRouter);
 // Gắn router sản phẩm vào đường dẫn /api/products (chứa CRUD)
 app.use('/api/products', productRouter);
 
+// Gắn router giỏ hàng vào đường dẫn /api/cart
+// Lưu ý: authenticateToken đã được thêm vào từng route trong cart.js
+app.use('/api/cart', cartRouter);
+
 
 // 7. Lắng nghe
 app.listen(PORT, () => {
     console.log(`Server đang chạy tại http://localhost:${PORT}`);
-    console.log('--- PUBLIC API ---');
-    console.log(`GET Danh sách sản phẩm: http://localhost:${PORT}/api/products`);
-    console.log(`POST Đăng ký: http://localhost:${PORT}/api/register`);
-    console.log(`POST Đăng nhập: http://localhost:${PORT}/api/login`);
-    console.log('\n--- PRIVATE API (Cần Token) ---');
-    console.log('Sử dụng Header "Authorization: Bearer [TOKEN]"');
+    console.log('--- PUBLIC API ---');
+    console.log(`GET Danh sách sản phẩm: http://localhost:${PORT}/api/products`);
+    console.log(`POST Đăng ký: http://localhost:${PORT}/api/register`);
+    console.log(`POST Đăng nhập: http://localhost:${PORT}/api/login`);
+    console.log('\n--- PRIVATE API (Cần Token) ---');
+    console.log(`GET Giỏ hàng: http://localhost:${PORT}/api/cart`);
+    console.log(`POST Thêm vào giỏ: http://localhost:${PORT}/api/cart/items`);
+    console.log('Sử dụng Header "Authorization: Bearer [TOKEN]"');
 });
