@@ -1,0 +1,70 @@
+============================================
+HƯỚNG DẪN SỬ DỤNG POSTMAN COLLECTION
+============================================
+
+1. IMPORT COLLECTION VÀO POSTMAN:
+   - Mở Postman
+   - Click "Import" (góc trên bên trái)
+   - Chọn file "Cart_API_Collection.json"
+   - Collection sẽ xuất hiện trong sidebar
+
+2. TẠO ENVIRONMENT (TÙY CHỌN):
+   - Click "Environments" ở sidebar trái
+   - Click "Create Environment"
+   - Thêm các biến:
+     * base_url = http://localhost:5000
+     * token = (để trống, sẽ tự động điền sau khi login)
+     * cart_item_id = (để trống, sẽ tự động điền sau khi thêm item)
+   - Save và chọn environment vừa tạo
+
+3. CÁCH TEST:
+   
+   Bước 1: Đăng nhập
+   - Chạy request "1. Đăng nhập để lấy token"
+   - Token sẽ tự động được lưu vào biến môi trường
+   - Kiểm tra: Vào Environments → xem token đã được lưu chưa
+
+   Bước 2: Lấy giỏ hàng
+   - Chạy request "2. Lấy giỏ hàng (GET)"
+   - Sẽ trả về cart rỗng hoặc có items
+
+   Bước 3: Thêm sản phẩm
+   - Chạy request "3. Thêm sản phẩm vào giỏ (POST)"
+   - Thay product_id và quantity theo ý muốn
+   - Item ID sẽ tự động được lưu vào biến
+
+   Bước 4: Xem lại giỏ hàng
+   - Chạy request "5. Xem lại giỏ hàng sau khi thêm"
+   - Kiểm tra items đã được thêm chưa
+
+   Bước 5: Cập nhật số lượng
+   - Chạy request "6. Cập nhật số lượng (PUT)"
+   - Thay {{cart_item_id}} bằng ID thực tế (hoặc dùng biến đã lưu)
+
+   Bước 6: Xóa item
+   - Chạy request "8. Xóa một item (DELETE)"
+
+   Bước 7: Xóa toàn bộ
+   - Chạy request "9. Xóa toàn bộ giỏ hàng (DELETE)"
+
+4. TEST ERROR CASES:
+   - Chạy các request trong folder "10. Test Error Cases"
+   - Kiểm tra response code và message
+
+5. LƯU Ý:
+   - Đảm bảo server đang chạy (node server.js)
+   - Đảm bảo đã có user trong database để login
+   - Đảm bảo đã có sản phẩm trong database (product_id: 1, 2, ...)
+   - Nếu không dùng Environment, thay {{base_url}} và {{token}} bằng giá trị thực
+
+============================================
+CÁCH CHẠY NHANH (KHÔNG DÙNG ENVIRONMENT):
+============================================
+
+1. Mở từng request
+2. Thay {{base_url}} bằng: http://localhost:5000
+3. Thay {{token}} bằng token bạn copy từ login response
+4. Thay {{cart_item_id}} bằng ID item thực tế
+
+============================================
+

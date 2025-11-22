@@ -1,0 +1,459 @@
+{
+	"info": {
+		"_postman_id": "cart-api-collection",
+		"name": "Cart API Collection",
+		"description": "Collection để test các API endpoints của giỏ hàng",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "1. Đăng nhập để lấy token",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"if (pm.response.code === 200) {",
+							"    var jsonData = pm.response.json();",
+							"    pm.environment.set(\"token\", jsonData.token);",
+							"    pm.environment.set(\"user_id\", jsonData.user.id);",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"username\": \"testuser\",\n    \"password\": \"password123\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/login",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"login"
+					]
+				},
+				"description": "Đăng nhập để lấy token. Token sẽ được lưu tự động vào biến môi trường."
+			},
+			"response": []
+		},
+		{
+			"name": "2. Lấy giỏ hàng (GET)",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/api/cart",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"cart"
+					]
+				},
+				"description": "Lấy giỏ hàng hiện tại của user. Nếu chưa có sẽ tự động tạo mới."
+			},
+			"response": []
+		},
+		{
+			"name": "3. Thêm sản phẩm vào giỏ (POST)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"if (pm.response.code === 201 || pm.response.code === 200) {",
+							"    var jsonData = pm.response.json();",
+							"    if (jsonData.item && jsonData.item.id) {",
+							"        pm.environment.set(\"cart_item_id\", jsonData.item.id);",
+							"    }",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"product_id\": 1,\n    \"quantity\": 2\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/cart/items",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"cart",
+						"items"
+					]
+				},
+				"description": "Thêm sản phẩm vào giỏ hàng. Nếu sản phẩm đã có, số lượng sẽ được cộng dồn."
+			},
+			"response": []
+		},
+		{
+			"name": "4. Thêm sản phẩm khác vào giỏ",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"product_id\": 2,\n    \"quantity\": 1\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/cart/items",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"cart",
+						"items"
+					]
+				},
+				"description": "Thêm sản phẩm thứ 2 vào giỏ để test."
+			},
+			"response": []
+		},
+		{
+			"name": "5. Xem lại giỏ hàng sau khi thêm",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/api/cart",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"cart"
+					]
+				},
+				"description": "Xem lại giỏ hàng để kiểm tra items đã được thêm."
+			},
+			"response": []
+		},
+		{
+			"name": "6. Cập nhật số lượng (PUT)",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"quantity\": 5\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/cart/items/{{cart_item_id}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"cart",
+						"items",
+						"{{cart_item_id}}"
+					]
+				},
+				"description": "Cập nhật số lượng của item trong giỏ hàng. Thay {{cart_item_id}} bằng ID thực tế."
+			},
+			"response": []
+		},
+		{
+			"name": "7. Tính tổng tiền (GET)",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/api/cart/total",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"cart",
+						"total"
+					]
+				},
+				"description": "Lấy tổng tiền và số lượng items trong giỏ hàng."
+			},
+			"response": []
+		},
+		{
+			"name": "8. Xóa một item (DELETE)",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/api/cart/items/{{cart_item_id}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"cart",
+						"items",
+						"{{cart_item_id}}"
+					]
+				},
+				"description": "Xóa một item khỏi giỏ hàng. Thay {{cart_item_id}} bằng ID thực tế."
+			},
+			"response": []
+		},
+		{
+			"name": "9. Xóa toàn bộ giỏ hàng (DELETE)",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/api/cart",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"cart"
+					]
+				},
+				"description": "Xóa toàn bộ giỏ hàng (tất cả items)."
+			},
+			"response": []
+		},
+		{
+			"name": "10. Test Error Cases",
+			"item": [
+				{
+					"name": "Thêm sản phẩm không tồn tại",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"product_id\": 99999,\n    \"quantity\": 1\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/cart/items",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"cart",
+								"items"
+							]
+						},
+						"description": "Test lỗi khi thêm sản phẩm không tồn tại. Kỳ vọng: 404"
+					},
+					"response": []
+				},
+				{
+					"name": "Thêm với quantity <= 0",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"product_id\": 1,\n    \"quantity\": 0\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/cart/items",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"cart",
+								"items"
+							]
+						},
+						"description": "Test lỗi khi quantity <= 0. Kỳ vọng: 400"
+					},
+					"response": []
+				},
+				{
+					"name": "Thiếu product_id",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"quantity\": 1\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/cart/items",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"cart",
+								"items"
+							]
+						},
+						"description": "Test lỗi khi thiếu product_id. Kỳ vọng: 400"
+					},
+					"response": []
+				},
+				{
+					"name": "Xóa item không tồn tại",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/cart/items/99999",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"cart",
+								"items",
+								"99999"
+							]
+						},
+						"description": "Test lỗi khi xóa item không tồn tại. Kỳ vọng: 404"
+					},
+					"response": []
+				},
+				{
+					"name": "Không có token",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/cart",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"cart"
+							]
+						},
+						"description": "Test lỗi khi không có token. Kỳ vọng: 401"
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:5000",
+			"type": "string"
+		},
+		{
+			"key": "token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "cart_item_id",
+			"value": "",
+			"type": "string"
+		}
+	]
+}
+

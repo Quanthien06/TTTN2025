@@ -90,12 +90,14 @@ router.get('/', authenticateToken, async (req, res) => {
 router.post('/items', authenticateToken, async (req, res) => {
     const pool = req.app.locals.pool;
     const userId = req.user.id;
-    const { productId, quantity } = req.body;
+    // Hỗ trợ cả product_id và productId để tương thích
+    const productId = req.body.product_id || req.body.productId;
+    const { quantity } = req.body;
 
     try {
         // Check validate
         if (!productId || quantity == null) {
-            return res.status(400).json({ message: 'productId và quantity hợp lệ là bắt buộc' });
+            return res.status(400).json({ message: 'product_id và quantity hợp lệ là bắt buộc' });
         }
 
         if (quantity <= 0) {
