@@ -355,17 +355,6 @@ router.get('/total', authenticateToken, async (req, res) => {
 });
 
 module.exports = router;
-
-// ============================================
-// CẬP NHẬT server.js
-// ============================================
-// Thêm vào server.js:
-// 
-// const cartRouter = require('./routes/cart');
-// 
-// app.use('/api/cart', cartRouter);
-// 
-// (Lưu ý: authenticateToken đã được thêm vào từng route trong cart.js,
-//  nên không cần thêm middleware ở đây nữa)
+    
 
 

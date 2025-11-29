@@ -14,6 +14,7 @@ const jwt = require('jsonwebtoken');
 const authRouter = require('./routes/auth');
 const productRouter = require('./routes/product');
 const cartRouter = require('./routes/cart');
+const orderRouter = require('./routes/orders');
 // Import middleware xác thực
 const authenticateToken = require('./middleware/auth'); 
 
@@ -69,6 +70,10 @@ app.use('/api/products', productRouter);
 // Lưu ý: authenticateToken đã được thêm vào từng route trong cart.js
 app.use('/api/cart', cartRouter);
 
+// Gắn router đơn hàng vào đường dẫn /api/orders
+// Lưu ý: authenticateToken đã được thêm vào từng route trong orders.js
+app.use('/api/orders', orderRouter);
+
 
 // 7. Lắng nghe
 app.listen(PORT, () => {
@@ -80,5 +85,7 @@ app.listen(PORT, () => {
     console.log('\n--- PRIVATE API (Cần Token) ---');
     console.log(`GET Giỏ hàng: http://localhost:${PORT}/api/cart`);
     console.log(`POST Thêm vào giỏ: http://localhost:${PORT}/api/cart/items`);
+    console.log(`POST Tạo đơn hàng: http://localhost:${PORT}/api/orders`);
+    console.log(`GET Danh sách đơn hàng: http://localhost:${PORT}/api/orders`);
     console.log('Sử dụng Header "Authorization: Bearer [TOKEN]"');
 });
