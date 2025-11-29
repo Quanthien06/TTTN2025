@@ -33,8 +33,8 @@
     - [✓] Import authenticateToken middleware (ĐÃ XONG)
     - [✓] Thêm POST /api/orders (Tạo đơn hàng từ cart) (ĐÃ XONG)
     - [✓] Thêm GET /api/orders (Lấy danh sách đơn hàng) (ĐÃ XONG)
-    - [ ] Thêm GET /api/orders/:id (Chi tiết đơn hàng)
-    - [ ] Thêm PUT /api/orders/:id/status (Cập nhật trạng thái - Admin)
+    - [✓] Thêm GET /api/orders/:id (Chi tiết đơn hàng) (ĐÃ XONG)
+    - [✓] Thêm PUT /api/orders/:id/status (Cập nhật trạng thái - Admin) (ĐÃ XONG)
 
 [✓] BƯỚC 3: CẬP NHẬT SERVER.JS
     - [✓] Import orderRouter: const orderRouter = require('./routes/orders'); (ĐÃ XONG)
@@ -97,13 +97,13 @@
 ⚡ ƯU TIÊN TRUNG BÌNH (LÀM SAU KHI HOÀN THÀNH CÁC BƯỚC TRÊN)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-5. [PRIORITY 5] Hoàn thiện GET /api/orders/:id
-   - Copy code từ BƯỚC 5 trong hướng dẫn
-   - Test với order ID hợp lệ và không hợp lệ
+5. [PRIORITY 5] Hoàn thiện GET /api/orders/:id ✅ ĐÃ HOÀN THÀNH
+   - [✓] Code đã được thêm vào routes/orders.js
+   - [ ] Test với order ID hợp lệ và không hợp lệ (CẦN TEST)
 
-6. [PRIORITY 6] Hoàn thiện PUT /api/orders/:id/status (Admin)
-   - Copy code từ BƯỚC 6 trong hướng dẫn
-   - Test với admin token và user token (phải báo lỗi 403)
+6. [PRIORITY 6] Hoàn thiện PUT /api/orders/:id/status (Admin) ✅ ĐÃ HOÀN THÀNH
+   - [✓] Code đã được thêm vào routes/orders.js
+   - [ ] Test với admin token và user token (phải báo lỗi 403) (CẦN TEST)
 
 7. [PRIORITY 7] Thêm Validation
    - Validate shipping_address không rỗng
@@ -141,8 +141,8 @@
 ================================================================================
 
 Tổng số bước: 12
-Đã hoàn thành: 5/12 (42%)
-Chưa hoàn thành: 7/12 (58%)
+Đã hoàn thành: 7/12 (58%)
+Chưa hoàn thành: 5/12 (42%)
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 CÁC BƯỚC CẦN LÀM THEO THỨ TỰ:
@@ -152,7 +152,9 @@ CÁC BƯỚC CẦN LÀM THEO THỨ TỰ:
 2. ⏳ Chạy SQL trong MySQL (CẦN LÀM - QUAN TRỌNG!)
 3. ✅ Hoàn thiện routes/orders.js với POST /api/orders (ĐÃ XONG)
 4. ✅ Hoàn thiện routes/orders.js với GET /api/orders (ĐÃ XONG)
-5. ✅ Cập nhật server.js (ĐÃ XONG)
+5. ✅ Hoàn thiện routes/orders.js với GET /api/orders/:id (ĐÃ XONG)
+6. ✅ Hoàn thiện routes/orders.js với PUT /api/orders/:id/status (ĐÃ XONG)
+7. ✅ Cập nhật server.js (ĐÃ XONG)
 5. ⏳ Cập nhật server.js
 6. ⏳ Test POST /api/orders
 7. ⏳ Test GET /api/orders

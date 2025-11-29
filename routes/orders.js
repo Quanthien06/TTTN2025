@@ -130,4 +130,114 @@ router.get('/', authenticateToken, async (req, res) => {
     }
 });
 
+// GET /api/orders/:id - Lấy chi tiết đơn hàng
+router.get('/:id', authenticateToken, async (req, res) => {
+    const pool = req.app.locals.pool;
+    const userId = req.user.id;
+    const orderId = req.params.id;
+
+    try {
+        // Kiểm tra đơn hàng thuộc về user
+        const [orders] = await pool.query(
+            'SELECT * FROM orders WHERE id = ? AND user_id = ?',
+            [orderId, userId]
+        );
+
+        if (orders.length === 0) {
+            return res.status(404).json({ message: 'Đơn hàng không tồn tại' });
+        }
+
+        const order = orders[0];
+
+        // Lấy items
+        const [orderItems] = await pool.query(
+            `SELECT oi.*, 
+                p.name as product_name, 
+                p.category,
+                (oi.price * oi.quantity) as subtotal
+            FROM order_items oi
+            JOIN products p ON oi.product_id = p.id
+            WHERE oi.order_id = ?`,
+            [orderId]
+        );
+
+        const formattedItems = orderItems.map(item => ({
+            ...item,
+            price: parseFloat(item.price),
+            subtotal: parseFloat(item.subtotal)
+        }));
+
+        res.json({
+            order: {
+                ...order,
+                total: parseFloat(order.total),
+                items: formattedItems,
+                item_count: formattedItems.length
+            }
+        });
+
+    } catch (error) {
+        console.error('Lỗi khi lấy chi tiết đơn hàng:', error);
+        res.status(500).json({ message: 'Lỗi máy chủ nội bộ' });
+    }
+});
+
+// PUT /api/orders/:id/status - Cập nhật trạng thái đơn hàng (Admin only)
+router.put('/:id/status', authenticateToken, async (req, res) => {
+    const pool = req.app.locals.pool;
+    const userId = req.user.id;
+    const orderId = req.params.id;
+    const { status } = req.body;
+
+    try {
+        // Kiểm tra quyền admin
+        if (req.user.role !== 'admin') {
+            return res.status(403).json({ message: 'Chỉ admin mới có quyền cập nhật trạng thái đơn hàng' });
+        }
+
+        // Validate status
+        const validStatuses = ['pending', 'processing', 'shipped', 'delivered', 'cancelled'];
+        if (!validStatuses.includes(status)) {
+            return res.status(400).json({ 
+                message: 'Trạng thái không hợp lệ',
+                valid_statuses: validStatuses
+            });
+        }
+
+        // Kiểm tra đơn hàng tồn tại
+        const [orders] = await pool.query(
+            'SELECT * FROM orders WHERE id = ?',
+            [orderId]
+        );
+
+        if (orders.length === 0) {
+            return res.status(404).json({ message: 'Đơn hàng không tồn tại' });
+        }
+
+        // Cập nhật status
+        await pool.query(
+            'UPDATE orders SET status = ? WHERE id = ?',
+            [status, orderId]
+        );
+
+        // Lấy đơn hàng đã cập nhật
+        const [updatedOrders] = await pool.query(
+            'SELECT * FROM orders WHERE id = ?',
+            [orderId]
+        );
+
+        res.json({
+            message: 'Đã cập nhật trạng thái đơn hàng',
+            order: {
+                ...updatedOrders[0],
+                total: parseFloat(updatedOrders[0].total)
+            }
+        });
+
+    } catch (error) {
+        console.error('Lỗi khi cập nhật trạng thái đơn hàng:', error);
+        res.status(500).json({ message: 'Lỗi máy chủ nội bộ' });
+    }
+});
+
 module.exports = router;
