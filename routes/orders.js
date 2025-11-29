@@ -94,10 +94,40 @@ router.post('/', authenticateToken, async (req, res) => {
     }
 });
 
-// GET /api/orders - Lấy danh sách đơn hàng (sẽ hoàn thiện sau)
+// GET /api/orders - Lấy danh sách đơn hàng của user
 router.get('/', authenticateToken, async (req, res) => {
-    // Code sẽ được thêm sau
-    res.json({ message: 'GET /api/orders - Đang phát triển' });
+    const pool = req.app.locals.pool;
+    const userId = req.user.id;
+
+    try {
+        const [orders] = await pool.query(
+            `SELECT o.*, 
+                COUNT(oi.id) as item_count,
+                SUM(oi.quantity) as total_quantity
+            FROM orders o
+            LEFT JOIN order_items oi ON o.id = oi.order_id
+            WHERE o.user_id = ?
+            GROUP BY o.id
+            ORDER BY o.created_at DESC`,
+            [userId]
+        );
+
+        const formattedOrders = orders.map(order => ({
+            ...order,
+            total: parseFloat(order.total),
+            item_count: parseInt(order.item_count || 0),
+            total_quantity: parseInt(order.total_quantity || 0)
+        }));
+
+        res.json({
+            orders: formattedOrders,
+            count: orders.length
+        });
+
+    } catch (error) {
+        console.error('Lỗi khi lấy danh sách đơn hàng:', error);
+        res.status(500).json({ message: 'Lỗi máy chủ nội bộ' });
+    }
 });
 
 module.exports = router;

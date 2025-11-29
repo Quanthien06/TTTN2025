@@ -29,17 +29,17 @@
     - [ ] Verify: SHOW TABLES; để kiểm tra orders và order_items
     - [ ] Test foreign keys hoạt động đúng
 
-[ ] BƯỚC 2: HOÀN THIỆN ROUTES/ORDERS.JS
+[✓] BƯỚC 2: HOÀN THIỆN ROUTES/ORDERS.JS
     - [✓] Import authenticateToken middleware (ĐÃ XONG)
     - [✓] Thêm POST /api/orders (Tạo đơn hàng từ cart) (ĐÃ XONG)
-    - [ ] Thêm GET /api/orders (Lấy danh sách đơn hàng)
+    - [✓] Thêm GET /api/orders (Lấy danh sách đơn hàng) (ĐÃ XONG)
     - [ ] Thêm GET /api/orders/:id (Chi tiết đơn hàng)
     - [ ] Thêm PUT /api/orders/:id/status (Cập nhật trạng thái - Admin)
 
-[ ] BƯỚC 3: CẬP NHẬT SERVER.JS
-    - [ ] Import orderRouter: const orderRouter = require('./routes/orders');
-    - [ ] Thêm route: app.use('/api/orders', orderRouter);
-    - [ ] Thêm log console cho các endpoints orders
+[✓] BƯỚC 3: CẬP NHẬT SERVER.JS
+    - [✓] Import orderRouter: const orderRouter = require('./routes/orders'); (ĐÃ XONG)
+    - [✓] Thêm route: app.use('/api/orders', orderRouter); (ĐÃ XONG)
+    - [✓] Thêm log console cho các endpoints orders (ĐÃ XONG)
 
 [ ] BƯỚC 4: TEST API
     - [ ] Test POST /api/orders (Tạo đơn hàng)
@@ -82,16 +82,16 @@
    - [ ] Test với cart có sản phẩm (CẦN TEST)
    - [ ] Verify cart được đánh dấu completed sau khi tạo order (CẦN TEST)
 
-3. [PRIORITY 3] Hoàn thiện GET /api/orders
+3. [PRIORITY 3] Hoàn thiện GET /api/orders ✅ ĐÃ HOÀN THÀNH
    ⚠️ QUAN TRỌNG: User cần xem danh sách đơn hàng của mình
-   - Copy code từ BƯỚC 4 trong hướng dẫn
-   - Test với user đã có đơn hàng
+   - [✓] Code đã được thêm vào routes/orders.js
+   - [ ] Test với user đã có đơn hàng (CẦN TEST)
 
-4. [PRIORITY 4] Cập nhật server.js
+4. [PRIORITY 4] Cập nhật server.js ✅ ĐÃ HOÀN THÀNH
    ⚠️ QUAN TRỌNG: Không có route thì API không hoạt động
-   - Import orderRouter
-   - Thêm app.use('/api/orders', orderRouter)
-   - Restart server
+   - [✓] Import orderRouter (ĐÃ XONG)
+   - [✓] Thêm app.use('/api/orders', orderRouter) (ĐÃ XONG)
+   - [✓] Đã thêm log console (ĐÃ XONG)
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ⚡ ƯU TIÊN TRUNG BÌNH (LÀM SAU KHI HOÀN THÀNH CÁC BƯỚC TRÊN)
@@ -141,17 +141,18 @@
 ================================================================================
 
 Tổng số bước: 12
-Đã hoàn thành: 3/12 (25%)
-Chưa hoàn thành: 9/12 (75%)
+Đã hoàn thành: 5/12 (42%)
+Chưa hoàn thành: 7/12 (58%)
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 CÁC BƯỚC CẦN LÀM THEO THỨ TỰ:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 1. ✅ Tạo database schema (ĐÃ XONG)
-2. ⏳ Chạy SQL trong MySQL (CẦN LÀM)
+2. ⏳ Chạy SQL trong MySQL (CẦN LÀM - QUAN TRỌNG!)
 3. ✅ Hoàn thiện routes/orders.js với POST /api/orders (ĐÃ XONG)
-4. ⏳ Hoàn thiện routes/orders.js với GET /api/orders
+4. ✅ Hoàn thiện routes/orders.js với GET /api/orders (ĐÃ XONG)
+5. ✅ Cập nhật server.js (ĐÃ XONG)
 5. ⏳ Cập nhật server.js
 6. ⏳ Test POST /api/orders
 7. ⏳ Test GET /api/orders
