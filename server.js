@@ -15,6 +15,7 @@ const authRouter = require('./routes/auth');
 const productRouter = require('./routes/product');
 const cartRouter = require('./routes/cart');
 const orderRouter = require('./routes/orders');
+const categoriesRouter = require('./routes/categories'); // Router cho Categories API
 // Import middleware xác thực
 const authenticateToken = require('./middleware/auth'); 
 
@@ -74,6 +75,10 @@ app.use('/api/cart', cartRouter);
 // Lưu ý: authenticateToken đã được thêm vào từng route trong orders.js
 app.use('/api/orders', orderRouter);
 
+// Gắn router categories vào đường dẫn /api/categories
+// Lưu ý: Một số route công khai (GET), một số cần admin (POST, PUT, DELETE)
+app.use('/api/categories', categoriesRouter);
+
 
 // 7. Lắng nghe
 app.listen(PORT, () => {
@@ -82,10 +87,22 @@ app.listen(PORT, () => {
     console.log(`GET Danh sách sản phẩm: http://localhost:${PORT}/api/products`);
     console.log(`POST Đăng ký: http://localhost:${PORT}/api/register`);
     console.log(`POST Đăng nhập: http://localhost:${PORT}/api/login`);
+    console.log('\n--- PUBLIC API (Categories) ---');
+    console.log(`GET Danh sách categories: http://localhost:${PORT}/api/categories`);
+    console.log(`GET Sản phẩm theo category: http://localhost:${PORT}/api/categories/:id`);
+    
     console.log('\n--- PRIVATE API (Cần Token) ---');
+    console.log(`GET Thông tin user: http://localhost:${PORT}/api/me`);
+    console.log(`PUT Cập nhật profile: http://localhost:${PORT}/api/profile`);
+    console.log(`PUT Đổi mật khẩu: http://localhost:${PORT}/api/change-password`);
+    console.log(`POST Đăng xuất: http://localhost:${PORT}/api/logout`);
     console.log(`GET Giỏ hàng: http://localhost:${PORT}/api/cart`);
     console.log(`POST Thêm vào giỏ: http://localhost:${PORT}/api/cart/items`);
     console.log(`POST Tạo đơn hàng: http://localhost:${PORT}/api/orders`);
     console.log(`GET Danh sách đơn hàng: http://localhost:${PORT}/api/orders`);
-    console.log('Sử dụng Header "Authorization: Bearer [TOKEN]"');
+    console.log('\n--- ADMIN API (Cần Token Admin) ---');
+    console.log(`POST Tạo category: http://localhost:${PORT}/api/categories`);
+    console.log(`PUT Cập nhật category: http://localhost:${PORT}/api/categories/:id`);
+    console.log(`DELETE Xóa category: http://localhost:${PORT}/api/categories/:id`);
+    console.log('\nSử dụng Header "Authorization: Bearer [TOKEN]"');
 });
