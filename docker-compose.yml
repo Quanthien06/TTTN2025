@@ -1,0 +1,145 @@
+# docker-compose.yml
+# File để chạy tất cả microservices với Docker
+
+services:
+  # MySQL Database
+  mysql:
+    image: mysql:8.0
+    container_name: tttn2025-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: tttn2025
+      MYSQL_USER: tttn_user
+      MYSQL_PASSWORD: tttn_pass
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./database:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - tttn-network
+
+  # Auth Service
+  auth-service:
+    build:
+      context: ./services/auth-service
+      dockerfile: Dockerfile
+    container_name: tttn2025-auth
+    environment:
+      DB_HOST: mysql
+      DB_USER: tttn_user
+      DB_PASSWORD: tttn_pass
+      DB_NAME: tttn2025
+      JWT_SECRET: HhGg78@!kYpQzXcVbNmL1o2P3oI4U5yT6rE7wQ8aZ9sX0cVkGjH
+    ports:
+      - "5001:5001"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - tttn-network
+    restart: unless-stopped
+
+  # Product Service
+  product-service:
+    build:
+      context: ./services/product-service
+      dockerfile: Dockerfile
+    container_name: tttn2025-product
+    environment:
+      DB_HOST: mysql
+      DB_USER: tttn_user
+      DB_PASSWORD: tttn_pass
+      DB_NAME: tttn2025
+      JWT_SECRET: HhGg78@!kYpQzXcVbNmL1o2P3oI4U5yT6rE7wQ8aZ9sX0cVkGjH
+    ports:
+      - "5002:5002"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - tttn-network
+    restart: unless-stopped
+
+  # Cart Service
+  cart-service:
+    build:
+      context: ./services/cart-service
+      dockerfile: Dockerfile
+    container_name: tttn2025-cart
+    environment:
+      DB_HOST: mysql
+      DB_USER: tttn_user
+      DB_PASSWORD: tttn_pass
+      DB_NAME: tttn2025
+      JWT_SECRET: HhGg78@!kYpQzXcVbNmL1o2P3oI4U5yT6rE7wQ8aZ9sX0cVkGjH
+    ports:
+      - "5003:5003"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - tttn-network
+    restart: unless-stopped
+
+  # Order Service
+  order-service:
+    build:
+      context: ./services/order-service
+      dockerfile: Dockerfile
+    container_name: tttn2025-order
+    environment:
+      DB_HOST: mysql
+      DB_USER: tttn_user
+      DB_PASSWORD: tttn_pass
+      DB_NAME: tttn2025
+      JWT_SECRET: HhGg78@!kYpQzXcVbNmL1o2P3oI4U5yT6rE7wQ8aZ9sX0cVkGjH
+      CART_SERVICE_URL: http://cart-service:5003
+    ports:
+      - "5004:5004"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      cart-service:
+        condition: service_started
+    networks:
+      - tttn-network
+    restart: unless-stopped
+
+  # API Gateway
+  gateway:
+    build:
+      context: .
+      dockerfile: ./gateway/Dockerfile
+    container_name: tttn2025-gateway
+    environment:
+      AUTH_SERVICE_URL: http://auth-service:5001
+      PRODUCT_SERVICE_URL: http://product-service:5002
+      CART_SERVICE_URL: http://cart-service:5003
+      ORDER_SERVICE_URL: http://order-service:5004
+      JWT_SECRET: HhGg78@!kYpQzXcVbNmL1o2P3oI4U5yT6rE7wQ8aZ9sX0cVkGjH
+    ports:
+      - "5000:5000"
+    depends_on:
+      - auth-service
+      - product-service
+      - cart-service
+      - order-service
+    networks:
+      - tttn-network
+    restart: unless-stopped
+
+# Networks
+networks:
+  tttn-network:
+    driver: bridge
+
+# Volumes
+volumes:
+  mysql_data:
+

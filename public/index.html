@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TTTN2025 API Portal</title>
+    <title>Shop TTTN2025 - Cửa hàng Online</title>
     <link rel="stylesheet" href="/styles.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -12,173 +12,234 @@
 </head>
 
 <body>
-    <header class="hero">
-        <div class="container hero__content">
-            <div>
-                <p class="hero__eyebrow">TTTN 2025 • Node.js REST API</p>
-                <h1>Quản trị sản phẩm &amp; giỏ hàng dễ dàng</h1>
-                <p class="hero__subtitle">
-                    Bộ API phục vụ đồ án tốt nghiệp: đăng ký, đăng nhập, quản lý sản phẩm và giỏ hàng với chuẩn RESTful,
-                    bảo vệ bằng JWT.
-                </p>
-                <div class="hero__actions">
-                    <a class="btn primary" href="#quick-start">Bắt đầu ngay</a>
-                    <a class="btn ghost" href="#api-list">Xem danh sách API</a>
+    <!-- Header / Navigation -->
+    <header class="header">
+        <div class="container">
+            <div class="header__content">
+                <div class="header__brand">
+                    <h1><a href="#">🛍️ Shop TTTN2025</a></h1>
                 </div>
-                <ul class="hero__stats">
-                    <li>
-                        <strong>03</strong>
-                        <span>Module chính</span>
-                    </li>
-                    <li>
-                        <strong>08+</strong>
-                        <span>Endpoint bảo vệ JWT</span>
-                    </li>
-                    <li>
-                        <strong>24/7</strong>
-                        <span>Sẵn sàng thử nghiệm</span>
-                    </li>
-                </ul>
-            </div>
-            <div class="hero__card">
-                <p class="hero__card-title">Thông tin máy chủ</p>
-                <ul>
-                    <li>
-                        <span>Base URL</span>
-                        <code>http://localhost:5000</code>
-                    </li>
-                    <li>
-                        <span>API công khai</span>
-                        <code>GET /api/products</code>
-                    </li>
-                    <li>
-                        <span>API yêu cầu token</span>
-                        <code>Authorization: Bearer &lt;JWT&gt;</code>
-                    </li>
-                    <li>
-                        <span>Database</span>
-                        <code>MySQL (tttn2025)</code>
-                    </li>
-                </ul>
+                
+                <nav class="header__nav" id="headerNav">
+                    <a href="#" class="nav-link active" data-page="home">Trang chủ</a>
+                    <a href="#" class="nav-link" data-page="products">Sản phẩm</a>
+                    <a href="#" class="nav-link" data-page="categories">Danh mục</a>
+                    <div class="nav-user" id="navUser" style="display: none;">
+                        <a href="#" class="nav-link" data-page="cart">
+                            Giỏ hàng <span class="cart-badge" id="cartBadge" style="display: none;">0</span>
+                        </a>
+                        <a href="#" class="nav-link" data-page="orders">Đơn hàng</a>
+                        <div class="user-menu">
+                            <button class="user-menu-btn" id="userMenuBtn">
+                                <span id="userName">User</span> ▼
+                            </button>
+                            <div class="user-menu-dropdown" id="userMenuDropdown">
+                                <a href="#" data-page="profile">Hồ sơ</a>
+                                <a href="#" id="logoutBtn">Đăng xuất</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="nav-auth" id="navAuth">
+                        <button class="btn btn-sm" id="loginBtn">Đăng nhập</button>
+                        <button class="btn btn-sm btn-primary" id="registerBtn">Đăng ký</button>
+                    </div>
+                </nav>
             </div>
         </div>
     </header>
 
-    <main>
-        <section id="quick-start" class="section">
+    <!-- Main Content -->
+    <main class="main-content" id="mainContent">
+        <!-- Home Page -->
+        <section class="page" id="pageHome" data-page="home">
+            <div class="hero-banner">
+                <div class="container">
+                    <h2>Chào mừng đến Shop TTTN2025</h2>
+                    <p>Nơi mua sắm trực tuyến uy tín, chất lượng</p>
+                    <button class="btn btn-primary btn-lg" onclick="navigateTo('products')">Khám phá sản phẩm</button>
+                </div>
+            </div>
+
+            <!-- Categories Quick View -->
+            <div class="container section">
+                <h3 class="section-title">Danh mục sản phẩm</h3>
+                <div class="categories-grid" id="categoriesGrid">
+                    <div class="loading">Đang tải...</div>
+                </div>
+            </div>
+
+            <!-- Featured Products -->
+            <div class="container section">
+                <h3 class="section-title">Sản phẩm nổi bật</h3>
+                <div class="products-grid" id="featuredProducts">
+                    <div class="loading">Đang tải...</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Products Page -->
+        <section class="page hidden" id="pageProducts" data-page="products">
             <div class="container">
-                <div class="section__header">
-                    <p class="eyebrow">QUICK START</p>
-                    <h2>3 bước sử dụng API</h2>
-                    <p>Thử nghiệm nhanh với Postman hoặc bất kỳ HTTP client nào.</p>
+                <div class="page-header">
+                    <h2>Sản phẩm</h2>
                 </div>
-                <div class="steps">
-                    <article>
-                        <p class="step__number">01</p>
-                        <h3>Đăng nhập / Đăng ký</h3>
-                        <p>Tạo tài khoản qua <code>POST /api/register</code> và nhận token bằng <code>POST /api/login</code>.</p>
-                    </article>
-                    <article>
-                        <p class="step__number">02</p>
-                        <h3>Gọi API</h3>
-                        <p>Truy vấn sản phẩm, thêm giỏ hàng, cập nhật dữ liệu thông qua các endpoint RESTful.</p>
-                    </article>
-                    <article>
-                        <p class="step__number">03</p>
-                        <h3>Quản trị</h3>
-                        <p>Dùng token admin để thêm, sửa, xoá sản phẩm hoặc thao tác giỏ hàng.</p>
-                    </article>
+
+                <!-- Search & Filter -->
+                <div class="filters">
+                    <div class="filter-row">
+                        <input type="text" class="input" id="searchInput" placeholder="Tìm kiếm sản phẩm...">
+                        <select class="select" id="categoryFilter">
+                            <option value="">Tất cả danh mục</option>
+                        </select>
+                        <select class="select" id="sortSelect">
+                            <option value="id">Sắp xếp</option>
+                            <option value="price-asc">Giá: Thấp → Cao</option>
+                            <option value="price-desc">Giá: Cao → Thấp</option>
+                            <option value="name-asc">Tên: A → Z</option>
+                        </select>
+                        <button class="btn btn-secondary" id="applyFiltersBtn">Lọc</button>
+                        <button class="btn btn-ghost" id="resetFiltersBtn">Xóa bộ lọc</button>
+                    </div>
+                    <div class="filter-row">
+                        <label>Giá từ:</label>
+                        <input type="number" class="input input-sm" id="minPrice" placeholder="0">
+                        <label>đến:</label>
+                        <input type="number" class="input input-sm" id="maxPrice" placeholder="Max">
+                    </div>
                 </div>
+
+                <!-- Products Grid -->
+                <div class="products-grid" id="productsGrid">
+                    <div class="loading">Đang tải...</div>
+                </div>
+
+                <!-- Pagination -->
+                <div class="pagination" id="pagination"></div>
             </div>
         </section>
 
-        <section id="api-list" class="section section--alt">
+        <!-- Categories Page -->
+        <section class="page hidden" id="pageCategories" data-page="categories">
             <div class="container">
-                <div class="section__header">
-                    <p class="eyebrow">API OVERVIEW</p>
-                    <h2>Danh sách endpoint chính</h2>
-                    <p>Các module lõi hiện có trong dự án.</p>
+                <div class="page-header">
+                    <h2>Danh mục sản phẩm</h2>
                 </div>
-                <div class="api-grid">
-                    <article>
-                        <h3>Authentication</h3>
-                        <ul>
-                            <li><code>POST /api/register</code> — Đăng ký tài khoản</li>
-                            <li><code>POST /api/login</code> — Nhận JWT</li>
-                        </ul>
-                    </article>
-                    <article>
-                        <h3>Products</h3>
-                        <ul>
-                            <li><code>GET /api/products</code> — Danh sách sản phẩm</li>
-                            <li><code>POST /api/products</code> — Thêm sản phẩm (admin)</li>
-                            <li><code>PUT /api/products/:id</code> — Cập nhật</li>
-                            <li><code>DELETE /api/products/:id</code> — Xoá</li>
-                        </ul>
-                    </article>
-                    <article>
-                        <h3>Cart</h3>
-                        <ul>
-                            <li><code>GET /api/cart</code> — Lấy giỏ hàng</li>
-                            <li><code>POST /api/cart/items</code> — Thêm sản phẩm</li>
-                            <li><code>PUT /api/cart/items/:itemId</code> — Sửa số lượng</li>
-                            <li><code>DELETE /api/cart</code> — Làm trống giỏ</li>
-                        </ul>
-                    </article>
+                <div class="categories-list" id="categoriesList">
+                    <div class="loading">Đang tải...</div>
                 </div>
             </div>
         </section>
 
-        <section class="section">
-            <div class="container tips">
-                <div>
-                    <p class="eyebrow">BEST PRACTICES</p>
-                    <h2>Lưu ý khi sử dụng API</h2>
-                    <ul class="tips__list">
-                        <li>Luôn gửi header <code>Authorization: Bearer &lt;token&gt;</code> cho các endpoint private.</li>
-                        <li>Token có hiệu lực 100 ngày. Khi hết hạn, đăng nhập lại để lấy token mới.</li>
-                        <li>Đối với thao tác admin (POST/PUT/DELETE sản phẩm) cần role <code>admin</code>.</li>
-                        <li>Giỏ hàng tự động khởi tạo khi user thêm sản phẩm đầu tiên.</li>
-                    </ul>
+        <!-- Cart Page -->
+        <section class="page hidden" id="pageCart" data-page="cart">
+            <div class="container">
+                <div class="page-header">
+                    <h2>Giỏ hàng của tôi</h2>
                 </div>
-                <div class="tips__card">
-                    <h3>Dùng Postman?</h3>
-                    <ol>
-                        <li>Đăng nhập và copy token.</li>
-                        <li>Tạo collection với biến môi trường <code>{{base_url}}</code>.</li>
-                        <li>Thiết lập header mặc định <code>Authorization</code>.</li>
-                        <li>Tận dụng file <code>HUONG_DAN_TEST_API.md</code> để tham khảo payload.</li>
-                    </ol>
+                <div id="cartContent">
+                    <div class="loading">Đang tải...</div>
                 </div>
             </div>
         </section>
 
-        <section class="cta">
-            <div class="container cta__content">
-                <div>
-                    <p class="eyebrow">READY TO BUILD?</p>
-                    <h2>Bắt đầu mở Postman và thử nghiệm ngay!</h2>
-                    <p>API được xây dựng cho đồ án tốt nghiệp, dễ hiểu, dễ mở rộng và sẵn sàng tích hợp giao diện quản trị.</p>
+        <!-- Orders Page -->
+        <section class="page hidden" id="pageOrders" data-page="orders">
+            <div class="container">
+                <div class="page-header">
+                    <h2>Đơn hàng của tôi</h2>
                 </div>
-                <div class="cta__actions">
-                    <a class="btn primary" href="/HUONG_DAN_TEST_API.md" target="_blank">Xem tài liệu test</a>
-                    <a class="btn ghost" href="mailto:support@example.com">Liên hệ hỗ trợ</a>
+                <div id="ordersContent">
+                    <div class="loading">Đang tải...</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Profile Page -->
+        <section class="page hidden" id="pageProfile" data-page="profile">
+            <div class="container">
+                <div class="page-header">
+                    <h2>Hồ sơ cá nhân</h2>
+                </div>
+                <div class="profile-content" id="profileContent">
+                    <div class="loading">Đang tải...</div>
                 </div>
             </div>
         </section>
     </main>
 
-    <footer>
-        <div class="container footer__content">
-            <p>© 2025 Đồ án TTTN. Xây dựng bằng Node.js, Express &amp; MySQL.</p>
-            <ul>
-                <li><a href="/HUONG_DAN_TEST_API.md" target="_blank">Tài liệu API</a></li>
-                <li><a href="/HUONG_DAN_TEST_CART_API.txt" target="_blank">Cart API Guide</a></li>
-                <li><a href="https://www.postman.com/" target="_blank" rel="noopener">Postman</a></li>
-            </ul>
+    <!-- Modal: Login -->
+    <div class="modal" id="loginModal">
+        <div class="modal-content">
+            <span class="modal-close" id="loginModalClose">&times;</span>
+            <h2>Đăng nhập</h2>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label>Tên đăng nhập</label>
+                    <input type="text" class="input" id="loginUsername" required>
+                </div>
+                <div class="form-group">
+                    <label>Mật khẩu</label>
+                    <input type="password" class="input" id="loginPassword" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Đăng nhập</button>
+            </form>
+            <div class="modal-message" id="loginMessage"></div>
         </div>
-    </footer>
+    </div>
+
+    <!-- Modal: Register -->
+    <div class="modal" id="registerModal">
+        <div class="modal-content">
+            <span class="modal-close" id="registerModalClose">&times;</span>
+            <h2>Đăng ký</h2>
+            <form id="registerForm">
+                <div class="form-group">
+                    <label>Tên đăng nhập</label>
+                    <input type="text" class="input" id="registerUsername" required>
+                </div>
+                <div class="form-group">
+                    <label>Mật khẩu</label>
+                    <input type="password" class="input" id="registerPassword" required minlength="6">
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Đăng ký</button>
+            </form>
+            <div class="modal-message" id="registerMessage"></div>
+        </div>
+    </div>
+
+    <!-- Modal: Checkout -->
+    <div class="modal" id="checkoutModal">
+        <div class="modal-content">
+            <span class="modal-close" id="checkoutModalClose">&times;</span>
+            <h2>Đặt hàng</h2>
+            <form id="checkoutForm">
+                <div class="form-group">
+                    <label>Địa chỉ giao hàng</label>
+                    <textarea class="input" id="shippingAddress" rows="3" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Số điện thoại</label>
+                    <input type="tel" class="input" id="shippingPhone" required>
+                </div>
+                <div class="form-group">
+                    <label>Tổng tiền</label>
+                    <input type="text" class="input" id="orderTotal" readonly>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Xác nhận đặt hàng</button>
+            </form>
+            <div class="modal-message" id="checkoutMessage"></div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div class="toast" id="toast"></div>
+
+    <script src="/app.js"></script>
 </body>
 
 </html>
-
