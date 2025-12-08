@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng ký - TechStore</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Custom styles từ login_styles.css -->
+    <link rel="stylesheet" href="/login_styles.css">
+    
+    <!-- Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Custom animations */
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .animate-slide-up {
+            animation: slideUp 0.5s ease-out;
+        }
+        /* Loading spinner */
+        .spinner {
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        /* Password strength indicator */
+        .password-strength {
+            height: 4px;
+            border-radius: 2px;
+            transition: all 0.3s;
+        }
+        .password-strength.weak {
+            background: #ef4444;
+            width: 33%;
+        }
+        .password-strength.medium {
+            background: #f59e0b;
+            width: 66%;
+        }
+        .password-strength.strong {
+            background: #10b981;
+            width: 100%;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+    <div class="py-16 px-4">
+        <div class="flex bg-white rounded-lg shadow-2xl overflow-hidden mx-auto max-w-sm lg:max-w-4xl animate-slide-up">
+            <!-- Left side - Image (hidden on mobile) -->
+            <div class="hidden lg:block lg:w-1/2 bg-cover bg-center"
+                style="background-image:url('https://images.unsplash.com/photo-1556740758-90de374c12ad?ixlib=rb-1.2.1&auto=format&fit=crop&w=1000&q=80')">
+            </div>
+            
+            <!-- Right side - Register Form -->
+            <div class="w-full p-8 lg:w-1/2">
+                <!-- Header -->
+                <div class="text-center mb-8">
+                    <h2 class="text-3xl font-bold text-gray-800 mb-2">🛍️ TechStore</h2>
+                    <p class="text-lg text-gray-600">Tạo tài khoản mới của bạn</p>
+                </div>
+
+                <!-- Error/Success Messages -->
+                <div id="errorMessage" class="hidden mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded"></div>
+                <div id="successMessage" class="hidden mb-4 p-3 bg-green-100 border border-green-400 text-green-700 rounded"></div>
+
+                <!-- Register Form -->
+                <form id="registerForm" onsubmit="handleRegister(event)">
+                    <!-- Username Field -->
+                    <div class="mt-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="register-username">
+                            Tên đăng nhập <span class="text-red-500">*</span>
+                        </label>
+                        <input 
+                            id="register-username"
+                            type="text" 
+                            class="bg-gray-50 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent border border-gray-300 rounded-lg py-3 px-4 block w-full transition-all"
+                            placeholder="Nhập tên đăng nhập (tối thiểu 3 ký tự)"
+                            required
+                            autocomplete="username"
+                            minlength="3"
+                        />
+                        <p class="text-xs text-gray-500 mt-1">Tên đăng nhập phải có ít nhất 3 ký tự</p>
+                    </div>
+
+                    <!-- Password Field -->
+                    <div class="mt-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="register-password">
+                            Mật khẩu <span class="text-red-500">*</span>
+                        </label>
+                        <input 
+                            id="register-password"
+                            type="password" 
+                            class="bg-gray-50 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent border border-gray-300 rounded-lg py-3 px-4 block w-full transition-all"
+                            placeholder="Nhập mật khẩu (tối thiểu 6 ký tự)"
+                            required
+                            autocomplete="new-password"
+                            minlength="6"
+                            oninput="checkPasswordStrength(this.value)"
+                        />
+                        <!-- Password Strength Indicator -->
+                        <div class="mt-2">
+                            <div class="password-strength bg-gray-200" id="passwordStrength"></div>
+                            <p class="text-xs text-gray-500 mt-1" id="passwordStrengthText">Mật khẩu phải có ít nhất 6 ký tự</p>
+                        </div>
+                    </div>
+
+                    <!-- Confirm Password Field -->
+                    <div class="mt-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="register-password-confirm">
+                            Xác nhận mật khẩu <span class="text-red-500">*</span>
+                        </label>
+                        <input 
+                            id="register-password-confirm"
+                            type="password" 
+                            class="bg-gray-50 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent border border-gray-300 rounded-lg py-3 px-4 block w-full transition-all"
+                            placeholder="Nhập lại mật khẩu"
+                            required
+                            autocomplete="new-password"
+                            oninput="checkPasswordMatch()"
+                        />
+                        <p class="text-xs text-red-500 mt-1 hidden" id="passwordMatchError">Mật khẩu xác nhận không khớp!</p>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div class="mt-8">
+                        <button 
+                            type="submit" 
+                            id="registerBtn"
+                            class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 w-full rounded-lg transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                        >
+                            <span id="registerBtnText">ĐĂNG KÝ</span>
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Divider -->
+                <div class="mt-6 flex items-center justify-between">
+                    <span class="border-b w-1/5 lg:w-1/4"></span>
+                    <span class="text-xs text-center text-gray-500 uppercase">hoặc</span>
+                    <span class="border-b w-1/5 lg:w-1/4"></span>
+                </div>
+
+                <!-- Login Link -->
+                <div class="mt-6 text-center">
+                    <p class="text-sm text-gray-600">
+                        Đã có tài khoản?
+                        <a href="/login.html" class="text-blue-600 font-bold hover:text-blue-800 hover:underline">
+                            Đăng nhập ngay
+                        </a>
+                    </p>
+                </div>
+
+                <!-- Back to Home -->
+                <div class="mt-4 text-center">
+                    <a href="/" class="text-sm text-gray-500 hover:text-gray-700">
+                        ← Về trang chủ
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:5000/api';
+
+        function showError(message) {
+            const errorEl = document.getElementById('errorMessage');
+            errorEl.textContent = message;
+            errorEl.classList.remove('hidden');
+            setTimeout(() => {
+                errorEl.classList.add('hidden');
+            }, 5000);
+        }
+
+        function showSuccess(message) {
+            const successEl = document.getElementById('successMessage');
+            successEl.textContent = message;
+            successEl.classList.remove('hidden');
+            setTimeout(() => {
+                successEl.classList.add('hidden');
+            }, 3000);
+        }
+
+        function setLoading(isLoading) {
+            const btn = document.getElementById('registerBtn');
+            const btnText = document.getElementById('registerBtnText');
+            
+            if (isLoading) {
+                btn.disabled = true;
+                btnText.innerHTML = '<span class="spinner inline-block w-4 h-4 mr-2"></span>Đang xử lý...';
+            } else {
+                btn.disabled = false;
+                btnText.textContent = 'ĐĂNG KÝ';
+            }
+        }
+
+        function checkPasswordStrength(password) {
+            const strengthBar = document.getElementById('passwordStrength');
+            const strengthText = document.getElementById('passwordStrengthText');
+            
+            if (password.length === 0) {
+                strengthBar.className = 'password-strength bg-gray-200';
+                strengthBar.style.width = '0%';
+                strengthText.textContent = 'Mật khẩu phải có ít nhất 6 ký tự';
+                strengthText.className = 'text-xs text-gray-500 mt-1';
+                return;
+            }
+
+            if (password.length < 6) {
+                strengthBar.className = 'password-strength weak';
+                strengthText.textContent = 'Mật khẩu yếu (cần ít nhất 6 ký tự)';
+                strengthText.className = 'text-xs text-red-500 mt-1';
+            } else if (password.length < 10) {
+                strengthBar.className = 'password-strength medium';
+                strengthText.textContent = 'Mật khẩu trung bình';
+                strengthText.className = 'text-xs text-yellow-500 mt-1';
+            } else {
+                strengthBar.className = 'password-strength strong';
+                strengthText.textContent = 'Mật khẩu mạnh';
+                strengthText.className = 'text-xs text-green-500 mt-1';
+            }
+        }
+
+        function checkPasswordMatch() {
+            const password = document.getElementById('register-password').value;
+            const confirmPassword = document.getElementById('register-password-confirm').value;
+            const confirmInput = document.getElementById('register-password-confirm');
+            const errorText = document.getElementById('passwordMatchError');
+            
+            if (confirmPassword.length === 0) {
+                confirmInput.classList.remove('border-red-500');
+                errorText.classList.add('hidden');
+                return;
+            }
+
+            if (password !== confirmPassword) {
+                confirmInput.classList.add('border-red-500');
+                confirmInput.classList.remove('border-gray-300');
+                errorText.classList.remove('hidden');
+            } else {
+                confirmInput.classList.remove('border-red-500');
+                confirmInput.classList.add('border-gray-300');
+                errorText.classList.add('hidden');
+            }
+        }
+
+        async function handleRegister(event) {
+            event.preventDefault();
+            
+            const username = document.getElementById('register-username').value.trim();
+            const password = document.getElementById('register-password').value;
+            const confirmPassword = document.getElementById('register-password-confirm').value;
+
+            // Hide previous messages
+            document.getElementById('errorMessage').classList.add('hidden');
+            document.getElementById('successMessage').classList.add('hidden');
+
+            // Validation
+            if (!username || !password || !confirmPassword) {
+                showError('Vui lòng nhập đầy đủ thông tin!');
+                return;
+            }
+
+            if (username.length < 3) {
+                showError('Tên đăng nhập phải có ít nhất 3 ký tự!');
+                return;
+            }
+
+            if (password.length < 6) {
+                showError('Mật khẩu phải có ít nhất 6 ký tự!');
+                return;
+            }
+
+            if (password !== confirmPassword) {
+                showError('Mật khẩu xác nhận không khớp!');
+                return;
+            }
+
+            setLoading(true);
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/register`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        username, 
+                        password,
+                        role: 'user' 
+                    })
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.message || 'Đăng ký thất bại');
+                }
+
+                showSuccess('Đăng ký thành công! Đang chuyển đến trang đăng nhập...');
+
+                // Chuyển đến trang đăng nhập sau 1.5 giây
+                setTimeout(() => {
+                    window.location.href = `/login.html?username=${encodeURIComponent(username)}`;
+                }, 1500);
+
+            } catch (error) {
+                console.error('Register error:', error);
+                showError(error.message || 'Lỗi kết nối server. Vui lòng thử lại!');
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        // Auto-fill username from URL parameter
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const username = urlParams.get('username');
+            if (username) {
+                document.getElementById('register-username').value = username;
+            }
+            document.getElementById('register-username').focus();
+        });
+    </script>
+</body>
+</html>

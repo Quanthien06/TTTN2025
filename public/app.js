@@ -40,9 +40,11 @@ function formatPrice(price) {
 function showToast(message, type = 'success') {
     const toast = document.getElementById('toast');
     toast.textContent = message;
-    toast.className = `toast ${type} active`;
+    const bgColor = type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500';
+    toast.className = `toast fixed bottom-4 right-4 ${bgColor} text-white rounded-lg shadow-lg p-4 z-50 animate-fade-in`;
+    toast.classList.remove('hidden');
     setTimeout(() => {
-        toast.classList.remove('active');
+        toast.classList.add('hidden');
     }, 3000);
 }
 
@@ -177,12 +179,12 @@ function updateUIForAuth(isLoggedIn) {
     const userName = document.getElementById('userName');
 
     if (isLoggedIn) {
-        navAuth.style.display = 'none';
-        navUser.style.display = 'flex';
-        userName.textContent = currentUser?.username || 'User';
+        if (navAuth) navAuth.classList.add('hidden');
+        if (navUser) navUser.classList.remove('hidden');
+        if (userName) userName.textContent = currentUser?.username || 'User';
     } else {
-        navAuth.style.display = 'flex';
-        navUser.style.display = 'none';
+        if (navAuth) navAuth.classList.remove('hidden');
+        if (navUser) navUser.classList.add('hidden');
     }
 }
 
@@ -266,9 +268,13 @@ async function loadCategories() {
         }
 
         grid.innerHTML = data.categories.slice(0, 6).map(cat => `
-            <div class="category-card" onclick="viewCategory(${cat.id})">
-                <h3>${cat.name}</h3>
-                <div class="count">${cat.product_count} sản phẩm</div>
+            <div 
+                class="category-card bg-white rounded-lg shadow-md p-6 text-center cursor-pointer hover:shadow-lg transition-shadow animate-fade-in"
+                onclick="viewCategory(${cat.id})"
+            >
+                <div class="text-4xl mb-3">📦</div>
+                <h3 class="font-bold text-gray-800 mb-2">${cat.name}</h3>
+                <div class="text-sm text-gray-500">${cat.product_count || 0} sản phẩm</div>
             </div>
         `).join('');
     } catch (error) {
@@ -338,27 +344,64 @@ async function loadProducts() {
 
 function renderProducts(products, container) {
     if (!products || products.length === 0) {
-        container.innerHTML = '<div class="empty-state">Không tìm thấy sản phẩm nào</div>';
+        container.innerHTML = '<div class="text-center text-gray-500 py-12">Không tìm thấy sản phẩm nào</div>';
         return;
     }
 
-    container.innerHTML = products.map(product => `
-        <div class="product-card">
-            <h3>${product.name}</h3>
-            <div class="category">${product.category || 'Chưa phân loại'}</div>
-            <div class="price">${formatPrice(product.price)}</div>
-            <div class="description">${product.description || 'Không có mô tả'}</div>
-            ${currentUser ? `
-                <button class="btn btn-primary btn-block" onclick="addToCart(${product.id}, '${product.name}', ${product.price})">
-                    Thêm vào giỏ
-                </button>
-            ` : `
-                <button class="btn btn-secondary btn-block" onclick="showToast('Vui lòng đăng nhập để thêm sản phẩm', 'error')">
-                    Đăng nhập để mua
-                </button>
-            `}
+    container.innerHTML = products.map(product => {
+        // Tính phần trăm giảm giá (giả sử có giá gốc)
+        const originalPrice = product.original_price || product.price * 1.1;
+        const discountPercent = Math.round(((originalPrice - product.price) / originalPrice) * 100);
+        const hasDiscount = discountPercent > 0;
+
+        return `
+        <div class="product-card bg-white rounded-lg shadow-md overflow-hidden animate-fade-in">
+            ${hasDiscount ? `
+                <div class="relative">
+                    <div class="absolute top-2 left-2 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded z-10">
+                        Giảm ${discountPercent}%
+                    </div>
+                </div>
+            ` : ''}
+            <div class="aspect-square bg-gray-100 flex items-center justify-center overflow-hidden">
+                <img 
+                    src="${product.image || 'https://via.placeholder.com/300x300?text=' + encodeURIComponent(product.name)}" 
+                    alt="${product.name}"
+                    class="w-full h-full object-cover"
+                    onerror="this.src='https://via.placeholder.com/300x300?text=${encodeURIComponent(product.name)}'"
+                />
+            </div>
+            <div class="p-4">
+                <div class="text-xs text-gray-500 mb-1">${product.category || 'Chưa phân loại'}</div>
+                <h3 class="font-bold text-gray-800 mb-2 line-clamp-2 h-12">${product.name}</h3>
+                <div class="mb-2">
+                    <span class="text-lg font-bold text-red-600">${formatPrice(product.price)}</span>
+                    ${hasDiscount ? `
+                        <span class="text-sm text-gray-400 line-through ml-2">${formatPrice(originalPrice)}</span>
+                    ` : ''}
+                </div>
+                ${product.description ? `
+                    <p class="text-xs text-gray-600 mb-3 line-clamp-2">${product.description}</p>
+                ` : ''}
+                ${currentUser ? `
+                    <button 
+                        onclick="addToCart(${product.id}, '${product.name}', ${product.price})"
+                        class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
+                    >
+                        Thêm vào giỏ
+                    </button>
+                ` : `
+                    <a 
+                        href="/login.html"
+                        class="block w-full bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 px-4 rounded-lg text-center transition-colors"
+                    >
+                        Đăng nhập để mua
+                    </a>
+                `}
+            </div>
         </div>
-    `).join('');
+        `;
+    }).join('');
 }
 
 async function loadCategoryFilterOptions() {
@@ -407,20 +450,31 @@ function renderPagination() {
     let html = '';
     
     // Previous button
-    html += `<button ${currentPagination.page === 1 ? 'disabled' : ''} onclick="changePage(${currentPagination.page - 1})">‹</button>`;
+    html += `<button 
+        ${currentPagination.page === 1 ? 'disabled' : ''} 
+        onclick="changePage(${currentPagination.page - 1})"
+        class="px-4 py-2 border border-gray-300 rounded-lg ${currentPagination.page === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-100'} transition-colors"
+    >‹</button>`;
     
     // Page numbers
     for (let i = 1; i <= currentPagination.totalPages; i++) {
         if (i === 1 || i === currentPagination.totalPages || 
             (i >= currentPagination.page - 2 && i <= currentPagination.page + 2)) {
-            html += `<button class="${i === currentPagination.page ? 'active' : ''}" onclick="changePage(${i})">${i}</button>`;
+            html += `<button 
+                class="px-4 py-2 border border-gray-300 rounded-lg ${i === currentPagination.page ? 'bg-red-600 text-white border-red-600' : 'hover:bg-gray-100'} transition-colors"
+                onclick="changePage(${i})"
+            >${i}</button>`;
         } else if (i === currentPagination.page - 3 || i === currentPagination.page + 3) {
-            html += `<button disabled>...</button>`;
+            html += `<button disabled class="px-4 py-2 opacity-50">...</button>`;
         }
     }
     
     // Next button
-    html += `<button ${currentPagination.page === currentPagination.totalPages ? 'disabled' : ''} onclick="changePage(${currentPagination.page + 1})">›</button>`;
+    html += `<button 
+        ${currentPagination.page === currentPagination.totalPages ? 'disabled' : ''} 
+        onclick="changePage(${currentPagination.page + 1})"
+        class="px-4 py-2 border border-gray-300 rounded-lg ${currentPagination.page === currentPagination.totalPages ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-100'} transition-colors"
+    >›</button>`;
     
     pagination.innerHTML = html;
 }
@@ -509,9 +563,21 @@ async function loadCartCount() {
     try {
         const data = await apiCall('/cart');
         const badge = document.getElementById('cartBadge');
+        const badgeHeader = document.getElementById('cartBadgeHeader');
         const count = data.cart.items?.length || 0;
-        badge.textContent = count;
-        badge.style.display = count > 0 ? 'inline-block' : 'none';
+        
+        if (badge) {
+            badge.textContent = count;
+            badge.style.display = count > 0 ? 'inline-block' : 'none';
+        }
+        if (badgeHeader) {
+            badgeHeader.textContent = count;
+            if (count > 0) {
+                badgeHeader.classList.remove('hidden');
+            } else {
+                badgeHeader.classList.add('hidden');
+            }
+        }
     } catch (error) {
         console.error('Error loading cart count:', error);
     }
@@ -780,10 +846,14 @@ async function loadCategoriesPage() {
         }
 
         content.innerHTML = data.categories.map(cat => `
-            <div class="category-card" onclick="viewCategoryProducts('${cat.name}')">
-                <h3>${cat.name}</h3>
-                <div class="count">${cat.product_count} sản phẩm</div>
-                ${cat.description ? `<p style="margin-top: 0.5rem; color: var(--text-muted); font-size: 0.875rem;">${cat.description}</p>` : ''}
+            <div 
+                class="category-card bg-white rounded-lg shadow-md p-6 text-center cursor-pointer hover:shadow-lg transition-shadow animate-fade-in"
+                onclick="viewCategoryProducts('${cat.name}')"
+            >
+                <div class="text-4xl mb-3">📦</div>
+                <h3 class="font-bold text-gray-800 mb-2">${cat.name}</h3>
+                <div class="text-sm text-gray-500 mb-2">${cat.product_count || 0} sản phẩm</div>
+                ${cat.description ? `<p class="text-xs text-gray-600 mt-2">${cat.description}</p>` : ''}
             </div>
         `).join('');
     } catch (error) {
@@ -805,7 +875,11 @@ function viewCategoryProducts(categoryName) {
 // ============================================
 
 function closeModal(modalId) {
-    document.getElementById(modalId).classList.remove('active');
+    document.getElementById(modalId).classList.add('hidden');
+}
+
+function openModal(modalId) {
+    document.getElementById(modalId).classList.remove('hidden');
 }
 
 // ============================================
@@ -821,7 +895,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (page === 'cart' || page === 'orders' || page === 'profile') {
                 if (!currentUser) {
                     showToast('Vui lòng đăng nhập', 'error');
-                    document.getElementById('loginModal').classList.add('active');
+                    window.location.href = '/login.html';
                     return;
                 }
             }
@@ -829,14 +903,30 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Auth buttons
-    document.getElementById('loginBtn').addEventListener('click', () => {
-        document.getElementById('loginModal').classList.add('active');
-    });
+    // Main search bar
+    const mainSearchInput = document.getElementById('mainSearchInput');
+    if (mainSearchInput) {
+        mainSearchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                navigateTo('products');
+                document.getElementById('searchInput').value = mainSearchInput.value;
+                applyFilters();
+            }
+        });
+    }
 
-    document.getElementById('registerBtn').addEventListener('click', () => {
-        document.getElementById('registerModal').classList.add('active');
-    });
+    // User menu toggle
+    const userMenuBtn = document.getElementById('userMenuBtn');
+    const userMenuDropdown = document.getElementById('userMenuDropdown');
+    if (userMenuBtn && userMenuDropdown) {
+        userMenuBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            userMenuDropdown.classList.toggle('hidden');
+        });
+        document.addEventListener('click', () => {
+            userMenuDropdown.classList.add('hidden');
+        });
+    }
 
     document.getElementById('logoutBtn').addEventListener('click', () => {
         logout();
@@ -859,7 +949,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.modal').forEach(modal => {
         modal.addEventListener('click', (e) => {
             if (e.target === modal) {
-                modal.classList.remove('active');
+                modal.classList.add('hidden');
             }
         });
     });
