@@ -12,6 +12,9 @@ const dbConfig = {
     multipleStatements: true
 };
 
+// Giới hạn số sản phẩm cần import (giúp test nhanh, giảm tải)
+const MAX_PRODUCTS = 100;
+
 // Đọc và parse CSV - Sử dụng cách đơn giản hơn
 function parseCSV(csvContent) {
     const lines = csvContent.trim().split('\n');
@@ -141,6 +144,12 @@ async function importData() {
         console.log('Đang parse dữ liệu CSV...');
         const rows = parseCSV(csvContent);
         console.log(`Tìm thấy ${rows.length} sản phẩm`);
+
+        // Chỉ lấy tối đa MAX_PRODUCTS sản phẩm đầu để import
+        const rowsToImport = rows.slice(0, MAX_PRODUCTS);
+        if (rows.length > MAX_PRODUCTS) {
+            console.log(`Giới hạn import ${rowsToImport.length}/${rows.length} sản phẩm (có thể tăng MAX_PRODUCTS nếu cần)`);
+        }
         
         // Xóa dữ liệu cũ (tùy chọn)
         console.log('Đang xóa dữ liệu cũ...');
@@ -151,8 +160,8 @@ async function importData() {
         let successCount = 0;
         let errorCount = 0;
         
-        for (let i = 0; i < rows.length; i++) {
-            const row = rows[i];
+        for (let i = 0; i < rowsToImport.length; i++) {
+            const row = rowsToImport[i];
             
             try {
                 const name = row['model_name'] || '';
@@ -206,8 +215,8 @@ async function importData() {
                 
                 successCount++;
                 
-                if ((i + 1) % 100 === 0) {
-                    console.log(`Đã import ${i + 1}/${rows.length} sản phẩm...`);
+                if ((i + 1) % 100 === 0 || i === rowsToImport.length - 1) {
+                    console.log(`Đã import ${i + 1}/${rowsToImport.length} sản phẩm...`);
                 }
             } catch (error) {
                 errorCount++;
@@ -218,7 +227,7 @@ async function importData() {
         console.log('\n=== KẾT QUẢ IMPORT ===');
         console.log(`Thành công: ${successCount} sản phẩm`);
         console.log(`Lỗi: ${errorCount} sản phẩm`);
-        console.log(`Tổng cộng: ${rows.length} sản phẩm`);
+        console.log(`Tổng cộng đã thử import: ${rowsToImport.length} sản phẩm`);
         
     } catch (error) {
         console.error('Lỗi:', error);

@@ -147,26 +147,13 @@ router.post('/login', async (req, res) => {
             return res.status(401).json({ message: 'Username/Email hoặc password không đúng' });
         }
 
-        // 2. Kiểm tra email đã được xác nhận chưa
-        // CHỈ yêu cầu xác thực cho tài khoản MỚI (có OTP code)
-        // Tài khoản cũ (không có OTP) có thể đăng nhập bình thường
-        if (user.email && !user.email_verified && user.otp_code) {
-            // Chỉ yêu cầu xác thực nếu tài khoản có OTP (tài khoản mới chưa xác thực)
-            return res.status(403).json({ 
-                message: 'Vui lòng xác nhận email trước khi đăng nhập. Kiểm tra hộp thư của bạn!',
-                requiresVerification: true,
-                email: user.email
-            });
-        }
-        // Nếu tài khoản không có OTP (tài khoản cũ) hoặc đã xác thực, cho phép đăng nhập
-
-        // 3. Kiểm tra password
+        // 2. Kiểm tra password
         const isPasswordValid = await bcrypt.compare(password, user.password);
         if (!isPasswordValid) {
             return res.status(401).json({ message: 'Username/Email hoặc password không đúng' });
         }
 
-        // 4. Tạo JWT
+        // 3. Tạo JWT
         if (!JWT_SECRET) {
             console.error('JWT_SECRET không được cấu hình!');
             return res.status(500).json({ message: 'Lỗi cấu hình server' });
@@ -178,9 +165,9 @@ router.post('/login', async (req, res) => {
             { expiresIn: '100d' }
         );
 
-        // 5. Trả về token
+        // 4. Trả về token + lời chào
         res.json({ 
-            message: 'Đăng nhập thành công',
+            message: `Đăng nhập thành công. Xin chào, ${user.username}!`,
             token,
             user: { 
                 id: user.id, 

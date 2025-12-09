@@ -16,9 +16,22 @@ let currentFilters = {};
 // UTILITY FUNCTIONS
 // ============================================
 
+// Placeholder image inline (tránh phụ thuộc CDN bị chặn)
+const PLACEHOLDER_IMG = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400"><rect width="400" height="400" fill="%23f3f4f6"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="%239ca3af" font-size="24" font-family="Arial">No image</text></svg>';
+
 // Lấy token từ localStorage
 function getToken() {
     return localStorage.getItem('token');
+}
+
+// Lấy user cache từ localStorage (fallback để ẩn nút đăng ký/đăng nhập ngay)
+function getCachedUser() {
+    try {
+        const raw = localStorage.getItem('user_info');
+        return raw ? JSON.parse(raw) : null;
+    } catch {
+        return null;
+    }
 }
 
 // Lưu token vào localStorage
@@ -26,9 +39,20 @@ function saveToken(token) {
     localStorage.setItem('token', token);
 }
 
+// Lưu user info vào localStorage
+function saveUserInfo(user) {
+    if (!user) return;
+    localStorage.setItem('user_info', JSON.stringify(user));
+}
+
 // Xóa token khỏi localStorage
 function removeToken() {
     localStorage.removeItem('token');
+}
+
+// Xóa thông tin user cache
+function removeUserInfo() {
+    localStorage.removeItem('user_info');
 }
 
 // Format số tiền VNĐ
@@ -101,14 +125,33 @@ async function checkAuth() {
         return;
     }
 
+    // Nếu đã có user cache, hiển thị ngay để ẩn nút đăng nhập/đăng ký
+    const cachedUser = getCachedUser();
+    if (cachedUser) {
+        currentUser = cachedUser;
+        updateUIForAuth(true);
+    } else {
+        // Không có cache nhưng có token -> vẫn ẩn nút login/register ngay
+        updateUIForAuth(true);
+    }
+
     try {
         const data = await apiCall('/me');
         currentUser = data.user;
         updateUIForAuth(true);
         loadCartCount();
     } catch (error) {
-        removeToken();
-        updateUIForAuth(false);
+        // Nếu có cache + token thì vẫn giữ UI đăng nhập để tránh nhấp nháy
+        const hasToken = !!getToken();
+        const cached = getCachedUser();
+        if (cached && hasToken) {
+            currentUser = cached;
+            updateUIForAuth(true);
+        } else {
+            removeToken();
+            removeUserInfo();
+            updateUIForAuth(false);
+        }
     }
 }
 
@@ -123,6 +166,7 @@ async function login(username, password) {
 
         saveToken(data.token);
         currentUser = data.user;
+        saveUserInfo(data.user);
         updateUIForAuth(true);
         closeModal('loginModal');
         showToast('Đăng nhập thành công!', 'success');
@@ -166,6 +210,7 @@ async function register(username, password) {
 // Đăng xuất
 function logout() {
     removeToken();
+    removeUserInfo();
     currentUser = null;
     updateUIForAuth(false);
     showToast('Đã đăng xuất', 'success');
@@ -373,11 +418,11 @@ function renderProducts(products, container) {
             ` : ''}
             <div class="aspect-square bg-gray-100 flex items-center justify-center overflow-hidden">
                 <img 
-                    src="${product.image_url || product.image || 'https://via.placeholder.com/400x400?text=' + encodeURIComponent(product.name)}" 
+                    src="${product.image_url || product.image || '/img/placeholder.png'}" 
                     alt="${product.name}"
                     class="w-full h-full object-cover"
                     loading="lazy"
-                    onerror="this.src='https://via.placeholder.com/400x400?text=${encodeURIComponent(product.name)}'"
+                    onerror="this.src='/img/placeholder.png'"
                 />
             </div>
             <div class="p-4">
@@ -896,9 +941,19 @@ function openModal(modalId) {
 // ============================================
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Đồng bộ UI ngay lập tức theo localStorage trước khi gọi API
+    const cachedUser = getCachedUser();
+    if (cachedUser) {
+        currentUser = cachedUser;
+        updateUIForAuth(true);
+    } else if (getToken()) {
+        // Có token nhưng chưa fetch /me: vẫn ẩn nút đăng ký/đăng nhập
+        updateUIForAuth(true);
+    }
+
     // Kiểm tra đăng nhập khi trang load
     checkAuth();
-    
+
     // Navigation
     document.querySelectorAll('.nav-link[data-page]').forEach(link => {
         link.addEventListener('click', (e) => {
@@ -1000,7 +1055,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Initialize
-    checkAuth();
     navigateTo('home');
 });
 

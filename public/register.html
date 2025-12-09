@@ -7,7 +7,10 @@
     
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
+    <link rel="apple-touch-icon" sizes="180x180" href="./img/logo/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="./img/logo/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="./img/logo/favicon-16x16.png">
+    <link rel="manifest" href="./img/logo/site.webmanifest">
     <!-- Custom styles từ login_styles.css -->
     <link rel="stylesheet" href="/login_styles.css">
     
@@ -511,6 +514,13 @@
             }
             document.getElementById('register-username').focus();
         });
+    </script>
+    <script>
+        // Nếu đã đăng nhập thì chuyển về trang chủ, tránh ở lại trang đăng ký
+        (function redirectIfLoggedIn() {
+            const token = localStorage.getItem('token');
+            if (token) window.location.href = '/';
+        })();
     </script>
 </body>
 </html>
