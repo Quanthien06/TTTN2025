@@ -37,7 +37,7 @@ router.get('/', authenticateToken, async (req, res) => {
 
         const cart = cartRows[0] || { id: cartId, user_id: userId, status: 'active' };
 
-        // Lấy items trong cart | Show thông tin sản phẩm
+        // Lấy items trong cart | Show thông tin sản phẩm đầy đủ
         const [items] = await pool.query(
             `SELECT 
                 ci.id,
@@ -49,6 +49,9 @@ router.get('/', authenticateToken, async (req, res) => {
                 ci.updated_at,
                 p.name as product_name,
                 p.category as product_category,
+                p.image_url as product_image,
+                p.description as product_description,
+                p.brand as product_brand,
                 (ci.price * ci.quantity) as subtotal
             FROM cart_items ci
             JOIN products p ON ci.product_id = p.id

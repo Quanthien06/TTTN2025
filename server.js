@@ -1,5 +1,15 @@
 // server.js
 
+// Load biến môi trường từ file .env
+require('dotenv').config();
+
+// Debug: Kiểm tra biến môi trường đã load chưa
+console.log('=== ENVIRONMENT VARIABLES CHECK ===');
+console.log('GOOGLE_CLIENT_ID:', process.env.GOOGLE_CLIENT_ID ? `${process.env.GOOGLE_CLIENT_ID.substring(0, 20)}...` : 'UNDEFINED ❌');
+console.log('GOOGLE_CLIENT_SECRET:', process.env.GOOGLE_CLIENT_SECRET ? 'SET ✅' : 'UNDEFINED ❌');
+console.log('GOOGLE_CALLBACK_URL:', process.env.GOOGLE_CALLBACK_URL || 'UNDEFINED ❌');
+console.log('=====================================\n');
+
 // 1. "require" (nhập) thư viện express đã cài đặt
 const express = require('express');  // gọi  path để truyền FE
 // Hỗ trợ làm việc với đường dẫn hệ thống
@@ -8,10 +18,14 @@ const path = require('path');
 const mysql = require('mysql2/promise');
 // ***** NHẬP THƯ VIỆN CẦN THIẾT CHO MIDDLEWARE *****
 const jwt = require('jsonwebtoken');
+// OAuth2 và Session
+const session = require('express-session');
+const passport = require('passport');
 
 // ***** NHẬP CÁC FILE ROUTE ĐÃ TÁCH *****
 // Đảm bảo bạn đã tạo thư mục routes/
 const authRouter = require('./routes/auth');
+const oauthRouter = require('./routes/oauth'); // OAuth2 routes
 const productRouter = require('./routes/product');
 const cartRouter = require('./routes/cart');
 const orderRouter = require('./routes/orders');
@@ -28,6 +42,18 @@ const JWT_SECRET = 'HhGg78@!kYpQzXcVbNmL1o2P3oI4U5yT6rE7wQ8aZ9sX0cVkGjH';
 // ****************************
 // ******** MIDDLEWARE ********
 // ****************************
+
+// Session middleware cho OAuth2
+app.use(session({
+    secret: JWT_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    cookie: { secure: false } // Set true nếu dùng HTTPS
+}));
+
+// Initialize Passport
+app.use(passport.initialize());
+app.use(passport.session());
 
 // Middleware giúp Express đọc dữ liệu JSON
 app.use(express.json());
@@ -46,6 +72,7 @@ const pool = mysql.createPool({
 app.locals.pool = pool;
 app.locals.JWT_SECRET = JWT_SECRET;
 app.locals.jwt = jwt; // <--- ĐÃ THÊM: Lưu trữ đối tượng jwt vào app.locals
+app.locals.app = app; // Cho OAuth routes truy cập app
 
 
 // ****************************
@@ -63,6 +90,8 @@ app.get('/', (req, res) => {
 
 // Gắn router xác thực vào đường dẫn /api (chứa /register và /login)
 app.use('/api', authRouter);
+// Gắn router OAuth2 vào đường dẫn /api/auth
+app.use('/api/auth', oauthRouter);
 
 // Gắn router sản phẩm vào đường dẫn /api/products (chứa CRUD)
 app.use('/api/products', productRouter);
@@ -87,6 +116,8 @@ app.listen(PORT, () => {
     console.log(`GET Danh sách sản phẩm: http://localhost:${PORT}/api/products`);
     console.log(`POST Đăng ký: http://localhost:${PORT}/api/register`);
     console.log(`POST Đăng nhập: http://localhost:${PORT}/api/login`);
+    console.log(`GET OAuth Google: http://localhost:${PORT}/api/auth/google`);
+    console.log(`GET OAuth Status: http://localhost:${PORT}/api/auth/status`);
     console.log('\n--- PUBLIC API (Categories) ---');
     console.log(`GET Danh sách categories: http://localhost:${PORT}/api/categories`);
     console.log(`GET Sản phẩm theo category: http://localhost:${PORT}/api/categories/:id`);

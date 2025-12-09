@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Giỏ hàng - Shop TTTN2025</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom styles -->
+    <link rel="stylesheet" href="/styles.css">
+    
+    <style>
+        @media (max-width: 640px) {
+            .cart-item-grid {
+                display: block;
+            }
+        }
+        
+        .fade-enter-active, .fade-leave-active {
+            transition: opacity 0.3s;
+        }
+        .fade-enter, .fade-leave-to {
+            opacity: 0;
+        }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+        
+        /* Loading spinner */
+        .spinner {
+            border: 3px solid rgba(0, 0, 0, 0.1);
+            border-top-color: #ef4444;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans min-h-screen">
+    <!-- Header -->
+    <header class="bg-white shadow-md sticky top-0 z-50">
+        <div class="container mx-auto px-4">
+            <div class="flex items-center justify-between py-4">
+                <a href="/" class="flex items-center gap-2">
+                    <span class="text-3xl">🛍️</span>
+                    <span class="text-2xl font-bold text-red-600">Shop TTTN2025</span>
+                </a>
+                <div class="flex items-center gap-4">
+                    <a href="/" class="text-gray-700 hover:text-red-600 transition-colors">
+                        <i class="fas fa-home mr-1"></i> Trang chủ
+                    </a>
+                    <a href="/products.html" class="text-gray-700 hover:text-red-600 transition-colors">
+                        <i class="fas fa-shopping-bag mr-1"></i> Sản phẩm
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="container mx-auto p-4 max-w-6xl py-8">
+        <!-- Header with cart count -->
+        <div class="flex justify-between items-center mb-8">
+            <h1 class="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-800">Giỏ hàng của tôi</h1>
+            <div class="bg-red-600 text-white px-4 py-2 rounded-full flex items-center">
+                <i class="fas fa-shopping-cart mr-2"></i>
+                <span id="cartItemCount">0</span> <span class="hidden sm:inline ml-1">sản phẩm</span>
+            </div>
+        </div>
+
+        <!-- Loading State -->
+        <div id="loadingState" class="text-center py-12">
+            <div class="spinner w-12 h-12 mx-auto mb-4"></div>
+            <p class="text-gray-600">Đang tải giỏ hàng...</p>
+        </div>
+
+        <!-- Empty Cart Message -->
+        <div id="emptyCart" class="hidden bg-white rounded-lg shadow-md p-8 text-center">
+            <i class="fas fa-shopping-cart text-gray-300 text-6xl mb-4"></i>
+            <p class="text-xl text-gray-500 mb-2">Giỏ hàng của bạn đang trống</p>
+            <p class="text-gray-400 mb-6">Hãy thêm sản phẩm vào giỏ hàng</p>
+            <a href="/" class="inline-block bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition font-medium">
+                <i class="fas fa-arrow-left mr-2"></i> Tiếp tục mua sắm
+            </a>
+        </div>
+
+        <!-- Cart Content -->
+        <div id="cartContent" class="hidden space-y-6">
+            <!-- Mobile View (< sm breakpoint) -->
+            <div class="sm:hidden space-y-4" id="cartMobileView"></div>
+
+            <!-- Tablet/Desktop View (≥ sm breakpoint) -->
+            <div class="hidden sm:block">
+                <div class="bg-white rounded-lg shadow-md overflow-hidden">
+                    <table class="w-full" id="cartTable">
+                        <thead class="bg-gray-50 text-gray-700">
+                            <tr>
+                                <th class="py-4 px-4 text-left">Sản phẩm</th>
+                                <th class="py-4 px-4 text-left">Thông tin</th>
+                                <th class="py-4 px-4 text-center">Số lượng</th>
+                                <th class="py-4 px-4 text-right">Đơn giá</th>
+                                <th class="py-4 px-4 text-right">Thành tiền</th>
+                                <th class="py-4 px-4 text-center">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cartTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Order Summary -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+                <div class="md:col-span-2">
+                    <!-- Shipping Options -->
+                    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                        <h2 class="text-lg font-semibold mb-4">Phương thức vận chuyển</h2>
+                        <div class="space-y-3">
+                            <label class="flex items-center p-3 border rounded cursor-pointer hover:bg-gray-50 transition">
+                                <input type="radio" name="shippingMethod" value="standard" checked class="mr-3" id="shippingStandard">
+                                <div class="flex-1">
+                                    <div class="font-medium">Giao hàng tiêu chuẩn</div>
+                                    <div class="text-sm text-gray-600">5-7 ngày làm việc</div>
+                                </div>
+                                <div class="ml-auto font-medium">30.000 ₫</div>
+                            </label>
+                            
+                            <label class="flex items-center p-3 border rounded cursor-pointer hover:bg-gray-50 transition">
+                                <input type="radio" name="shippingMethod" value="express" class="mr-3" id="shippingExpress">
+                                <div class="flex-1">
+                                    <div class="font-medium">Giao hàng nhanh</div>
+                                    <div class="text-sm text-gray-600">2-3 ngày làm việc</div>
+                                </div>
+                                <div class="ml-auto font-medium">50.000 ₫</div>
+                            </label>
+                            
+                            <label class="flex items-center p-3 border rounded cursor-pointer hover:bg-gray-50 transition">
+                                <input type="radio" name="shippingMethod" value="overnight" class="mr-3" id="shippingOvernight">
+                                <div class="flex-1">
+                                    <div class="font-medium">Giao hàng hỏa tốc</div>
+                                    <div class="text-sm text-gray-600">Trong ngày</div>
+                                </div>
+                                <div class="ml-auto font-medium">100.000 ₫</div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Promo Code -->
+                    <div class="bg-white rounded-lg shadow-md p-6">
+                        <h2 class="text-lg font-semibold mb-4">Mã giảm giá</h2>
+                        <div class="flex">
+                            <input 
+                                type="text" 
+                                id="promoCodeInput"
+                                placeholder="Nhập mã giảm giá" 
+                                class="flex-grow border rounded-l-lg p-3 focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
+                            >
+                            <button 
+                                onclick="applyPromoCode()"
+                                class="bg-red-600 text-white px-6 py-3 rounded-r-lg hover:bg-red-700 transition font-medium"
+                            >
+                                Áp dụng
+                            </button>
+                        </div>
+                        <div id="promoMessage" class="mt-2 text-sm hidden"></div>
+                    </div>
+                </div>
+
+                <!-- Order Total -->
+                <div class="md:col-span-1">
+                    <div class="bg-white rounded-lg shadow-md p-6 sticky top-24">
+                        <h2 class="text-xl font-bold mb-4">Tóm tắt đơn hàng</h2>
+                        <div class="space-y-3 mb-4">
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Tạm tính</span>
+                                <span class="font-medium" id="subtotal">0 ₫</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Phí vận chuyển</span>
+                                <span class="font-medium" id="shippingCost">30.000 ₫</span>
+                            </div>
+                            <div id="discountRow" class="hidden flex justify-between text-green-600">
+                                <span>Giảm giá</span>
+                                <span class="font-medium" id="discountAmount">-0 ₫</span>
+                            </div>
+                            <div class="flex justify-between text-gray-600">
+                                <span>Thuế VAT (10%)</span>
+                                <span class="font-medium" id="taxAmount">0 ₫</span>
+                            </div>
+                            <div class="border-t pt-3 mt-3">
+                                <div class="flex justify-between font-bold text-lg">
+                                    <span>Tổng cộng</span>
+                                    <span class="text-red-600" id="totalAmount">0 ₫</span>
+                                </div>
+                            </div>
+                        </div>
+                        <button 
+                            onclick="proceedToCheckout()"
+                            id="checkoutBtn"
+                            class="w-full bg-red-600 text-white py-3 rounded-lg font-medium hover:bg-red-700 transition flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                            disabled
+                        >
+                            <i class="fas fa-lock mr-2"></i> Thanh toán
+                        </button>
+                        <div class="flex items-center justify-center mt-4 text-sm text-gray-600">
+                            <i class="fas fa-shield-alt mr-2"></i> Thanh toán an toàn
+                        </div>
+                        <div class="flex justify-center space-x-2 mt-4">
+                            <i class="fab fa-cc-visa text-2xl text-blue-900"></i>
+                            <i class="fab fa-cc-mastercard text-2xl text-red-600"></i>
+                            <i class="fab fa-cc-paypal text-2xl text-blue-700"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Continue Shopping & Clear Cart -->
+            <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
+                <a href="/" class="flex items-center text-red-600 hover:text-red-800 transition">
+                    <i class="fas fa-arrow-left mr-2"></i>
+                    Tiếp tục mua sắm
+                </a>
+                <button onclick="clearCart()" class="text-red-600 hover:text-red-800 transition">
+                    <i class="fas fa-trash mr-1"></i> Xóa toàn bộ giỏ hàng
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-4 right-4 bg-white border border-gray-200 rounded-lg shadow-lg p-4 hidden z-50 max-w-sm"></div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:5000/api';
+        let cartData = null;
+        let discount = 0;
+        let promoCode = '';
+
+        // Kiểm tra đăng nhập
+        function checkAuth() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = '/login.html?redirect=cart';
+                return false;
+            }
+            return true;
+        }
+
+        // Format giá VNĐ
+        function formatPrice(price) {
+            return new Intl.NumberFormat('vi-VN').format(price) + ' ₫';
+        }
+
+        // Hiển thị toast
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const bgColor = type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500';
+            toast.className = `fixed bottom-4 right-4 ${bgColor} text-white rounded-lg shadow-lg p-4 z-50 max-w-sm`;
+            toast.textContent = message;
+            toast.classList.remove('hidden');
+            setTimeout(() => {
+                toast.classList.add('hidden');
+            }, 3000);
+        }
+
+        // Gọi API với token
+        async function apiCall(endpoint, options = {}) {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                throw new Error('Vui lòng đăng nhập');
+            }
+
+            const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+                ...options,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                    ...(options.headers || {})
+                }
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                if (response.status === 401) {
+                    localStorage.removeItem('token');
+                    window.location.href = '/login.html?redirect=cart';
+                    return;
+                }
+                throw new Error(data.message || 'Có lỗi xảy ra');
+            }
+
+            return data;
+        }
+
+        // Load giỏ hàng
+        async function loadCart() {
+            if (!checkAuth()) return;
+
+            try {
+                document.getElementById('loadingState').classList.remove('hidden');
+                document.getElementById('cartContent').classList.add('hidden');
+                document.getElementById('emptyCart').classList.add('hidden');
+
+                const data = await apiCall('/cart');
+                cartData = data.cart;
+
+                if (!cartData.items || cartData.items.length === 0) {
+                    showEmptyCart();
+                    return;
+                }
+
+                renderCart();
+                updateOrderSummary();
+                
+            } catch (error) {
+                console.error('Error loading cart:', error);
+                showToast(error.message || 'Lỗi khi tải giỏ hàng', 'error');
+                showEmptyCart();
+            } finally {
+                document.getElementById('loadingState').classList.add('hidden');
+            }
+        }
+
+        // Hiển thị giỏ hàng trống
+        function showEmptyCart() {
+            document.getElementById('emptyCart').classList.remove('hidden');
+            document.getElementById('cartContent').classList.add('hidden');
+            document.getElementById('cartItemCount').textContent = '0';
+        }
+
+        // Render giỏ hàng
+        function renderCart() {
+            document.getElementById('cartContent').classList.remove('hidden');
+            document.getElementById('emptyCart').classList.add('hidden');
+            document.getElementById('cartItemCount').textContent = cartData.items.length;
+
+            // Render mobile view
+            renderMobileView();
+            
+            // Render desktop view
+            renderDesktopView();
+        }
+
+        // Render mobile view
+        function renderMobileView() {
+            const container = document.getElementById('cartMobileView');
+            container.innerHTML = cartData.items.map(item => `
+                <div class="bg-white rounded-lg shadow-md p-4">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="flex items-start space-x-3 flex-1">
+                            <img 
+                                src="${item.product_image || 'https://via.placeholder.com/80'}" 
+                                alt="${item.product_name}"
+                                class="w-20 h-20 object-cover rounded"
+                                onerror="this.src='https://via.placeholder.com/80'"
+                            >
+                            <div class="flex-1">
+                                <h3 class="font-semibold text-lg">${item.product_name}</h3>
+                                ${item.product_brand ? `<p class="text-sm text-gray-600">${item.product_brand}</p>` : ''}
+                                <p class="text-red-600 font-bold mt-1">${formatPrice(item.price)}</p>
+                            </div>
+                        </div>
+                        <button onclick="removeCartItem(${item.id})" class="text-red-500 hover:text-red-700 p-2">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-600">Số lượng:</span>
+                            <div class="flex items-center border rounded">
+                                <button onclick="updateQuantity(${item.id}, ${item.quantity - 1})" class="px-3 py-1 text-gray-500 hover:bg-gray-100">
+                                    <i class="fas fa-minus text-xs"></i>
+                                </button>
+                                <input 
+                                    type="number" 
+                                    value="${item.quantity}" 
+                                    min="1"
+                                    onchange="updateQuantity(${item.id}, this.value)"
+                                    class="w-16 text-center border-x py-1"
+                                >
+                                <button onclick="updateQuantity(${item.id}, ${item.quantity + 1})" class="px-3 py-1 text-gray-500 hover:bg-gray-100">
+                                    <i class="fas fa-plus text-xs"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="flex justify-between font-bold text-lg pt-2 border-t">
+                            <span>Thành tiền:</span>
+                            <span class="text-red-600">${formatPrice(item.subtotal)}</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Render desktop view
+        function renderDesktopView() {
+            const tbody = document.getElementById('cartTableBody');
+            tbody.innerHTML = cartData.items.map(item => `
+                <tr class="border-t border-gray-200 hover:bg-gray-50 transition">
+                    <td class="py-4 px-4">
+                        <div class="flex items-center space-x-3">
+                            <img 
+                                src="${item.product_image || 'https://via.placeholder.com/80'}" 
+                                alt="${item.product_name}"
+                                class="w-20 h-20 object-cover rounded"
+                                onerror="this.src='https://via.placeholder.com/80'"
+                            >
+                            <div>
+                                <h3 class="font-medium">${item.product_name}</h3>
+                                ${item.product_brand ? `<p class="text-sm text-gray-600">${item.product_brand}</p>` : ''}
+                                ${item.product_category ? `<p class="text-xs text-gray-500">${item.product_category}</p>` : ''}
+                            </div>
+                        </div>
+                    </td>
+                    <td class="py-4 px-4">
+                        ${item.product_description ? `
+                            <p class="text-sm text-gray-600 line-clamp-2">${item.product_description}</p>
+                        ` : '<p class="text-sm text-gray-400">Không có mô tả</p>'}
+                    </td>
+                    <td class="py-4 px-4 text-center">
+                        <div class="flex items-center justify-center">
+                            <button onclick="updateQuantity(${item.id}, ${item.quantity - 1})" class="px-3 py-1 text-gray-500 border rounded-l hover:bg-gray-100">
+                                <i class="fas fa-minus text-xs"></i>
+                            </button>
+                            <input 
+                                type="number" 
+                                value="${item.quantity}" 
+                                min="1"
+                                onchange="updateQuantity(${item.id}, this.value)"
+                                class="w-16 text-center border-y py-1"
+                            >
+                            <button onclick="updateQuantity(${item.id}, ${item.quantity + 1})" class="px-3 py-1 text-gray-500 border rounded-r hover:bg-gray-100">
+                                <i class="fas fa-plus text-xs"></i>
+                            </button>
+                        </div>
+                    </td>
+                    <td class="py-4 px-4 text-right">
+                        <span class="font-medium">${formatPrice(item.price)}</span>
+                    </td>
+                    <td class="py-4 px-4 text-right">
+                        <span class="font-bold text-red-600">${formatPrice(item.subtotal)}</span>
+                    </td>
+                    <td class="py-4 px-4 text-center">
+                        <button onclick="removeCartItem(${item.id})" class="text-red-500 hover:text-red-700 p-2">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Cập nhật số lượng
+        async function updateQuantity(itemId, quantity) {
+            quantity = parseInt(quantity);
+            if (quantity < 1) quantity = 1;
+
+            try {
+                await apiCall(`/cart/items/${itemId}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ quantity })
+                });
+                showToast('Đã cập nhật số lượng', 'success');
+                loadCart();
+            } catch (error) {
+                showToast(error.message, 'error');
+                loadCart();
+            }
+        }
+
+        // Xóa sản phẩm
+        async function removeCartItem(itemId) {
+            if (!confirm('Bạn có chắc muốn xóa sản phẩm này khỏi giỏ hàng?')) return;
+
+            try {
+                await apiCall(`/cart/items/${itemId}`, { method: 'DELETE' });
+                showToast('Đã xóa sản phẩm khỏi giỏ hàng', 'success');
+                loadCart();
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        }
+
+        // Xóa toàn bộ giỏ hàng
+        async function clearCart() {
+            if (!confirm('Bạn có chắc muốn xóa toàn bộ giỏ hàng?')) return;
+
+            try {
+                await apiCall('/cart', { method: 'DELETE' });
+                showToast('Đã xóa toàn bộ giỏ hàng', 'success');
+                loadCart();
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        }
+
+        // Cập nhật tổng đơn hàng
+        function updateOrderSummary() {
+            if (!cartData) return;
+
+            const subtotal = cartData.total || 0;
+            const shippingMethod = document.querySelector('input[name="shippingMethod"]:checked')?.value || 'standard';
+            const shippingRates = {
+                'standard': 30000,
+                'express': 50000,
+                'overnight': 100000
+            };
+            const shipping = shippingRates[shippingMethod] || 30000;
+            const tax = (subtotal - discount) * 0.1; // VAT 10%
+            const total = subtotal + shipping + tax - discount;
+
+            document.getElementById('subtotal').textContent = formatPrice(subtotal);
+            document.getElementById('shippingCost').textContent = formatPrice(shipping);
+            document.getElementById('taxAmount').textContent = formatPrice(tax);
+            document.getElementById('totalAmount').textContent = formatPrice(total);
+
+            if (discount > 0) {
+                document.getElementById('discountRow').classList.remove('hidden');
+                document.getElementById('discountAmount').textContent = '-' + formatPrice(discount);
+            } else {
+                document.getElementById('discountRow').classList.add('hidden');
+            }
+
+            document.getElementById('checkoutBtn').disabled = cartData.items.length === 0;
+        }
+
+        // Áp dụng mã giảm giá
+        function applyPromoCode() {
+            const code = document.getElementById('promoCodeInput').value.trim().toUpperCase();
+            const messageEl = document.getElementById('promoMessage');
+            
+            const promoCodes = {
+                'SAVE10': { discount: 0.1, message: 'Giảm 10% đã được áp dụng!' },
+                'FREESHIP': { discount: 0, message: 'Miễn phí vận chuyển!', freeShipping: true },
+                'WELCOME20': { discount: 0.2, message: 'Giảm 20% đã được áp dụng!' }
+            };
+
+            if (!code) {
+                messageEl.textContent = 'Vui lòng nhập mã giảm giá';
+                messageEl.className = 'mt-2 text-sm text-red-600';
+                messageEl.classList.remove('hidden');
+                return;
+            }
+
+            const promo = promoCodes[code];
+            if (promo) {
+                discount = promo.discount ? (cartData.total * promo.discount) : 0;
+                promoCode = code;
+                messageEl.textContent = promo.message;
+                messageEl.className = 'mt-2 text-sm text-green-600';
+                messageEl.classList.remove('hidden');
+                updateOrderSummary();
+            } else {
+                discount = 0;
+                messageEl.textContent = 'Mã giảm giá không hợp lệ';
+                messageEl.className = 'mt-2 text-sm text-red-600';
+                messageEl.classList.remove('hidden');
+                updateOrderSummary();
+            }
+        }
+
+        // Thanh toán
+        function proceedToCheckout() {
+            if (!cartData || cartData.items.length === 0) {
+                showToast('Giỏ hàng trống', 'error');
+                return;
+            }
+
+            const shippingMethod = document.querySelector('input[name="shippingMethod"]:checked')?.value || 'standard';
+            const total = parseFloat(document.getElementById('totalAmount').textContent.replace(/[^\d]/g, ''));
+
+            // Lưu thông tin checkout vào sessionStorage
+            sessionStorage.setItem('checkoutData', JSON.stringify({
+                cart: cartData,
+                shippingMethod,
+                discount,
+                promoCode,
+                total
+            }));
+
+            // Chuyển đến trang checkout hoặc mở modal
+            window.location.href = '/checkout.html';
+        }
+
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!checkAuth()) return;
+            
+            loadCart();
+
+            // Update summary khi đổi shipping method
+            document.querySelectorAll('input[name="shippingMethod"]').forEach(radio => {
+                radio.addEventListener('change', updateOrderSummary);
+            });
+        });
+    </script>
+</body>
+</html>

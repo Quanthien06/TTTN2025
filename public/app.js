@@ -181,7 +181,10 @@ function updateUIForAuth(isLoggedIn) {
     if (isLoggedIn) {
         if (navAuth) navAuth.classList.add('hidden');
         if (navUser) navUser.classList.remove('hidden');
-        if (userName) userName.textContent = currentUser?.username || 'User';
+        if (userName) {
+            const username = currentUser?.username || 'User';
+            userName.textContent = `Xin chào, ${username}`;
+        }
     } else {
         if (navAuth) navAuth.classList.remove('hidden');
         if (navUser) navUser.classList.add('hidden');
@@ -225,10 +228,15 @@ function navigateTo(page) {
             loadCategoriesPage();
             break;
         case 'cart':
-            if (currentUser) loadCart();
-            else {
-                showToast('Vui lòng đăng nhập để xem giỏ hàng', 'error');
-                navigateTo('home');
+            // Kiểm tra token - nếu có token thì cho vào cart.html
+            // cart.html sẽ tự kiểm tra authentication và redirect nếu cần
+            const token = getToken();
+            if (token) {
+                // Có token -> chuyển đến cart.html (cart.html sẽ tự verify)
+                window.location.href = '/cart.html';
+            } else {
+                // Chưa có token -> chuyển đến trang login với redirect về cart
+                window.location.href = '/login.html?redirect=cart';
             }
             break;
         case 'orders':
@@ -365,10 +373,11 @@ function renderProducts(products, container) {
             ` : ''}
             <div class="aspect-square bg-gray-100 flex items-center justify-center overflow-hidden">
                 <img 
-                    src="${product.image || 'https://via.placeholder.com/300x300?text=' + encodeURIComponent(product.name)}" 
+                    src="${product.image_url || product.image || 'https://via.placeholder.com/400x400?text=' + encodeURIComponent(product.name)}" 
                     alt="${product.name}"
                     class="w-full h-full object-cover"
-                    onerror="this.src='https://via.placeholder.com/300x300?text=${encodeURIComponent(product.name)}'"
+                    loading="lazy"
+                    onerror="this.src='https://via.placeholder.com/400x400?text=${encodeURIComponent(product.name)}'"
                 />
             </div>
             <div class="p-4">
@@ -887,6 +896,9 @@ function openModal(modalId) {
 // ============================================
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Kiểm tra đăng nhập khi trang load
+    checkAuth();
+    
     // Navigation
     document.querySelectorAll('.nav-link[data-page]').forEach(link => {
         link.addEventListener('click', (e) => {

@@ -11,6 +11,9 @@
     <!-- Custom styles từ login_styles.css -->
     <link rel="stylesheet" href="/login_styles.css">
     
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <!-- Font -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -103,6 +106,21 @@
                         <p class="text-xs text-gray-500 mt-1">Tên đăng nhập phải có ít nhất 3 ký tự</p>
                     </div>
 
+                    <!-- Email Field -->
+                    <div class="mt-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="register-email">
+                            Email <span class="text-red-500">*</span>
+                        </label>
+                        <input 
+                            id="register-email"
+                            type="email" 
+                            class="bg-gray-50 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent border border-gray-300 rounded-lg py-3 px-4 block w-full transition-all"
+                            placeholder="Nhập địa chỉ email của bạn"
+                            required
+                            autocomplete="email"
+                        />
+                    </div>
+
                     <!-- Password Field -->
                     <div class="mt-4">
                         <label class="block text-gray-700 text-sm font-bold mb-2" for="register-password">
@@ -154,6 +172,22 @@
                     </div>
                 </form>
 
+                <!-- Google OAuth Button -->
+                <div class="mt-6">
+                    <a 
+                        href="/api/auth/google?redirect=/"
+                        class="w-full flex items-center justify-center gap-3 bg-white border-2 border-gray-300 text-gray-700 font-bold py-3 px-4 rounded-lg transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] shadow-md hover:shadow-lg"
+                    >
+                        <svg class="w-5 h-5" viewBox="0 0 24 24">
+                            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                        </svg>
+                        <span>Đăng ký với Google</span>
+                    </a>
+                </div>
+
                 <!-- Divider -->
                 <div class="mt-6 flex items-center justify-between">
                     <span class="border-b w-1/5 lg:w-1/4"></span>
@@ -161,8 +195,52 @@
                     <span class="border-b w-1/5 lg:w-1/4"></span>
                 </div>
 
+                <!-- OTP Verification Form (Hidden by default) -->
+                <div id="otpVerificationSection" class="hidden mt-6">
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                        <p class="text-sm text-blue-800">
+                            <i class="fas fa-envelope mr-2"></i>
+                            Mã OTP đã được gửi đến email <strong id="registeredEmail"></strong>
+                        </p>
+                    </div>
+                    <form id="otpForm" onsubmit="handleVerifyOTP(event)">
+                        <div class="mt-4">
+                            <label class="block text-gray-700 text-sm font-bold mb-2" for="otp-code">
+                                Mã OTP <span class="text-red-500">*</span>
+                            </label>
+                            <input 
+                                id="otp-code"
+                                type="text" 
+                                maxlength="6"
+                                class="bg-gray-50 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent border border-gray-300 rounded-lg py-3 px-4 block w-full transition-all text-center text-2xl tracking-widest"
+                                placeholder="000000"
+                                required
+                            />
+                            <p class="text-xs text-gray-500 mt-2">Nhập mã 6 chữ số đã được gửi đến email của bạn</p>
+                        </div>
+                        <div class="mt-6">
+                            <button 
+                                type="submit" 
+                                id="verifyBtn"
+                                class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 w-full rounded-lg transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                            >
+                                <span id="verifyBtnText">XÁC NHẬN</span>
+                            </button>
+                        </div>
+                        <div class="mt-4 text-center">
+                            <button 
+                                type="button"
+                                onclick="resendOTP()"
+                                class="text-sm text-blue-600 hover:text-blue-800"
+                            >
+                                Gửi lại mã OTP
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
                 <!-- Login Link -->
-                <div class="mt-6 text-center">
+                <div id="loginLinkSection" class="mt-6 text-center">
                     <p class="text-sm text-gray-600">
                         Đã có tài khoản?
                         <a href="/login.html" class="text-blue-600 font-bold hover:text-blue-800 hover:underline">
@@ -265,10 +343,13 @@
             }
         }
 
+        let registeredEmail = '';
+
         async function handleRegister(event) {
             event.preventDefault();
             
             const username = document.getElementById('register-username').value.trim();
+            const email = document.getElementById('register-email').value.trim();
             const password = document.getElementById('register-password').value;
             const confirmPassword = document.getElementById('register-password-confirm').value;
 
@@ -277,13 +358,18 @@
             document.getElementById('successMessage').classList.add('hidden');
 
             // Validation
-            if (!username || !password || !confirmPassword) {
+            if (!username || !email || !password || !confirmPassword) {
                 showError('Vui lòng nhập đầy đủ thông tin!');
                 return;
             }
 
             if (username.length < 3) {
                 showError('Tên đăng nhập phải có ít nhất 3 ký tự!');
+                return;
+            }
+
+            if (!email.includes('@')) {
+                showError('Email không hợp lệ!');
                 return;
             }
 
@@ -307,6 +393,7 @@
                     },
                     body: JSON.stringify({ 
                         username, 
+                        email,
                         password,
                         role: 'user' 
                     })
@@ -318,18 +405,100 @@
                     throw new Error(result.message || 'Đăng ký thất bại');
                 }
 
-                showSuccess('Đăng ký thành công! Đang chuyển đến trang đăng nhập...');
-
-                // Chuyển đến trang đăng nhập sau 1.5 giây
-                setTimeout(() => {
-                    window.location.href = `/login.html?username=${encodeURIComponent(username)}`;
-                }, 1500);
+                // Lưu email để hiển thị trong form OTP
+                registeredEmail = email;
+                
+                // Ẩn form đăng ký và hiển thị form xác nhận OTP
+                document.getElementById('registerForm').classList.add('hidden');
+                document.getElementById('otpVerificationSection').classList.remove('hidden');
+                document.getElementById('loginLinkSection').classList.add('hidden');
+                document.getElementById('registeredEmail').textContent = email;
+                
+                showSuccess('Đăng ký thành công! Vui lòng kiểm tra email để lấy mã OTP.');
 
             } catch (error) {
                 console.error('Register error:', error);
                 showError(error.message || 'Lỗi kết nối server. Vui lòng thử lại!');
             } finally {
                 setLoading(false);
+            }
+        }
+
+        async function handleVerifyOTP(event) {
+            event.preventDefault();
+            
+            const otp = document.getElementById('otp-code').value.trim();
+
+            if (!otp || otp.length !== 6) {
+                showError('Vui lòng nhập mã OTP 6 chữ số!');
+                return;
+            }
+
+            const verifyBtn = document.getElementById('verifyBtn');
+            const verifyBtnText = document.getElementById('verifyBtnText');
+            
+            verifyBtn.disabled = true;
+            verifyBtnText.innerHTML = '<span class="spinner inline-block w-4 h-4 mr-2"></span>Đang xác nhận...';
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/verify-email`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        email: registeredEmail,
+                        otp: otp
+                    })
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.message || 'Xác nhận thất bại');
+                }
+
+                showSuccess('Xác nhận email thành công! Đang chuyển đến trang đăng nhập...');
+
+                // Chuyển đến trang đăng nhập sau 1.5 giây
+                setTimeout(() => {
+                    window.location.href = `/login.html?username=${encodeURIComponent(document.getElementById('register-username').value)}`;
+                }, 1500);
+
+            } catch (error) {
+                console.error('Verify OTP error:', error);
+                showError(error.message || 'Mã OTP không đúng hoặc đã hết hạn!');
+            } finally {
+                verifyBtn.disabled = false;
+                verifyBtnText.textContent = 'XÁC NHẬN';
+            }
+        }
+
+        async function resendOTP() {
+            if (!registeredEmail) return;
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/resend-verification`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        email: registeredEmail
+                    })
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.message || 'Không thể gửi lại mã OTP');
+                }
+
+                showSuccess('Mã OTP mới đã được gửi đến email của bạn!');
+
+            } catch (error) {
+                console.error('Resend OTP error:', error);
+                showError(error.message || 'Lỗi khi gửi lại mã OTP!');
             }
         }
 

@@ -5,6 +5,8 @@ const bcrypt = require('bcrypt'); // Sử dụng bcrypt tiêu chuẩn
 const jwt = require('jsonwebtoken');
 // Import middleware authenticateToken để bảo vệ các route cần xác thực
 const authenticateToken = require('../middleware/auth');
+// Import email service
+const { sendVerificationEmail, sendPasswordResetOTP, generateOTP } = require('../config/email');
 
 router.get('/register', (req, res) => {
     res.status(405).json({ 
@@ -36,22 +38,61 @@ router.post('/register', async (req, res) => {
     const pool = req.app.locals.pool; 
     
     try {
-        const { username, password, role = 'admin' } = req.body; 
+        const { username, email, password, role = 'user' } = req.body; 
 
+        // Validation
         if (!username || !password) {
             return res.status(400).json({ message: 'Username và password là bắt buộc' });
         }
 
-        const hashedPassword = await bcrypt.hash(password, 10); 
+        if (!email || !email.includes('@')) {
+            return res.status(400).json({ message: 'Email hợp lệ là bắt buộc' });
+        }
 
-        const sql = 'INSERT INTO users (username, password, role) VALUES (?, ?, ?)';
-        await pool.query(sql, [username, hashedPassword, role]);
+        // Kiểm tra email đã tồn tại chưa
+        const [emailCheck] = await pool.query('SELECT id FROM users WHERE email = ?', [email]);
+        if (emailCheck.length > 0) {
+            return res.status(409).json({ message: 'Email đã được sử dụng' });
+        }
 
-        res.status(201).json({ message: 'Đăng ký thành công! Vui lòng đăng nhập.' });
+        // Hash password
+        const hashedPassword = await bcrypt.hash(password, 10);
+        
+        // Tạo mã OTP
+        const otpCode = generateOTP();
+        const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 phút
+
+        // Lưu user với email_verified = false và OTP
+        const sql = 'INSERT INTO users (username, email, password, role, otp_code, otp_expires) VALUES (?, ?, ?, ?, ?, ?)';
+        await pool.query(sql, [username, email, hashedPassword, role, otpCode, otpExpires]);
+
+        // Gửi email xác nhận
+        const emailResult = await sendVerificationEmail(email, otpCode);
+        
+        if (!emailResult.success) {
+            console.error('Lỗi gửi email:', emailResult.error);
+            // Vẫn trả về success nhưng cảnh báo email chưa gửi được
+            return res.status(201).json({ 
+                message: 'Đăng ký thành công nhưng không thể gửi email xác nhận. Vui lòng liên hệ admin.',
+                emailSent: false
+            });
+        }
+
+        res.status(201).json({ 
+            message: 'Đăng ký thành công! Vui lòng kiểm tra email để xác nhận tài khoản.',
+            emailSent: true,
+            note: 'Mã OTP đã được gửi đến email của bạn'
+        });
 
     } catch (error) {
         if (error.code === 'ER_DUP_ENTRY') {
-            return res.status(409).json({ message: 'Username đã tồn tại' });
+            if (error.message.includes('username')) {
+                return res.status(409).json({ message: 'Username đã tồn tại' });
+            }
+            if (error.message.includes('email')) {
+                return res.status(409).json({ message: 'Email đã được sử dụng' });
+            }
+            return res.status(409).json({ message: 'Thông tin đã tồn tại' });
         }
         console.error('Lỗi khi đăng ký người dùng:', error);
         res.status(500).json({ message: 'Lỗi máy chủ nội bộ' });
@@ -82,55 +123,71 @@ router.get('/login', (req, res) => {
 });
 
 // API ĐĂNG NHẬP (LOGIN) - POST
+// Hỗ trợ đăng nhập bằng username hoặc email
 router.post('/login', async (req, res) => {
     const pool = req.app.locals.pool; 
     const JWT_SECRET = req.app.locals.JWT_SECRET;
 
     try {
-        const { username, password } = req.body;
+        const { username, email, password } = req.body;
+        const loginIdentifier = username || email; // Hỗ trợ cả username và email
 
-        if (!username || !password) {
-            return res.status(400).json({ message: 'Username và password là bắt buộc' });
+        if (!loginIdentifier || !password) {
+            return res.status(400).json({ message: 'Username/Email và password là bắt buộc' });
         }
 
-        // 1. Tìm user trong database
-        const [rows] = await pool.query('SELECT * FROM users WHERE username = ?', [username]);
+        // 1. Tìm user trong database (tìm theo username hoặc email)
+        const [rows] = await pool.query(
+            'SELECT * FROM users WHERE username = ? OR email = ?', 
+            [loginIdentifier, loginIdentifier]
+        );
         const user = rows[0];
 
         if (!user) {
-            return res.status(401).json({ message: 'Username hoặc password không đúng' });
+            return res.status(401).json({ message: 'Username/Email hoặc password không đúng' });
         }
 
-        // 2. Kiểm tra password
+        // 2. Kiểm tra email đã được xác nhận chưa
+        // CHỈ yêu cầu xác thực cho tài khoản MỚI (có OTP code)
+        // Tài khoản cũ (không có OTP) có thể đăng nhập bình thường
+        if (user.email && !user.email_verified && user.otp_code) {
+            // Chỉ yêu cầu xác thực nếu tài khoản có OTP (tài khoản mới chưa xác thực)
+            return res.status(403).json({ 
+                message: 'Vui lòng xác nhận email trước khi đăng nhập. Kiểm tra hộp thư của bạn!',
+                requiresVerification: true,
+                email: user.email
+            });
+        }
+        // Nếu tài khoản không có OTP (tài khoản cũ) hoặc đã xác thực, cho phép đăng nhập
+
+        // 3. Kiểm tra password
         const isPasswordValid = await bcrypt.compare(password, user.password);
         if (!isPasswordValid) {
-            return res.status(401).json({ message: 'Username hoặc password không đúng' });
+            return res.status(401).json({ message: 'Username/Email hoặc password không đúng' });
         }
 
-        // 3. Tạo JWT - Sử dụng jwt đã require ở đầu file
+        // 4. Tạo JWT
         if (!JWT_SECRET) {
             console.error('JWT_SECRET không được cấu hình!');
             return res.status(500).json({ message: 'Lỗi cấu hình server' });
         }
-
-        console.log('Đang tạo token với JWT_SECRET length:', JWT_SECRET.length);
-        console.log('JWT_SECRET (first 10 chars):', JWT_SECRET.substring(0, 10) + '...');
 
         const token = jwt.sign(
             { id: user.id, username: user.username, role: user.role }, 
             JWT_SECRET, 
             { expiresIn: '100d' }
         );
-        
-        console.log('Token đã được tạo thành công cho user:', user.username);
-        console.log('Token length:', token.length);
-        console.log('Token (first 30 chars):', token.substring(0, 30) + '...');
 
-        // 4. Trả về token
+        // 5. Trả về token
         res.json({ 
             message: 'Đăng nhập thành công',
             token,
-            user: { id: user.id, username: user.username, role: user.role }
+            user: { 
+                id: user.id, 
+                username: user.username, 
+                email: user.email,
+                role: user.role 
+            }
         });
     } catch (error) {
         console.error('Lỗi khi đăng nhập:', error);
@@ -319,6 +376,201 @@ router.post('/logout', authenticateToken, async (req, res) => {
         message: 'Đăng xuất thành công',
         note: 'Vui lòng xóa token ở client (localStorage/sessionStorage)'
     });
+});
+
+// ============================================
+// EMAIL VERIFICATION & PASSWORD RESET
+// ============================================
+
+// POST /api/verify-email - Xác nhận email với OTP
+router.post('/verify-email', async (req, res) => {
+    const pool = req.app.locals.pool;
+    const { email, otp } = req.body;
+
+    try {
+        if (!email || !otp) {
+            return res.status(400).json({ message: 'Email và OTP là bắt buộc' });
+        }
+
+        // Tìm user với email và OTP hợp lệ
+        const [rows] = await pool.query(
+            'SELECT * FROM users WHERE email = ? AND otp_code = ? AND otp_expires > NOW()',
+            [email, otp]
+        );
+
+        if (rows.length === 0) {
+            return res.status(400).json({ 
+                message: 'OTP không hợp lệ hoặc đã hết hạn. Vui lòng yêu cầu mã mới.' 
+            });
+        }
+
+        const user = rows[0];
+
+        // Cập nhật email_verified = true và xóa OTP
+        await pool.query(
+            'UPDATE users SET email_verified = TRUE, otp_code = NULL, otp_expires = NULL WHERE id = ?',
+            [user.id]
+        );
+
+        res.json({ message: 'Email đã được xác nhận thành công!' });
+
+    } catch (error) {
+        console.error('Lỗi khi xác nhận email:', error);
+        res.status(500).json({ message: 'Lỗi máy chủ nội bộ' });
+    }
+});
+
+// POST /api/resend-verification - Gửi lại mã OTP xác nhận
+router.post('/resend-verification', async (req, res) => {
+    const pool = req.app.locals.pool;
+    const { email } = req.body;
+
+    try {
+        if (!email) {
+            return res.status(400).json({ message: 'Email là bắt buộc' });
+        }
+
+        // Tìm user với email
+        const [rows] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
+
+        if (rows.length === 0) {
+            return res.status(404).json({ message: 'Email không tồn tại trong hệ thống' });
+        }
+
+        const user = rows[0];
+
+        if (user.email_verified) {
+            return res.status(400).json({ message: 'Email đã được xác nhận rồi' });
+        }
+
+        // Tạo mã OTP mới
+        const otpCode = generateOTP();
+        const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 phút
+
+        // Cập nhật OTP trong database
+        await pool.query(
+            'UPDATE users SET otp_code = ?, otp_expires = ? WHERE id = ?',
+            [otpCode, otpExpires, user.id]
+        );
+
+        // Gửi email
+        const emailResult = await sendVerificationEmail(email, otpCode);
+
+        if (!emailResult.success) {
+            return res.status(500).json({ 
+                message: 'Không thể gửi email. Vui lòng thử lại sau.',
+                emailSent: false
+            });
+        }
+
+        res.json({ 
+            message: 'Mã OTP mới đã được gửi đến email của bạn',
+            emailSent: true
+        });
+
+    } catch (error) {
+        console.error('Lỗi khi gửi lại mã xác nhận:', error);
+        res.status(500).json({ message: 'Lỗi máy chủ nội bộ' });
+    }
+});
+
+// POST /api/forgot-password - Gửi OTP để reset mật khẩu
+router.post('/forgot-password', async (req, res) => {
+    const pool = req.app.locals.pool;
+    const { email } = req.body;
+
+    try {
+        if (!email) {
+            return res.status(400).json({ message: 'Email là bắt buộc' });
+        }
+
+        // Tìm user với email
+        const [rows] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
+
+        if (rows.length === 0) {
+            // Không tiết lộ email có tồn tại hay không (bảo mật)
+            return res.json({ 
+                message: 'Nếu email tồn tại, mã OTP đã được gửi',
+                emailSent: true
+            });
+        }
+
+        const user = rows[0];
+
+        // Tạo mã OTP mới
+        const otpCode = generateOTP();
+        const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 phút
+
+        // Cập nhật OTP trong database
+        await pool.query(
+            'UPDATE users SET otp_code = ?, otp_expires = ? WHERE id = ?',
+            [otpCode, otpExpires, user.id]
+        );
+
+        // Gửi email
+        const emailResult = await sendPasswordResetOTP(email, otpCode);
+
+        if (!emailResult.success) {
+            return res.status(500).json({ 
+                message: 'Không thể gửi email. Vui lòng thử lại sau.',
+                emailSent: false
+            });
+        }
+
+        res.json({ 
+            message: 'Nếu email tồn tại, mã OTP đã được gửi đến email của bạn',
+            emailSent: true
+        });
+
+    } catch (error) {
+        console.error('Lỗi khi gửi mã reset password:', error);
+        res.status(500).json({ message: 'Lỗi máy chủ nội bộ' });
+    }
+});
+
+// POST /api/reset-password - Đặt lại mật khẩu với OTP
+router.post('/reset-password', async (req, res) => {
+    const pool = req.app.locals.pool;
+    const { email, otp, newPassword } = req.body;
+
+    try {
+        if (!email || !otp || !newPassword) {
+            return res.status(400).json({ message: 'Email, OTP và mật khẩu mới là bắt buộc' });
+        }
+
+        if (newPassword.length < 6) {
+            return res.status(400).json({ message: 'Mật khẩu mới phải có ít nhất 6 ký tự' });
+        }
+
+        // Tìm user với email và OTP hợp lệ
+        const [rows] = await pool.query(
+            'SELECT * FROM users WHERE email = ? AND otp_code = ? AND otp_expires > NOW()',
+            [email, otp]
+        );
+
+        if (rows.length === 0) {
+            return res.status(400).json({ 
+                message: 'OTP không hợp lệ hoặc đã hết hạn. Vui lòng yêu cầu mã mới.' 
+            });
+        }
+
+        const user = rows[0];
+
+        // Hash mật khẩu mới
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+        // Cập nhật mật khẩu và xóa OTP
+        await pool.query(
+            'UPDATE users SET password = ?, otp_code = NULL, otp_expires = NULL WHERE id = ?',
+            [hashedPassword, user.id]
+        );
+
+        res.json({ message: 'Mật khẩu đã được đặt lại thành công!' });
+
+    } catch (error) {
+        console.error('Lỗi khi reset password:', error);
+        res.status(500).json({ message: 'Lỗi máy chủ nội bộ' });
+    }
 });
 
 module.exports = router;

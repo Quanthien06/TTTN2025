@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shop TTTN2025 - Cửa hàng Online</title>
+    <title>TechShop</title>
     
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -80,7 +80,7 @@
                 <div class="flex items-center">
                     <a href="#" onclick="navigateTo('home'); return false;" class="flex items-center gap-2">
                         <span class="text-3xl">🛍️</span>
-                        <span class="text-2xl font-bold text-red-600">Shop TTTN2025</span>
+                        <span class="text-2xl font-bold text-red-600">TechStore</span>
                     </a>
                 </div>
 
@@ -157,7 +157,7 @@
             <div class="bg-gradient-to-r from-red-600 to-red-700 text-white py-12 mb-8">
                 <div class="container mx-auto px-4">
                     <div class="text-center">
-                        <h2 class="text-4xl font-bold mb-4">Chào mừng đến Shop TTTN2025</h2>
+                        <h2 class="text-4xl font-bold mb-4">Chào mừng đến TechStore</h2>
                         <p class="text-xl mb-6">Nơi mua sắm trực tuyến uy tín, chất lượng</p>
                         <button onclick="navigateTo('products')" class="bg-white text-red-600 px-8 py-3 rounded-lg font-bold hover:bg-gray-100 transition-colors">
                             Khám phá sản phẩm
@@ -379,5 +379,23 @@
     <div class="toast fixed bottom-4 right-4 bg-white border border-gray-200 rounded-lg shadow-lg p-4 hidden z-50" id="toast"></div>
 
     <script src="/app.js"></script>
+    <script>
+        // Kiểm tra đăng nhập khi trang load
+        document.addEventListener('DOMContentLoaded', () => {
+            // Kiểm tra token từ URL (sau khi đăng nhập OAuth)
+            const urlParams = new URLSearchParams(window.location.search);
+            const token = urlParams.get('token');
+            if (token) {
+                localStorage.setItem('token', token);
+                // Xóa token khỏi URL
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+            
+            // Kiểm tra đăng nhập
+            if (typeof checkAuth === 'function') {
+                checkAuth();
+            }
+        });
+    </script>
 </body>
 </html>
