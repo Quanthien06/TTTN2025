@@ -281,6 +281,41 @@ router.put('/profile', authenticateToken, async (req, res) => {
     }
 });
 
+// GET /api/user-by-email - Lấy username từ email (dùng cho forgot password)
+router.get('/user-by-email', async (req, res) => {
+    const pool = req.app.locals.pool;
+    const { email } = req.query;
+
+    try {
+        if (!email || !email.includes('@')) {
+            return res.status(400).json({ message: 'Email hợp lệ là bắt buộc' });
+        }
+
+        // Tìm user với email
+        const [rows] = await pool.query(
+            'SELECT username FROM users WHERE email = ?',
+            [email]
+        );
+
+        if (rows.length === 0) {
+            // Không tiết lộ email có tồn tại hay không (bảo mật)
+            return res.json({ 
+                username: null,
+                exists: false
+            });
+        }
+
+        res.json({ 
+            username: rows[0].username,
+            exists: true
+        });
+
+    } catch (error) {
+        console.error('Lỗi khi lấy username từ email:', error);
+        res.status(500).json({ message: 'Lỗi máy chủ nội bộ' });
+    }
+});
+
 // PUT /api/change-password - Đổi mật khẩu
 // Cho phép user đổi mật khẩu của mình
 // Yêu cầu: currentPassword (để xác nhận) và newPassword (mật khẩu mới)
