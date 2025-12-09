@@ -8,6 +8,8 @@ console.log('=== ENVIRONMENT VARIABLES CHECK ===');
 console.log('GOOGLE_CLIENT_ID:', process.env.GOOGLE_CLIENT_ID ? `${process.env.GOOGLE_CLIENT_ID.substring(0, 20)}...` : 'UNDEFINED ❌');
 console.log('GOOGLE_CLIENT_SECRET:', process.env.GOOGLE_CLIENT_SECRET ? 'SET ✅' : 'UNDEFINED ❌');
 console.log('GOOGLE_CALLBACK_URL:', process.env.GOOGLE_CALLBACK_URL || 'UNDEFINED ❌');
+console.log('EMAIL_USER:', process.env.EMAIL_USER ? 'SET ✅' : 'UNDEFINED ❌');
+console.log('EMAIL_PASS:', process.env.EMAIL_PASS || process.env.EMAIL_PASSWORD ? 'SET ✅' : 'UNDEFINED ❌');
 console.log('=====================================\n');
 
 // 1. "require" (nhập) thư viện express đã cài đặt

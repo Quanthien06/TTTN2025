@@ -3,6 +3,11 @@
 
 const nodemailer = require('nodemailer');
 
+// Helper: kiểm tra đã cấu hình email chưa
+function isEmailConfigured() {
+    return Boolean(process.env.EMAIL_USER && (process.env.EMAIL_PASS || process.env.EMAIL_PASSWORD));
+}
+
 // Tạo transporter để gửi email
 // Sử dụng Gmail SMTP (có thể thay đổi cho email provider khác)
 const transporter = nodemailer.createTransport({
@@ -13,8 +18,35 @@ const transporter = nodemailer.createTransport({
     }
 });
 
+// Verify SMTP một lần, cache kết quả
+let verifyPromise = null;
+function verifySMTP() {
+    if (!verifyPromise) {
+        verifyPromise = transporter.verify()
+            .then(() => ({ ok: true }))
+            .catch((err) => {
+                console.error('SMTP verify fail:', err.message);
+                return { ok: false, error: err.message };
+            });
+    }
+    return verifyPromise;
+}
+
 // Hàm gửi email xác nhận đăng ký
 async function sendVerificationEmail(email, otpCode) {
+    if (!isEmailConfigured()) {
+        const msg = 'SMTP chưa cấu hình (EMAIL_USER/EMAIL_PASS). Không thể gửi OTP.';
+        console.error(msg);
+        return { success: false, error: msg };
+    }
+
+    const verifyResult = await verifySMTP();
+    if (!verifyResult.ok) {
+        const msg = `SMTP lỗi: ${verifyResult.error || 'Không xác định'}`;
+        console.error(msg);
+        return { success: false, error: msg };
+    }
+
     const mailOptions = {
         from: `"TechStore" <${process.env.EMAIL_USER || 'your-email@gmail.com'}>`,
         to: email,
@@ -48,6 +80,19 @@ async function sendVerificationEmail(email, otpCode) {
 
 // Hàm gửi email OTP để reset mật khẩu
 async function sendPasswordResetOTP(email, otpCode) {
+    if (!isEmailConfigured()) {
+        const msg = 'SMTP chưa cấu hình (EMAIL_USER/EMAIL_PASS). Không thể gửi OTP reset.';
+        console.error(msg);
+        return { success: false, error: msg };
+    }
+
+    const verifyResult = await verifySMTP();
+    if (!verifyResult.ok) {
+        const msg = `SMTP lỗi: ${verifyResult.error || 'Không xác định'}`;
+        console.error(msg);
+        return { success: false, error: msg };
+    }
+
     const mailOptions = {
         from: `"TechStore" <${process.env.EMAIL_USER || 'your-email@gmail.com'}>`,
         to: email,
@@ -86,6 +131,8 @@ function generateOTP() {
 
 module.exports = {
     transporter,
+    verifySMTP,
+    isEmailConfigured,
     sendVerificationEmail,
     sendPasswordResetOTP,
     generateOTP
