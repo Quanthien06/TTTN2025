@@ -98,8 +98,8 @@ GOOGLE_CALLBACK_URL=http://localhost:5000/api/auth/google/callback
 
 **Trong file .env:**
 ```env
-GOOGLE_CLIENT_ID=658343730766-f5hik99ljbgrb2n1vjkscrsoav5b21ve.apps.googleusercontent.com
-GOOGLE_CLIENT_SECRET=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
+GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=your-client-secret
 ```
 
 ---
