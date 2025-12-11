@@ -47,15 +47,20 @@ CREATE TABLE IF NOT EXISTS categories (
 CREATE TABLE IF NOT EXISTS products (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
+    slug VARCHAR(255) UNIQUE,
     description TEXT,
     price DECIMAL(10, 2) NOT NULL,
-    image_url VARCHAR(500),
-    category VARCHAR(100),
-    stock INT DEFAULT 0,
+    original_price DECIMAL(10, 2) NULL,
+    main_image_url VARCHAR(500) NOT NULL COMMENT 'Ảnh chính dùng làm nền sản phẩm',
+    images JSON COMMENT 'Mảng JSON chứa các ảnh phụ (tối thiểu 3 ảnh)',
+    category VARCHAR(100) NOT NULL,
+    brand VARCHAR(100),
+    stock_quantity INT DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_category (category),
     INDEX idx_price (price),
+    INDEX idx_slug (slug),
     FULLTEXT INDEX ft_search (name, description)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 

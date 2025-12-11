@@ -687,39 +687,36 @@ async function navigateToCategory(categoryName, searchTerms) {
     currentFilters = {};
     currentPagination.page = 1;
     
-    // Thử sử dụng category filter trước, nếu không có thì dùng search query
+    // Set category filter trực tiếp bằng category name
+    currentFilters.category = categoryName;
+    
+    // Cập nhật dropdown nếu có
     const categoryFilter = document.getElementById('categoryFilter');
     if (categoryFilter) {
         try {
-            // Đợi categories load xong rồi mới set filter
+            // Đợi categories load xong
             await loadCategoryFilterOptions();
             
-            // Thử tìm category name chính xác hoặc tương tự
+            // Tìm option khớp với category name
             const option = Array.from(categoryFilter.options).find(
                 opt => {
-                    const optText = opt.text.toLowerCase();
-                    const categoryLower = categoryName.toLowerCase();
-                    return optText.includes(categoryLower) || 
-                           categoryLower.includes(optText) ||
-                           searchTerms.some(term => optText.includes(term.toLowerCase()));
+                    const optText = opt.text.trim();
+                    return optText === categoryName;
                 }
             );
             
             if (option && option.value) {
                 categoryFilter.value = option.value;
-                currentFilters.category = option.value;
+                // Đảm bảo currentFilters.category = giá trị từ option (có thể khác format)
+                currentFilters.category = categoryName; // Giữ nguyên category name chính xác
             } else {
-                // Nếu không tìm thấy category, dùng search query
-                currentFilters.q = searchTerms.join(' ');
+                // Nếu không tìm thấy trong dropdown, vẫn set category filter
+                console.log('Category not found in dropdown, using direct filter:', categoryName);
             }
         } catch (error) {
-            // Nếu có lỗi, dùng search query
             console.error('Error loading categories:', error);
-            currentFilters.q = searchTerms.join(' ');
+            // Vẫn giữ category filter
         }
-    } else {
-        // Fallback: dùng search query
-        currentFilters.q = searchTerms.join(' ');
     }
     
     // Cập nhật UI
@@ -810,16 +807,23 @@ async function loadCategories() {
             return;
         }
 
-        grid.innerHTML = data.categories.slice(0, 6).map(cat => `
-            <div 
-                class="category-card bg-white rounded-lg shadow-md p-6 text-center cursor-pointer hover:shadow-lg transition-shadow animate-fade-in"
-                onclick="viewCategory(${cat.id})"
+        // Hiển thị tất cả categories (không giới hạn 6)
+        grid.innerHTML = data.categories.map(cat => {
+            const route = cat.route || 'products';
+            const categoryName = cat.name;
+            
+            return `
+            <a 
+                href="/${route}.html"
+                onclick="event.preventDefault(); navigateTo('${route}'); return false;"
+                class="category-card bg-white rounded-lg shadow-md p-6 text-center cursor-pointer hover:shadow-lg hover:scale-105 transition-all duration-300 animate-fade-in block"
             >
-                <div class="text-4xl mb-3">📦</div>
-                <h3 class="font-bold text-gray-800 mb-2">${cat.name}</h3>
+                <div class="text-4xl mb-3">${cat.icon || '📦'}</div>
+                <h3 class="font-bold text-gray-800 mb-2">${categoryName}</h3>
                 <div class="text-sm text-gray-500">${cat.product_count || 0} sản phẩm</div>
-            </div>
-        `).join('');
+            </a>
+            `;
+        }).join('');
     } catch (error) {
         document.getElementById('categoriesGrid').innerHTML = 
             `<div class="empty-state">Lỗi khi tải danh mục: ${error.message}</div>`;
@@ -926,51 +930,61 @@ function renderProducts(products, container) {
         const originalPrice = product.original_price || product.price * 1.1;
         const discountPercent = Math.round(((originalPrice - product.price) / originalPrice) * 100);
         const hasDiscount = discountPercent > 0;
+        
+        // Tạo link tới product detail (dùng slug nếu có, không thì dùng id)
+        const productSlug = product.slug || `product-${product.id}`;
+        const productDetailUrl = `/product-details.html?slug=${encodeURIComponent(productSlug)}`;
+        
+        // Sử dụng main_image_url nếu có, không thì dùng image_url hoặc image
+        const mainImage = product.main_image_url || product.image_url || product.image || '/img/placeholder.png';
 
         return `
-        <div class="product-card animate-fade-in">
-            <div class="media relative">
+        <a href="${productDetailUrl}" 
+           class="product-card animate-fade-in block bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group h-full"
+           onclick="event.stopPropagation();">
+            <div class="media relative overflow-hidden">
                 ${hasDiscount ? `
                     <div class="absolute top-3 left-3 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded z-10 shadow">
                         Giảm ${discountPercent}%
                     </div>
                 ` : ''}
                 <img 
-                    src="${product.image_url || product.image || '/img/placeholder.png'}" 
+                    src="${mainImage}" 
                     alt="${product.name}"
                     loading="lazy"
+                    class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                     onerror="this.src='/img/placeholder.png'"
                 />
             </div>
-            <div class="body">
+            <div class="body p-4 flex flex-col flex-1">
                 <div class="text-xs text-gray-500 mb-1">${product.category || 'Chưa phân loại'}</div>
-                <h3 class="font-bold text-gray-800 mb-1 line-clamp-2 min-h-[44px]">${product.name}</h3>
-                <div class="price-row">
-                    <span class="price">${formatPrice(product.price)}</span>
+                <h3 class="font-bold text-gray-800 mb-1 line-clamp-2 min-h-[3.5rem] group-hover:text-red-600 transition-colors">${product.name}</h3>
+                <div class="price-row mb-2 flex-shrink-0">
+                    <span class="price text-red-600 font-bold text-lg">${formatPrice(product.price)}</span>
                     ${hasDiscount ? `
-                        <span class="price-old">${formatPrice(originalPrice)}</span>
+                        <span class="price-old text-gray-400 line-through text-sm ml-2">${formatPrice(originalPrice)}</span>
                     ` : ''}
                 </div>
                 ${product.description ? `
-                    <p class="text-sm text-gray-600 mb-3 line-clamp-2">${product.description}</p>
-                ` : ''}
+                    <p class="text-sm text-gray-600 mb-3 line-clamp-2 flex-1">${product.description}</p>
+                ` : '<div class="flex-1"></div>'}
                 ${currentUser ? `
                     <button 
-                        onclick="addToCart(${product.id}, '${product.name}', ${product.price})"
-                        class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
+                        onclick="event.preventDefault(); event.stopPropagation(); addToCart(${product.id}, '${product.name.replace(/'/g, "\\'")}', ${product.price})"
+                        class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 px-4 rounded-lg transition-colors mt-auto"
                     >
                         Thêm vào giỏ
                     </button>
                 ` : `
-                    <a 
-                        href="/login.html"
-                        class="block w-full bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 px-4 rounded-lg text-center transition-colors"
+                    <div 
+                        onclick="event.preventDefault(); event.stopPropagation(); window.location.href='/login.html'"
+                        class="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2.5 px-4 rounded-lg text-center transition-colors mt-auto cursor-pointer"
                     >
                         Đăng nhập để mua
-                    </a>
+                    </div>
                 `}
             </div>
-        </div>
+        </a>
         `;
     }).join('');
 }

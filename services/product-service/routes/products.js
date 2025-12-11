@@ -27,9 +27,10 @@ router.get('/', async (req, res) => {
         let queryParams = [];
 
         if (q && q.trim() !== '') {
-            whereConditions.push('(name LIKE ? OR description LIKE ? OR category LIKE ?)');
+            // Tìm theo slug chính xác trước, nếu không thì tìm trong name, description, category
+            whereConditions.push('(slug = ? OR name LIKE ? OR description LIKE ? OR category LIKE ?)');
             const searchTerm = `%${q.trim()}%`;
-            queryParams.push(searchTerm, searchTerm, searchTerm);
+            queryParams.push(q.trim(), searchTerm, searchTerm, searchTerm);
         }
 
         if (category && category.trim() !== '') {
@@ -94,19 +95,71 @@ router.get('/', async (req, res) => {
     }
 });
 
+// GET /products/by-slug/:slug - Chi tiết sản phẩm theo slug
+router.get('/by-slug/:slug', async (req, res) => {
+    const pool = req.app.locals.pool;
+    const slug = req.params.slug;
+
+    try {
+        const [rows] = await pool.query('SELECT * FROM products WHERE slug = ?', [slug]);
+        const product = rows[0];
+
+        if (product) {
+            // Parse images JSON nếu có
+            let images = [];
+            if (product.images) {
+                try {
+                    images = typeof product.images === 'string' ? JSON.parse(product.images) : product.images;
+                } catch (e) {
+                    images = [];
+                }
+            }
+
+            res.json({
+                ...product,
+                price: typeof product.price === 'string' ? parseFloat(product.price) : product.price,
+                original_price: product.original_price ? (typeof product.original_price === 'string' ? parseFloat(product.original_price) : product.original_price) : null,
+                images: images
+            });
+        } else {
+            res.status(404).json({ message: 'Không tìm thấy sản phẩm' });
+        }
+    } catch (error) {
+        console.error('Lỗi khi lấy sản phẩm theo slug:', error);
+        res.status(500).json({ message: 'Lỗi máy chủ nội bộ' });
+    }
+});
+
 // GET /products/:id - Chi tiết sản phẩm
 router.get('/:id', async (req, res) => {
     const pool = req.app.locals.pool;
     const productId = req.params.id;
+
+    // Kiểm tra nếu là "by-slug" thì không xử lý ở đây
+    if (productId === 'by-slug') {
+        return;
+    }
 
     try {
         const [rows] = await pool.query('SELECT * FROM products WHERE id = ?', [productId]);
         const product = rows[0];
 
         if (product) {
+            // Parse images JSON nếu có
+            let images = [];
+            if (product.images) {
+                try {
+                    images = typeof product.images === 'string' ? JSON.parse(product.images) : product.images;
+                } catch (e) {
+                    images = [];
+                }
+            }
+
             res.json({
                 ...product,
-                price: typeof product.price === 'string' ? parseFloat(product.price) : product.price
+                price: typeof product.price === 'string' ? parseFloat(product.price) : product.price,
+                original_price: product.original_price ? (typeof product.original_price === 'string' ? parseFloat(product.original_price) : product.original_price) : null,
+                images: images
             });
         } else {
             res.status(404).json({ message: 'Không tìm thấy sản phẩm' });

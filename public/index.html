@@ -66,11 +66,23 @@
         /* Product card hover */
         .product-card {
             transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
         }
 
         .product-card:hover {
             transform: translateY(-4px);
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Đảm bảo products grid items có cùng chiều cao */
+        .products-grid {
+            align-items: stretch;
+        }
+        
+        .products-grid > * {
+            height: 100%;
         }
         /* Bootstrap compatibility */
         .breadcrumb {

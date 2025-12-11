@@ -4,25 +4,43 @@
 const express = require('express');
 const router = express.Router();
 
-// GET /categories - Lấy danh sách categories
+// GET /categories - Lấy danh sách categories từ products
 router.get('/', async (req, res) => {
     const pool = req.app.locals.pool;
 
     try {
+        // Lấy các category unique từ bảng products với số lượng sản phẩm
         const [rows] = await pool.query(
             `SELECT 
-                c.*,
-                COUNT(p.id) as product_count
-            FROM categories c
-            LEFT JOIN products p ON p.category = c.name
-            GROUP BY c.id
-            ORDER BY c.name ASC`
+                category as name,
+                COUNT(*) as product_count
+            FROM products
+            WHERE category IS NOT NULL AND category != ''
+            GROUP BY category
+            ORDER BY category ASC`
         );
 
-        const categories = rows.map(cat => ({
-            ...cat,
-            product_count: parseInt(cat.product_count || 0)
-        }));
+        // Map category names với icons và route
+        const categoryConfig = {
+            'Điện thoại, Tablet': { icon: '📱', route: 'phone-tablet' },
+            'Laptop': { icon: '💻', route: 'laptop' },
+            'Âm thanh, Mic thu âm': { icon: '🎵', route: 'audio' },
+            'Đồng hồ, Camera': { icon: '📷', route: 'watch-camera' },
+            'Phụ kiện': { icon: '🔌', route: 'accessories' },
+            'PC, Màn hình, Máy in': { icon: '🖥️', route: 'pc-monitor-printer' }
+        };
+
+        const categories = rows.map((row, index) => {
+            const config = categoryConfig[row.name] || { icon: '📦', route: 'products' };
+            return {
+                id: index + 1,
+                name: row.name,
+                slug: config.route,
+                product_count: parseInt(row.product_count || 0),
+                icon: config.icon,
+                route: config.route
+            };
+        });
 
         res.json({ categories });
     } catch (error) {
