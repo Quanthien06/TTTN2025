@@ -11,6 +11,8 @@ let currentPage = 'home';
 let currentProducts = [];
 let currentPagination = { page: 1, limit: 12, total: 0, totalPages: 0 };
 let currentFilters = {};
+let currentView = 'products'; // 'products' | 'news'
+let isLoggingIn = false; // Flag để tránh gọi checkAuth() ngay sau khi login
 
 // ============================================
 // UTILITY FUNCTIONS
@@ -21,7 +23,12 @@ const PLACEHOLDER_IMG = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2
 
 // Lấy token từ localStorage
 function getToken() {
-    return localStorage.getItem('token');
+    const token = localStorage.getItem('token');
+    // Chỉ trả về token nếu nó tồn tại và không rỗng
+    if (!token || token.trim() === '' || token === 'null' || token === 'undefined') {
+        return null;
+    }
+    return token;
 }
 
 // Lấy user cache từ localStorage (fallback để ẩn nút đăng ký/đăng nhập ngay)
@@ -92,12 +99,17 @@ async function apiCall(endpoint, options = {}) {
         };
 
         // Gửi token cho tất cả endpoint ngoại trừ login và register
+        const needsAuth = endpoint.includes('/me') || endpoint.includes('/profile') || endpoint.includes('/cart') || endpoint.includes('/orders');
+        
+        if (!token && needsAuth) {
+            // Nếu không có token nhưng endpoint cần auth, không gọi API
+            console.log('No token for protected endpoint:', endpoint);
+            throw new Error('Vui lòng đăng nhập để tiếp tục');
+        }
+        
         if (token && !endpoint.includes('/login') && !endpoint.includes('/register') && !endpoint.includes('/forgot-password') && !endpoint.includes('/reset-password') && !endpoint.includes('/verify-email') && !endpoint.includes('/resend-verification')) {
             headers['Authorization'] = `Bearer ${token}`;
             console.log('Sending token for endpoint:', endpoint);
-        } else if (!token && (endpoint.includes('/me') || endpoint.includes('/profile') || endpoint.includes('/cart') || endpoint.includes('/orders'))) {
-            // Nếu không có token nhưng endpoint cần auth
-            throw new Error('Vui lòng đăng nhập để tiếp tục');
         }
 
         const response = await fetch(`${API_BASE_URL}${endpoint}`, {
@@ -108,12 +120,18 @@ async function apiCall(endpoint, options = {}) {
         const data = await response.json();
 
         if (!response.ok) {
-            // Nếu lỗi 401, có thể token đã hết hạn
-            if (response.status === 401) {
+            // Nếu lỗi 401 và có token, có thể token đã hết hạn hoặc không hợp lệ
+            // NHƯNG: Không xóa token ngay cho endpoint /me - để checkAuth() quyết định
+            if (response.status === 401 && token && !endpoint.includes('/me')) {
+                console.log('API returned 401 for non-/me endpoint, token may be invalid or expired');
+                // Chỉ xóa token cho các endpoint khác /me
                 removeToken();
                 removeUserInfo();
                 currentUser = null;
                 updateUIForAuth(false);
+            } else if (response.status === 401 && token && endpoint.includes('/me')) {
+                console.log('API returned 401 for /me endpoint, but keeping token for checkAuth to decide');
+                // Không xóa token ở đây, để checkAuth() quyết định dựa trên cached user
             }
             throw new Error(data.message || 'Có lỗi xảy ra');
         }
@@ -133,40 +151,81 @@ async function apiCall(endpoint, options = {}) {
 
 // Kiểm tra đăng nhập
 async function checkAuth() {
+    // Nếu đang trong quá trình login, không gọi checkAuth() để tránh xóa token
+    if (isLoggingIn) {
+        console.log('checkAuth: Skipping - login in progress');
+        return;
+    }
+    
     const token = getToken();
     if (!token) {
+        console.log('checkAuth: No valid token found');
+        // Làm sạch localStorage nếu có giá trị không hợp lệ
+        const rawToken = localStorage.getItem('token');
+        if (rawToken && (rawToken === 'null' || rawToken === 'undefined' || rawToken.trim() === '')) {
+            console.log('checkAuth: Cleaning invalid token from localStorage');
+            removeToken();
+            removeUserInfo();
+        }
+        currentUser = null;
         updateUIForAuth(false);
         return;
     }
+
+    console.log('checkAuth: Valid token found, checking auth...');
 
     // Nếu đã có user cache, hiển thị ngay để ẩn nút đăng nhập/đăng ký
     const cachedUser = getCachedUser();
     if (cachedUser) {
         currentUser = cachedUser;
         updateUIForAuth(true);
+        console.log('checkAuth: Using cached user:', currentUser);
     } else {
         // Không có cache nhưng có token -> vẫn ẩn nút login/register ngay
         updateUIForAuth(true);
+        console.log('checkAuth: Token exists but no cached user, fetching /me...');
     }
 
     try {
         const data = await apiCall('/me');
         currentUser = data.user;
+        saveUserInfo(data.user); // Cập nhật cache
         updateUIForAuth(true);
         loadCartCount();
         redirectIfAdmin();
+        console.log('checkAuth success:', currentUser);
     } catch (error) {
-        // Nếu có cache + token thì vẫn giữ UI đăng nhập để tránh nhấp nháy
+        console.error('checkAuth error:', error.message);
+        
+        // QUAN TRỌNG: Kiểm tra lại token và cache TRƯỚC KHI quyết định xóa
         const hasToken = !!getToken();
         const cached = getCachedUser();
+        
         if (cached && hasToken) {
+            // Vẫn có token và cache -> GIỮ token và UI đăng nhập
+            // Có thể API /me tạm thời lỗi nhưng token vẫn hợp lệ
             currentUser = cached;
             updateUIForAuth(true);
             redirectIfAdmin();
-        } else {
+            console.log('checkAuth: Using cached user after error (keeping token):', currentUser);
+        } else if (error.message.includes('Token không hợp lệ') || error.message.includes('401')) {
+            // Chỉ xóa token nếu thực sự không hợp lệ VÀ không có cache
+            console.log('checkAuth: Token invalid and no cache, clearing auth state');
             removeToken();
             removeUserInfo();
+            currentUser = null;
             updateUIForAuth(false);
+        } else {
+            // Lỗi khác (network, server) -> giữ token và cache nếu có
+            if (cached) {
+                currentUser = cached;
+                updateUIForAuth(true);
+                console.log('checkAuth: Network/server error, keeping cached user');
+            } else {
+                currentUser = null;
+                updateUIForAuth(false);
+                console.log('checkAuth: Network/server error, no cache, cleared auth state');
+            }
         }
     }
 }
@@ -183,23 +242,76 @@ function redirectIfAdmin() {
 // Đăng nhập
 async function login(username, password) {
     try {
+        // Set flag để tránh checkAuth() gọi ngay sau khi login
+        isLoggingIn = true;
+        console.log('Login: Set isLoggingIn = true');
+        
         showLoading();
+        console.log('Login attempt for username:', username);
+        
         const data = await apiCall('/login', {
             method: 'POST',
             body: JSON.stringify({ username, password })
         });
 
+        console.log('Login API response:', data);
+
+        if (!data.token || !data.user) {
+            throw new Error('Đăng nhập thất bại: Thiếu thông tin từ server');
+        }
+
+        // Lưu token và user info
         saveToken(data.token);
         currentUser = data.user;
         saveUserInfo(data.user);
+        
+        // Kiểm tra lại token đã được lưu chưa
+        const savedToken = getToken();
+        console.log('Login: Token saved:', !!savedToken, 'Token length:', savedToken ? savedToken.length : 0);
+        console.log('Login: User saved:', currentUser);
+        
+        // QUAN TRỌNG: Cập nhật UI ngay lập tức DỰA TRÊN DATA TỪ LOGIN
+        // KHÔNG gọi checkAuth() ngay để tránh xóa token
         updateUIForAuth(true);
+        
+        // Đóng modal và hiển thị thông báo
         closeModal('loginModal');
-        showToast('Đăng nhập thành công!', 'success');
+        showToast(`Đăng nhập thành công! Xin chào, ${currentUser.username}!`, 'success');
+        
+        // Load cart count và redirect nếu là admin
         loadCartCount();
         redirectIfAdmin();
+        
+        // Delay việc verify token qua /me để đảm bảo token đã được lưu vào localStorage
+        // Và reset flag sau khi verify xong
+        setTimeout(async () => {
+            try {
+                const verifyData = await apiCall('/me');
+                // Cập nhật lại user info nếu có thay đổi
+                if (verifyData.user) {
+                    currentUser = verifyData.user;
+                    saveUserInfo(verifyData.user);
+                    updateUIForAuth(true);
+                    console.log('Login: Token verified successfully');
+                }
+            } catch (error) {
+                // Nếu verify fail nhưng vẫn có cached user, giữ UI đăng nhập
+                console.log('Login: Token verification failed, but keeping UI logged in:', error.message);
+                if (currentUser) {
+                    updateUIForAuth(true);
+                }
+            } finally {
+                // Reset flag sau khi verify xong
+                isLoggingIn = false;
+                console.log('Login: Reset isLoggingIn flag');
+            }
+        }, 1000); // Tăng delay lên 1 giây để đảm bảo token đã được lưu
+        
         return true;
     } catch (error) {
-        showToast(error.message, 'error');
+        console.error('Login error:', error);
+        showToast(error.message || 'Đăng nhập thất bại', 'error');
+        isLoggingIn = false; // Reset flag nếu có lỗi
         return false;
     } finally {
         hideLoading();
@@ -249,16 +361,50 @@ function updateUIForAuth(isLoggedIn) {
     const navUser = document.getElementById('navUser');
     const userName = document.getElementById('userName');
 
-    if (isLoggedIn) {
-        if (navAuth) navAuth.classList.add('hidden');
-        if (navUser) navUser.classList.remove('hidden');
+    console.log('updateUIForAuth called:', { 
+        isLoggedIn, 
+        currentUser, 
+        username: currentUser?.username,
+        hasToken: !!getToken() 
+    });
+
+    if (isLoggedIn && currentUser && currentUser.username) {
+        // Ẩn nút đăng nhập/đăng ký
+        if (navAuth) {
+            navAuth.classList.add('hidden');
+            console.log('Hidden navAuth');
+        }
+        
+        // Hiển thị user menu
+        if (navUser) {
+            navUser.classList.remove('hidden');
+            console.log('Shown navUser');
+        }
+        
+        // Cập nhật tên user
         if (userName) {
-            const username = currentUser?.username || 'User';
-            userName.textContent = `Xin chào, ${username}`;
+            const username = currentUser.username;
+            userName.textContent = `Xin chào, ${username}!`;
+            console.log('Updated userName to:', `Xin chào, ${username}!`);
         }
     } else {
-        if (navAuth) navAuth.classList.remove('hidden');
-        if (navUser) navUser.classList.add('hidden');
+        // Hiển thị nút đăng nhập/đăng ký
+        if (navAuth) {
+            navAuth.classList.remove('hidden');
+            console.log('Shown navAuth');
+        }
+        
+        // Ẩn user menu
+        if (navUser) {
+            navUser.classList.add('hidden');
+            console.log('Hidden navUser');
+        }
+        
+        // Xóa tên user
+        if (userName) {
+            userName.textContent = '';
+            console.log('Cleared userName');
+        }
     }
 }
 
@@ -315,6 +461,13 @@ function updateURLForPage(page, replace = false) {
     if (current === target) return;
     const method = replace ? 'replaceState' : 'pushState';
     window.history[method]({}, '', target);
+}
+
+function toggleFilters(show) {
+    const sidebar = document.getElementById('filtersSidebar');
+    const chips = document.getElementById('activeFilters');
+    if (sidebar) sidebar.classList.toggle('hidden', !show);
+    if (chips) chips.classList.toggle('hidden', !show);
 }
 
 function refreshProductsHeader(totalItems = null) {
@@ -388,6 +541,9 @@ function navigateTo(page) {
     if (page === 'products') {
         currentCategoryTitle = 'Sản phẩm';
         currentCategorySubtitle = 'Tất cả sản phẩm đang có';
+        currentView = 'products';
+        currentPagination.limit = 12;
+        toggleFilters(true);
     }
 
     // Ẩn tất cả các trang
@@ -523,6 +679,9 @@ async function navigateToCategory(categoryName, searchTerms) {
 
     currentCategoryTitle = categoryName || 'Sản phẩm';
     currentCategorySubtitle = `Kết quả cho ${categoryName || 'danh mục'}`;
+    currentView = 'products';
+    currentPagination.limit = 12;
+    toggleFilters(true);
     
     // Reset filters
     currentFilters = {};
@@ -588,6 +747,9 @@ function navigateToPromotions() {
     
     currentCategoryTitle = 'Khuyến mãi';
     currentCategorySubtitle = 'Sản phẩm đang giảm giá';
+    currentView = 'products';
+    currentPagination.limit = 12;
+    toggleFilters(true);
 
     // Reset filters và tìm sản phẩm có giảm giá
     currentFilters = {};
@@ -619,29 +781,14 @@ function navigateToTechNews() {
     }
     
     currentCategoryTitle = 'Tin công nghệ';
-    currentCategorySubtitle = 'Sản phẩm, thiết bị liên quan tin tức';
-
-    // Reset filters
-    currentFilters = {};
-    currentFilters.q = 'tin công nghệ';
-    currentPagination.page = 1;
-    
-    // Cập nhật UI
-    const searchInput = document.getElementById('searchInput');
-    const categoryFilter = document.getElementById('categoryFilter');
-    if (searchInput) searchInput.value = 'tin công nghệ';
-    if (categoryFilter) categoryFilter.value = '';
+    currentCategorySubtitle = 'Tin tức công nghệ mới nhất';
+    currentView = 'news';
+    currentPagination = { ...currentPagination, page: 1, limit: 5 };
+    toggleFilters(false);
     refreshProductsHeader();
     renderActiveFilters();
-    
-    // Load products với filter
-    loadProducts();
-    
-    // Scroll to top
+    loadNews();
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    
-    // Có thể hiển thị thông báo nếu đây là tính năng chưa có
-    // showToast('Trang tin công nghệ đang được phát triển', 'info');
 }
 
 // ============================================
@@ -706,6 +853,7 @@ function viewCategory(categoryId) {
 // ============================================
 
 async function loadProducts() {
+    currentView = 'products';
     try {
         showLoading();
         
@@ -740,7 +888,34 @@ async function loadProducts() {
     }
 }
 
+async function loadNews() {
+    try {
+        showLoading();
+        const params = new URLSearchParams();
+        params.append('page', currentPagination.page);
+        params.append('limit', currentPagination.limit || 5);
+
+        const data = await apiCall(`/news?${params.toString()}`);
+        const news = data.news || [];
+        currentPagination = data.pagination || currentPagination;
+
+        renderNews(news, document.getElementById('productsGrid'));
+        renderPagination();
+        refreshProductsHeader(data.pagination?.totalItems ?? news.length);
+        renderActiveFilters();
+    } catch (error) {
+        document.getElementById('productsGrid').innerHTML = 
+            `<div class="empty-state">Lỗi khi tải tin công nghệ: ${error.message}</div>`;
+    } finally {
+        hideLoading();
+    }
+}
+
 function renderProducts(products, container) {
+    if (container) {
+        container.className = 'products-grid grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6';
+    }
+
     if (!products || products.length === 0) {
         container.innerHTML = '<div class="text-center text-gray-500 py-12">Không tìm thấy sản phẩm nào</div>';
         return;
@@ -798,6 +973,43 @@ function renderProducts(products, container) {
         </div>
         `;
     }).join('');
+}
+
+function renderNews(newsItems, container) {
+    if (container) {
+        container.className = 'news-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6';
+    }
+
+    if (!newsItems || newsItems.length === 0) {
+        container.innerHTML = '<div class="text-center text-gray-500 py-12">Chưa có tin công nghệ nào</div>';
+        return;
+    }
+
+    container.innerHTML = newsItems.map(item => `
+        <a href="/news-details.html?slug=${encodeURIComponent(item.slug)}"
+            class="bg-white rounded-xl shadow-md overflow-hidden flex flex-col hover:shadow-lg transition-shadow h-full">
+            <div class="relative aspect-[4/3] bg-gray-100">
+                <img 
+                    src="${item.thumbnail_url || PLACEHOLDER_IMG}" 
+                    alt="${item.title}" 
+                    class="absolute inset-0 w-full h-full object-cover"
+                    onerror="this.src='${PLACEHOLDER_IMG}'"
+                >
+            </div>
+            <div class="p-4 flex flex-col gap-2 flex-1">
+                <div class="text-[11px] uppercase text-red-600 font-semibold tracking-wide">${item.category || 'Tech'}</div>
+                <h3 class="font-semibold text-gray-900 line-clamp-2">${item.title}</h3>
+                <p class="text-sm text-gray-600 line-clamp-3">${item.summary || ''}</p>
+                <div class="text-xs text-gray-500">${item.author || 'TechStore News'} • ${item.published_at ? new Date(item.published_at).toLocaleString('vi-VN') : ''}</div>
+                <div class="mt-auto inline-flex items-center gap-2 text-red-600 font-semibold">
+                    Đọc thêm
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                    </svg>
+                </div>
+            </div>
+        </a>
+    `).join('');
 }
 
 async function loadCategoryFilterOptions() {
@@ -883,7 +1095,11 @@ function renderPagination() {
 
 function changePage(page) {
     currentPagination.page = page;
-    loadProducts();
+    if (currentView === 'news') {
+        loadNews();
+    } else {
+        loadProducts();
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -1584,12 +1800,19 @@ function openModal(modalId) {
 document.addEventListener('DOMContentLoaded', () => {
     // Đồng bộ UI ngay lập tức theo localStorage trước khi gọi API
     const cachedUser = getCachedUser();
-    if (cachedUser) {
+    const token = getToken();
+    
+    if (cachedUser && token) {
         currentUser = cachedUser;
+        console.log('DOMContentLoaded: Found cached user:', currentUser);
         updateUIForAuth(true);
-    } else if (getToken()) {
+    } else if (token) {
         // Có token nhưng chưa fetch /me: vẫn ẩn nút đăng ký/đăng nhập
+        console.log('DOMContentLoaded: Found token but no cached user');
         updateUIForAuth(true);
+    } else {
+        console.log('DOMContentLoaded: No token or cached user');
+        updateUIForAuth(false);
     }
 
     // Kiểm tra đăng nhập khi trang load
@@ -1701,6 +1924,71 @@ document.addEventListener('DOMContentLoaded', () => {
             applyFilters();
         }
     });
+
+    // Slider functionality
+    let currentSlide = 0;
+    const slides = document.querySelectorAll('.slide');
+    const totalSlides = slides.length;
+    
+    function showSlide(index) {
+        slides.forEach((slide, i) => {
+            if (i === index) {
+                slide.classList.remove('opacity-0');
+                slide.classList.add('opacity-100');
+            } else {
+                slide.classList.remove('opacity-100');
+                slide.classList.add('opacity-0');
+            }
+        });
+        
+        // Update dots
+        const dots = document.querySelectorAll('.slider-dot');
+        dots.forEach((dot, i) => {
+            if (i === index) {
+                dot.classList.add('active-dot');
+                dot.classList.remove('bg-opacity-50');
+                dot.classList.add('bg-opacity-100');
+            } else {
+                dot.classList.remove('active-dot');
+                dot.classList.remove('bg-opacity-100');
+                dot.classList.add('bg-opacity-50');
+            }
+        });
+    }
+    
+    function nextSlide() {
+        currentSlide = (currentSlide + 1) % totalSlides;
+        showSlide(currentSlide);
+    }
+    
+    function prevSlide() {
+        currentSlide = (currentSlide - 1 + totalSlides) % totalSlides;
+        showSlide(currentSlide);
+    }
+    
+    // Auto-play slider
+    if (totalSlides > 0) {
+        setInterval(nextSlide, 5000); // Change slide every 5 seconds
+        
+        // Navigation buttons
+        const prevBtn = document.querySelector('.slider-prev');
+        const nextBtn = document.querySelector('.slider-next');
+        
+        if (prevBtn) prevBtn.addEventListener('click', prevSlide);
+        if (nextBtn) nextBtn.addEventListener('click', nextSlide);
+        
+        // Dots navigation
+        const dots = document.querySelectorAll('.slider-dot');
+        dots.forEach((dot, index) => {
+            dot.addEventListener('click', () => {
+                currentSlide = index;
+                showSlide(currentSlide);
+            });
+        });
+        
+        // Initialize first slide
+        showSlide(0);
+    }
 
     // Điều hướng trang ban đầu
     const initialPage = getInitialPage();

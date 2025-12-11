@@ -5,6 +5,7 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const { sendOTPEmail } = require('../utils/email');
 
 router.get('/register', (req, res) => {
     res.status(405).json({ 
@@ -222,6 +223,134 @@ router.post('/logout', async (req, res) => {
         message: 'Đăng xuất thành công',
         note: 'Vui lòng xóa token ở client'
     });
+});
+
+// POST /forgot-password - Gửi mã OTP để đặt lại mật khẩu
+router.post('/forgot-password', async (req, res) => {
+    const pool = req.app.locals.pool;
+    
+    try {
+        const { email } = req.body;
+
+        if (!email) {
+            return res.status(400).json({ message: 'Email là bắt buộc' });
+        }
+
+        // Tìm user theo email
+        const [rows] = await pool.query('SELECT id, username, email FROM users WHERE email = ?', [email]);
+        
+        if (rows.length === 0) {
+            // Không trả về lỗi để tránh email enumeration
+            return res.json({ 
+                message: 'Nếu email tồn tại, mã OTP đã được gửi',
+                sent: true 
+            });
+        }
+
+        const user = rows[0];
+        
+        // Tạo mã OTP 6 chữ số
+        const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+        const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 phút
+
+        // Lưu OTP vào database
+        await pool.query(
+            'UPDATE users SET otp_code = ?, otp_expires = ? WHERE id = ?',
+            [otpCode, otpExpires, user.id]
+        );
+
+        // Gửi email với mã OTP
+        await sendOTPEmail(email, otpCode, user.username);
+
+        res.json({ 
+            message: 'Mã OTP đã được gửi đến email của bạn',
+            sent: true
+        });
+    } catch (error) {
+        console.error('Lỗi khi gửi mã OTP:', error);
+        res.status(500).json({ message: 'Lỗi máy chủ nội bộ' });
+    }
+});
+
+// POST /reset-password - Đặt lại mật khẩu với OTP
+router.post('/reset-password', async (req, res) => {
+    const pool = req.app.locals.pool;
+    
+    try {
+        const { email, otp, newPassword } = req.body;
+
+        if (!email || !otp || !newPassword) {
+            return res.status(400).json({ message: 'Email, OTP và mật khẩu mới là bắt buộc' });
+        }
+
+        if (newPassword.length < 6) {
+            return res.status(400).json({ message: 'Mật khẩu mới phải có ít nhất 6 ký tự' });
+        }
+
+        // Tìm user theo email và kiểm tra OTP
+        const [rows] = await pool.query(
+            'SELECT id, otp_code, otp_expires FROM users WHERE email = ?',
+            [email]
+        );
+
+        if (rows.length === 0) {
+            return res.status(404).json({ message: 'Email không tồn tại' });
+        }
+
+        const user = rows[0];
+
+        if (!user.otp_code || user.otp_code !== otp) {
+            return res.status(401).json({ message: 'Mã OTP không đúng' });
+        }
+
+        if (!user.otp_expires || new Date(user.otp_expires) < new Date()) {
+            return res.status(401).json({ message: 'Mã OTP đã hết hạn' });
+        }
+
+        // Hash mật khẩu mới
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+        // Cập nhật mật khẩu và xóa OTP
+        await pool.query(
+            'UPDATE users SET password = ?, otp_code = NULL, otp_expires = NULL WHERE id = ?',
+            [hashedPassword, user.id]
+        );
+
+        res.json({ message: 'Đặt lại mật khẩu thành công' });
+    } catch (error) {
+        console.error('Lỗi khi đặt lại mật khẩu:', error);
+        res.status(500).json({ message: 'Lỗi máy chủ nội bộ' });
+    }
+});
+
+// GET /user-by-email - Lấy username từ email
+router.get('/user-by-email', async (req, res) => {
+    const pool = req.app.locals.pool;
+    
+    try {
+        const { email } = req.query;
+
+        if (!email) {
+            return res.status(400).json({ message: 'Email là bắt buộc' });
+        }
+
+        const [rows] = await pool.query(
+            'SELECT username FROM users WHERE email = ?',
+            [email]
+        );
+
+        if (rows.length === 0) {
+            return res.json({ exists: false });
+        }
+
+        res.json({ 
+            exists: true,
+            username: rows[0].username
+        });
+    } catch (error) {
+        console.error('Lỗi khi lấy username:', error);
+        res.status(500).json({ message: 'Lỗi máy chủ nội bộ' });
+    }
 });
 
 module.exports = router;

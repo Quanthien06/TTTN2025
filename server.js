@@ -32,6 +32,7 @@ const productRouter = require('./routes/product');
 const cartRouter = require('./routes/cart');
 const orderRouter = require('./routes/orders');
 const categoriesRouter = require('./routes/categories'); // Router cho Categories API
+const newsRouter = require('./routes/news'); // Router cho Tech News
 // Import middleware xác thực
 const authenticateToken = require('./middleware/auth'); 
 
@@ -96,7 +97,8 @@ const htmlPageRoutes = new Set([
     'phone-tablet', 'phone', 'tablet', 'phone-accessories',
     'laptop', 'audio', 'watch-camera', 'accessories',
     'pc-monitor-printer', 'pc', 'monitor', 'printer', 'pc-parts',
-    'promotions', 'tech-news', 'cart', 'orders', 'profile'
+    'promotions', 'tech-news', 'cart', 'orders', 'profile',
+    'news-detail', 'news-details'
 ]);
 
 app.get('/:page.html', (req, res, next) => {
@@ -127,6 +129,8 @@ app.use('/api/orders', orderRouter);
 // Gắn router categories vào đường dẫn /api/categories
 // Lưu ý: Một số route công khai (GET), một số cần admin (POST, PUT, DELETE)
 app.use('/api/categories', categoriesRouter);
+// Tin công nghệ
+app.use('/api/news', newsRouter);
 
 
 // 7. Lắng nghe

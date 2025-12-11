@@ -335,8 +335,8 @@
                 <div class="slider-container relative w-full h-full">
                     <!-- Slide 1 -->
                     <div class="slide absolute inset-0 w-full h-full opacity-100 transition-opacity duration-500 ease-in-out" data-slide="0">
-                        <img src="/img/slider/slide1.jpg" alt="Slide 1" class="w-full h-full object-cover">
-                        <div class="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
+                        <img src="/img/slider/slider1.jpg" alt="Slide 1" class="w-full h-full object-cover" onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'1200\' height=\'500\'><rect width=\'1200\' height=\'500\' fill=\'%23f3f4f6\'/><text x=\'50%25\' y=\'50%25\' dominant-baseline=\'middle\' text-anchor=\'middle\' fill=\'%239ca3af\' font-size=\'24\'>Slide 1</text></svg>'">
+                        <div class="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center z-10">
                             <div class="text-center text-white px-4">
                                 <h2 class="text-4xl md:text-5xl font-bold mb-4">Chào mừng đến TechStore</h2>
                                 <p class="text-xl md:text-2xl mb-6">Nơi mua sắm trực tuyến uy tín, chất lượng</p>
@@ -349,8 +349,8 @@
                     </div>
                     <!-- Slide 2 -->
                     <div class="slide absolute inset-0 w-full h-full opacity-0 transition-opacity duration-500 ease-in-out" data-slide="1">
-                        <img src="/img/slider/slide2.jpg" alt="Slide 2" class="w-full h-full object-cover">
-                        <div class="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
+                        <img src="/img/slider/slider2.png" alt="Slide 2" class="w-full h-full object-cover" onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'1200\' height=\'500\'><rect width=\'1200\' height=\'500\' fill=\'%23f3f4f6\'/><text x=\'50%25\' y=\'50%25\' dominant-baseline=\'middle\' text-anchor=\'middle\' fill=\'%239ca3af\' font-size=\'24\'>Slide 2</text></svg>'">
+                        <div class="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center z-10">
                             <div class="text-center text-white px-4">
                                 <h2 class="text-4xl md:text-5xl font-bold mb-4">Sản phẩm công nghệ hàng đầu</h2>
                                 <p class="text-xl md:text-2xl mb-6">Đa dạng sản phẩm, giá cả hợp lý</p>
@@ -363,8 +363,8 @@
                     </div>
                     <!-- Slide 3 -->
                     <div class="slide absolute inset-0 w-full h-full opacity-0 transition-opacity duration-500 ease-in-out" data-slide="2">
-                        <img src="/img/slider/slide3.jpg" alt="Slide 3" class="w-full h-full object-cover">
-                        <div class="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
+                        <img src="/img/slider/slider3.png" alt="Slide 3" class="w-full h-full object-cover" onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'1200\' height=\'500\'><rect width=\'1200\' height=\'500\' fill=\'%23f3f4f6\'/><text x=\'50%25\' y=\'50%25\' dominant-baseline=\'middle\' text-anchor=\'middle\' fill=\'%239ca3af\' font-size=\'24\'>Slide 3</text></svg>'">
+                        <div class="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center z-10">
                             <div class="text-center text-white px-4">
                                 <h2 class="text-4xl md:text-5xl font-bold mb-4">Ưu đãi đặc biệt</h2>
                                 <p class="text-xl md:text-2xl mb-6">Giảm giá lên đến 50% cho khách hàng mới</p>
@@ -430,7 +430,7 @@
 
                 <div class="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-6">
                     <!-- Sidebar filter -->
-                    <aside class="bg-white rounded-lg shadow-md p-5 h-fit space-y-5">
+                    <aside id="filtersSidebar" class="bg-white rounded-lg shadow-md p-5 h-fit space-y-5">
                         <div class="flex items-center justify-between">
                             <h3 class="text-lg font-semibold text-gray-800">Bộ lọc</h3>
                             <button id="resetFiltersBtn"
@@ -487,7 +487,7 @@
                             <div class="text-sm text-gray-600" id="productsCounter">Đang tải...</div>
                         </div>
 
-                        <div class="products-grid grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
+                        <div class="products-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
                             id="productsGrid">
                             <div class="text-center text-gray-500">Đang tải...</div>
                         </div>

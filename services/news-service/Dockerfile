@@ -1,4 +1,4 @@
-# Dockerfile cho Auth Service
+# Dockerfile cho News Service
 FROM node:18-alpine
 
 WORKDIR /app
@@ -8,9 +8,8 @@ RUN npm install
 
 COPY server.js ./
 COPY routes/ ./routes/
-COPY utils/ ./utils/
 
-EXPOSE 5001
+EXPOSE 5005
 
 CMD ["node", "server.js"]
 

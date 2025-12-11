@@ -2,27 +2,30 @@
 # File để chạy tất cả microservices với Docker
 
 services:
-  # MySQL Database
-  mysql:
-    image: mysql:8.0
-    container_name: tttn2025-mysql
-    environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: tttn2025
-      MYSQL_USER: tttn_user
-      MYSQL_PASSWORD: tttn_pass
-    ports:
-      - "3307:3306"
-    volumes:
-      - mysql_data:/var/lib/mysql
-      - ./database:/docker-entrypoint-initdb.d
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - tttn-network
+  # MySQL Database (Đã tắt - đang dùng MySQL localhost)
+  # mysql:
+  #   image: mysql:8.0
+  #   container_name: tttn2025-mysql
+  #   environment:
+  #     MYSQL_ROOT_PASSWORD: root
+  #     MYSQL_DATABASE: tttn2025
+  #     MYSQL_USER: tttn_user
+  #     MYSQL_PASSWORD: tttn_pass
+  #   ports:
+  #     - "3307:3306"
+  #   volumes:
+  #     - mysql_data:/var/lib/mysql
+  #     - ./database:/docker-entrypoint-initdb.d
+  #   healthcheck:
+  #     test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+  #   networks:
+  #     - tttn-network
+
+  # phpMyAdmin - Đang dùng phpMyAdmin trên localhost (127.0.0.1)
+  # Không cần container, truy cập trực tiếp qua http://127.0.0.1/phpmyadmin hoặc http://localhost/phpmyadmin
 
   # Auth Service
   auth-service:
@@ -31,16 +34,21 @@ services:
       dockerfile: Dockerfile
     container_name: tttn2025-auth
     environment:
-      DB_HOST: mysql
-      DB_USER: tttn_user
-      DB_PASSWORD: tttn_pass
+      DB_HOST: host.docker.internal
+      DB_USER: root
+      DB_PASSWORD: ""
       DB_NAME: tttn2025
       JWT_SECRET: HhGg78@!kYpQzXcVbNmL1o2P3oI4U5yT6rE7wQ8aZ9sX0cVkGjH
+      # Email Configuration (Gmail SMTP)
+      EMAIL_HOST: smtp.gmail.com
+      EMAIL_PORT: 587
+      EMAIL_USER: ${EMAIL_USER:-}
+      EMAIL_PASS: ${EMAIL_PASS:-}
+      EMAIL_FROM: ${EMAIL_FROM:-noreply@techstore.com}
     ports:
       - "5001:5001"
-    depends_on:
-      mysql:
-        condition: service_healthy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     networks:
       - tttn-network
     restart: unless-stopped
@@ -52,16 +60,15 @@ services:
       dockerfile: Dockerfile
     container_name: tttn2025-product
     environment:
-      DB_HOST: mysql
-      DB_USER: tttn_user
-      DB_PASSWORD: tttn_pass
+      DB_HOST: host.docker.internal
+      DB_USER: root
+      DB_PASSWORD: ""
       DB_NAME: tttn2025
       JWT_SECRET: HhGg78@!kYpQzXcVbNmL1o2P3oI4U5yT6rE7wQ8aZ9sX0cVkGjH
     ports:
       - "5002:5002"
-    depends_on:
-      mysql:
-        condition: service_healthy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     networks:
       - tttn-network
     restart: unless-stopped
@@ -73,16 +80,15 @@ services:
       dockerfile: Dockerfile
     container_name: tttn2025-cart
     environment:
-      DB_HOST: mysql
-      DB_USER: tttn_user
-      DB_PASSWORD: tttn_pass
+      DB_HOST: host.docker.internal
+      DB_USER: root
+      DB_PASSWORD: ""
       DB_NAME: tttn2025
       JWT_SECRET: HhGg78@!kYpQzXcVbNmL1o2P3oI4U5yT6rE7wQ8aZ9sX0cVkGjH
     ports:
       - "5003:5003"
-    depends_on:
-      mysql:
-        condition: service_healthy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     networks:
       - tttn-network
     restart: unless-stopped
@@ -94,19 +100,38 @@ services:
       dockerfile: Dockerfile
     container_name: tttn2025-order
     environment:
-      DB_HOST: mysql
-      DB_USER: tttn_user
-      DB_PASSWORD: tttn_pass
+      DB_HOST: host.docker.internal
+      DB_USER: root
+      DB_PASSWORD: ""
       DB_NAME: tttn2025
       JWT_SECRET: HhGg78@!kYpQzXcVbNmL1o2P3oI4U5yT6rE7wQ8aZ9sX0cVkGjH
       CART_SERVICE_URL: http://cart-service:5003
     ports:
       - "5004:5004"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
-      mysql:
-        condition: service_healthy
       cart-service:
         condition: service_started
+    networks:
+      - tttn-network
+    restart: unless-stopped
+
+  # News Service
+  news-service:
+    build:
+      context: ./services/news-service
+      dockerfile: Dockerfile
+    container_name: tttn2025-news
+    environment:
+      DB_HOST: host.docker.internal
+      DB_USER: root
+      DB_PASSWORD: ""
+      DB_NAME: tttn2025
+    ports:
+      - "5005:5005"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     networks:
       - tttn-network
     restart: unless-stopped
@@ -122,6 +147,7 @@ services:
       PRODUCT_SERVICE_URL: http://product-service:5002
       CART_SERVICE_URL: http://cart-service:5003
       ORDER_SERVICE_URL: http://order-service:5004
+      NEWS_SERVICE_URL: http://news-service:5005
       JWT_SECRET: HhGg78@!kYpQzXcVbNmL1o2P3oI4U5yT6rE7wQ8aZ9sX0cVkGjH
     ports:
       - "5000:5000"
@@ -130,6 +156,7 @@ services:
       - product-service
       - cart-service
       - order-service
+      - news-service
     networks:
       - tttn-network
     restart: unless-stopped
