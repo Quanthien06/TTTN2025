@@ -197,35 +197,100 @@ router.get('/me', authenticateToken, async (req, res) => {
     const userId = req.user.id;
 
     try {
-        // Query database để lấy thông tin user
-        // Chỉ lấy các field cần thiết, không lấy password vì lý do bảo mật
-        const [rows] = await pool.query(
+        console.log('GET /api/me - User ID:', userId);
+        
+        // Query database để lấy thông tin user - chỉ query các cột cơ bản trước
+        let [rows] = await pool.query(
             'SELECT id, username, role, created_at FROM users WHERE id = ?',
             [userId]
         );
 
-        // Kiểm tra user có tồn tại không (trường hợp token hợp lệ nhưng user đã bị xóa)
+        // Kiểm tra user có tồn tại không
         if (rows.length === 0) {
+            console.log('User not found:', userId);
             return res.status(404).json({ message: 'User không tồn tại' });
         }
 
-        // Lấy user đầu tiên (sẽ chỉ có 1 user với id này)
         const user = rows[0];
+        console.log('User found:', user.username);
+        
+        // Khởi tạo các giá trị mặc định
+        const result = {
+            id: user.id,
+            username: user.username,
+            role: user.role,
+            created_at: user.created_at,
+            email: null,
+            email_verified: null,
+            google_id: null
+        };
+        
+        // Thử lấy thêm các field mới nếu có (không bắt buộc)
+        // Query từng cột một để tránh lỗi nếu cột không tồn tại
+        try {
+            // Thử query email
+            try {
+                const [emailRows] = await pool.query(
+                    'SELECT email FROM users WHERE id = ?',
+                    [userId]
+                );
+                if (emailRows.length > 0 && emailRows[0].email) {
+                    result.email = emailRows[0].email;
+                }
+            } catch (emailError) {
+                console.log('Email column not available:', emailError.message);
+            }
+            
+            // Thử query email_verified
+            try {
+                const [verifiedRows] = await pool.query(
+                    'SELECT email_verified FROM users WHERE id = ?',
+                    [userId]
+                );
+                if (verifiedRows.length > 0 && verifiedRows[0].email_verified !== undefined) {
+                    result.email_verified = Boolean(verifiedRows[0].email_verified);
+                }
+            } catch (verifiedError) {
+                console.log('Email_verified column not available:', verifiedError.message);
+            }
+            
+            // Thử query google_id
+            try {
+                const [googleRows] = await pool.query(
+                    'SELECT google_id FROM users WHERE id = ?',
+                    [userId]
+                );
+                if (googleRows.length > 0 && googleRows[0].google_id) {
+                    result.google_id = googleRows[0].google_id;
+                }
+            } catch (googleError) {
+                console.log('Google_id column not available:', googleError.message);
+            }
+        } catch (extraError) {
+            // Nếu có lỗi chung, chỉ log warning
+            console.log('Error querying extra fields:', extraError.message);
+        }
         
         // Trả về thông tin user
+        console.log('Returning user data for:', result.username);
         res.json({
-            user: {
-                id: user.id,
-                username: user.username,
-                role: user.role,
-                created_at: user.created_at
-            }
+            user: result
         });
 
     } catch (error) {
-        // Log lỗi để debug
+        // Log lỗi chi tiết để debug
         console.error('Lỗi khi lấy thông tin user:', error);
-        res.status(500).json({ message: 'Lỗi máy chủ nội bộ' });
+        console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
+        console.error('Error details:', {
+            code: error.code,
+            sqlMessage: error.sqlMessage,
+            sqlState: error.sqlState
+        });
+        res.status(500).json({ 
+            message: 'Lỗi máy chủ nội bộ',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
     }
 });
 

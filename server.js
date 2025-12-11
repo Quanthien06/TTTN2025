@@ -90,6 +90,24 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
+// Điều hướng các trang tĩnh dạng *.html tới SPA kèm tham số page
+const htmlPageRoutes = new Set([
+    'home', 'products', 'categories',
+    'phone-tablet', 'phone', 'tablet', 'phone-accessories',
+    'laptop', 'audio', 'watch-camera', 'accessories',
+    'pc-monitor-printer', 'pc', 'monitor', 'printer', 'pc-parts',
+    'promotions', 'tech-news', 'cart', 'orders', 'profile'
+]);
+
+app.get('/:page.html', (req, res, next) => {
+    const page = req.params.page;
+    if (htmlPageRoutes.has(page)) {
+        const target = page === 'home' ? '/' : `/?page=${page}`;
+        return res.redirect(target);
+    }
+    next();
+});
+
 // Gắn router xác thực vào đường dẫn /api (chứa /register và /login)
 app.use('/api', authRouter);
 // Gắn router OAuth2 vào đường dẫn /api/auth

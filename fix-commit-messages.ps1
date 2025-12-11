@@ -27,3 +27,4 @@ Write-Host "Nếu commit đã push lên GitHub và không có vấn đề nghiê
 Write-Host "tốt nhất là để nguyên và commit message tốt hơn cho các commit tiếp theo." -ForegroundColor White
 Write-Host ""
 
+

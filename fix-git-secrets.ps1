@@ -57,3 +57,4 @@ Write-Host "Nên dùng CÁCH 1 (GitHub UI) vì đơn giản và an toàn hơn." 
 Write-Host "Chỉ dùng CÁCH 2 nếu thực sự cần xóa secrets khỏi history." -ForegroundColor Yellow
 Write-Host ""
 
+
