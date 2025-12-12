@@ -191,20 +191,77 @@ router.post('/', (req, res, next) => {
     }
 });
 
+// API Endpoint để LẤY MỘT SẢN PHẨM theo SLUG (GET /products/by-slug/:slug) - PUBLIC
+router.get('/by-slug/:slug', async (req, res) => {
+    const pool = req.app.locals.pool;
+    const slug = req.params.slug;
+
+    try {
+        // Tìm sản phẩm theo slug
+        const [rows] = await pool.query('SELECT * FROM products WHERE slug = ?', [slug]);
+        const product = rows[0];
+
+        if (!product) {
+            return res.status(404).json({ message: 'Không tìm thấy sản phẩm' });
+        }
+
+        // Parse images JSON nếu có
+        let images = [];
+        if (product.images) {
+            try {
+                images = typeof product.images === 'string' ? JSON.parse(product.images) : product.images;
+            } catch (e) {
+                images = [];
+            }
+        }
+
+        // Format sản phẩm
+        const formattedProduct = {
+            ...product,
+            price: typeof product.price === 'string' ? parseFloat(product.price) : product.price,
+            original_price: product.original_price ? (typeof product.original_price === 'string' ? parseFloat(product.original_price) : product.original_price) : null,
+            images: images
+        };
+
+        res.json(formattedProduct);
+    } catch (error) {
+        console.error(`Lỗi khi lấy sản phẩm theo slug ${slug}:`, error);
+        res.status(500).json({ message: 'Lỗi máy chủ nội bộ' });
+    }
+});
+
 // API Endpoint để LẤY MỘT SẢN PHẨM theo ID (GET /products/:id) - PUBLIC
+// Lưu ý: Route này phải đặt SAU /by-slug/:slug để tránh conflict
 router.get('/:id', async (req, res) => {
     const pool = req.app.locals.pool;
     const productId = req.params.id; 
+
+    // Kiểm tra nếu là "by-slug" thì không xử lý ở đây (đã được xử lý ở route trên)
+    if (productId === 'by-slug') {
+        return;
+    }
 
     try {
         const [rows] = await pool.query('SELECT * from products WHERE id = ?', [productId]);
         const product = rows[0];
 
         if (product) {
+            // Parse images JSON nếu có
+            let images = [];
+            if (product.images) {
+                try {
+                    images = typeof product.images === 'string' ? JSON.parse(product.images) : product.images;
+                } catch (e) {
+                    images = [];
+                }
+            }
+
             // Chuyển đổi price từ string sang number (nếu cần)
             const formattedProduct = {
                 ...product,
-                price: typeof product.price === 'string' ? parseFloat(product.price) : product.price
+                price: typeof product.price === 'string' ? parseFloat(product.price) : product.price,
+                original_price: product.original_price ? (typeof product.original_price === 'string' ? parseFloat(product.original_price) : product.original_price) : null,
+                images: images
             };
             res.json(formattedProduct); 
         } else {

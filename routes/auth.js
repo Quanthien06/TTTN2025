@@ -192,18 +192,31 @@ router.post('/login', async (req, res) => {
 router.get('/me', authenticateToken, async (req, res) => {
     // Lấy connection pool từ app để thực hiện query database
     const pool = req.app.locals.pool;
+    
+    // Kiểm tra pool có tồn tại không
+    if (!pool) {
+        console.error('Database pool không tồn tại!');
+        return res.status(500).json({ 
+            message: 'Lỗi cấu hình database',
+            error: 'Database pool chưa được khởi tạo'
+        });
+    }
+    
     // req.user được set bởi middleware authenticateToken sau khi verify token thành công
     // req.user chứa thông tin: { id, username, role }
     const userId = req.user.id;
 
     try {
         console.log('GET /api/me - User ID:', userId);
+        console.log('Pool exists:', !!pool);
         
-        // Query database để lấy thông tin user - chỉ query các cột cơ bản trước
+        // Query database để lấy thông tin user - sử dụng SELECT * để lấy tất cả các trường
         let [rows] = await pool.query(
-            'SELECT id, username, role, created_at FROM users WHERE id = ?',
+            'SELECT * FROM users WHERE id = ?',
             [userId]
         );
+        
+        console.log('Query executed, rows count:', rows.length);
 
         // Kiểm tra user có tồn tại không
         if (rows.length === 0) {
@@ -213,63 +226,32 @@ router.get('/me', authenticateToken, async (req, res) => {
 
         const user = rows[0];
         console.log('User found:', user.username);
+        console.log('User data keys:', Object.keys(user));
         
-        // Khởi tạo các giá trị mặc định
+        // Xử lý an toàn với các trường có thể không tồn tại
+        // Lưu ý: Database có thể dùng camelCase (createdAt) hoặc snake_case (created_at)
         const result = {
             id: user.id,
-            username: user.username,
-            role: user.role,
-            created_at: user.created_at,
-            email: null,
-            email_verified: null,
-            google_id: null
+            username: user.username || '',
+            role: user.role || 'user',
+            created_at: user.created_at || user.createdAt || null,
+            email: user.email || null,
+            email_verified: (user.email_verified !== undefined && user.email_verified !== null) ? Boolean(user.email_verified) : null,
+            google_id: user.google_id || null,
+            full_name: user.full_name || null,
+            phone: user.phone || null,
+            address: user.address || null,
+            date_of_birth: user.date_of_birth || null,
+            avatar_url: user.avatar_url || null
         };
         
-        // Thử lấy thêm các field mới nếu có (không bắt buộc)
-        // Query từng cột một để tránh lỗi nếu cột không tồn tại
-        try {
-            // Thử query email
-            try {
-                const [emailRows] = await pool.query(
-                    'SELECT email FROM users WHERE id = ?',
-                    [userId]
-                );
-                if (emailRows.length > 0 && emailRows[0].email) {
-                    result.email = emailRows[0].email;
-                }
-            } catch (emailError) {
-                console.log('Email column not available:', emailError.message);
-            }
-            
-            // Thử query email_verified
-            try {
-                const [verifiedRows] = await pool.query(
-                    'SELECT email_verified FROM users WHERE id = ?',
-                    [userId]
-                );
-                if (verifiedRows.length > 0 && verifiedRows[0].email_verified !== undefined) {
-                    result.email_verified = Boolean(verifiedRows[0].email_verified);
-                }
-            } catch (verifiedError) {
-                console.log('Email_verified column not available:', verifiedError.message);
-            }
-            
-            // Thử query google_id
-            try {
-                const [googleRows] = await pool.query(
-                    'SELECT google_id FROM users WHERE id = ?',
-                    [userId]
-                );
-                if (googleRows.length > 0 && googleRows[0].google_id) {
-                    result.google_id = googleRows[0].google_id;
-                }
-            } catch (googleError) {
-                console.log('Google_id column not available:', googleError.message);
-            }
-        } catch (extraError) {
-            // Nếu có lỗi chung, chỉ log warning
-            console.log('Error querying extra fields:', extraError.message);
-        }
+        console.log('Processed user result:', {
+            id: result.id,
+            username: result.username,
+            hasEmail: !!result.email,
+            hasFullName: !!result.full_name,
+            hasPhone: !!result.phone
+        });
         
         // Trả về thông tin user
         console.log('Returning user data for:', result.username);
@@ -279,70 +261,175 @@ router.get('/me', authenticateToken, async (req, res) => {
 
     } catch (error) {
         // Log lỗi chi tiết để debug
-        console.error('Lỗi khi lấy thông tin user:', error);
+        console.error('❌ Lỗi khi lấy thông tin user:', error);
         console.error('Error message:', error.message);
+        console.error('Error name:', error.name);
         console.error('Error stack:', error.stack);
-        console.error('Error details:', {
-            code: error.code,
-            sqlMessage: error.sqlMessage,
-            sqlState: error.sqlState
-        });
-        res.status(500).json({ 
+        
+        // Log chi tiết hơn cho database errors
+        if (error.code) {
+            console.error('Error code:', error.code);
+        }
+        if (error.sqlMessage) {
+            console.error('SQL Error message:', error.sqlMessage);
+        }
+        if (error.sqlState) {
+            console.error('SQL State:', error.sqlState);
+        }
+        if (error.errno) {
+            console.error('Error number:', error.errno);
+        }
+        
+        // Trả về lỗi chi tiết hơn trong development
+        const errorResponse = {
             message: 'Lỗi máy chủ nội bộ',
-            error: process.env.NODE_ENV === 'development' ? error.message : undefined
-        });
+            error: error.message,
+            code: error.code || 'UNKNOWN_ERROR'
+        };
+        
+        // Thêm thông tin SQL nếu có
+        if (error.sqlMessage) {
+            errorResponse.sqlError = error.sqlMessage;
+        }
+        
+        res.status(500).json(errorResponse);
     }
 });
 
 // PUT /api/profile - Cập nhật thông tin cá nhân
-// Cho phép user cập nhật username của mình
+// Cho phép user cập nhật thông tin profile: username, full_name, phone, address, date_of_birth
 // Cần có token hợp lệ
 router.put('/profile', authenticateToken, async (req, res) => {
     const pool = req.app.locals.pool;
     const userId = req.user.id;
-    // Lấy username mới từ request body
-    const { username } = req.body;
+    // Lấy các trường từ request body
+    const { username, full_name, phone, address, date_of_birth, avatar_url } = req.body;
+
+    console.log('PUT /api/profile - User ID:', userId);
+    console.log('Request body:', { username, full_name, phone, address, date_of_birth, avatar_url: avatar_url ? 'provided' : 'not provided' });
 
     try {
-        // Validation: Kiểm tra username không được rỗng
-        if (!username || username.trim() === '') {
-            return res.status(400).json({ message: 'Username không được để trống' });
+        // Validation: Kiểm tra username nếu có
+        if (username !== undefined) {
+            if (!username || username.trim() === '') {
+                return res.status(400).json({ message: 'Username không được để trống' });
+            }
+
+            // Kiểm tra username mới đã tồn tại chưa (trừ user hiện tại)
+            const [existingUsers] = await pool.query(
+                'SELECT id FROM users WHERE username = ? AND id != ?',
+                [username, userId]
+            );
+
+            if (existingUsers.length > 0) {
+                return res.status(409).json({ message: 'Username đã tồn tại' });
+            }
         }
 
-        // Kiểm tra username mới đã tồn tại chưa (trừ user hiện tại)
-        // Để tránh trùng username với user khác
-        const [existingUsers] = await pool.query(
-            'SELECT id FROM users WHERE username = ? AND id != ?',
-            [username, userId]
-        );
-
-        // Nếu username đã tồn tại, trả về lỗi 409 Conflict
-        if (existingUsers.length > 0) {
-            return res.status(409).json({ message: 'Username đã tồn tại' });
+        // Validation: Kiểm tra phone format nếu có
+        if (phone !== undefined && phone !== null && phone.trim() !== '') {
+            // Loại bỏ khoảng trắng và ký tự đặc biệt để kiểm tra
+            const phoneDigits = phone.replace(/\D/g, '');
+            if (phoneDigits.length < 10 || phoneDigits.length > 11) {
+                return res.status(400).json({ message: 'Số điện thoại không hợp lệ (phải có 10-11 chữ số)' });
+            }
         }
 
-        // Cập nhật username trong database
-        // trim() để loại bỏ khoảng trắng thừa
-        await pool.query(
-            'UPDATE users SET username = ? WHERE id = ?',
-            [username.trim(), userId]
-        );
+        // Validation: Kiểm tra date_of_birth nếu có
+        if (date_of_birth !== undefined && date_of_birth !== null && date_of_birth !== '') {
+            const birthDate = new Date(date_of_birth);
+            const today = new Date();
+            if (birthDate > today) {
+                return res.status(400).json({ message: 'Ngày sinh không thể lớn hơn ngày hiện tại' });
+            }
+            // Kiểm tra tuổi hợp lý (ít nhất 13 tuổi)
+            const age = today.getFullYear() - birthDate.getFullYear();
+            if (age < 13 || age > 120) {
+                return res.status(400).json({ message: 'Ngày sinh không hợp lệ' });
+            }
+        }
+
+        // Xây dựng câu lệnh UPDATE động
+        const updateFields = [];
+        const updateValues = [];
+
+        if (username !== undefined) {
+            updateFields.push('username = ?');
+            updateValues.push(username.trim());
+        }
+        if (full_name !== undefined) {
+            updateFields.push('full_name = ?');
+            updateValues.push(full_name ? full_name.trim() : null);
+        }
+        if (phone !== undefined) {
+            updateFields.push('phone = ?');
+            updateValues.push(phone ? phone.trim() : null);
+        }
+        if (address !== undefined) {
+            updateFields.push('address = ?');
+            updateValues.push(address ? address.trim() : null);
+        }
+        if (date_of_birth !== undefined) {
+            updateFields.push('date_of_birth = ?');
+            updateValues.push(date_of_birth || null);
+        }
+        if (avatar_url !== undefined) {
+            updateFields.push('avatar_url = ?');
+            updateValues.push(avatar_url || null);
+        }
+
+        // Nếu không có trường nào để cập nhật
+        if (updateFields.length === 0) {
+            return res.status(400).json({ message: 'Không có thông tin nào để cập nhật' });
+        }
+
+        // Thêm userId vào cuối mảng values
+        updateValues.push(userId);
+
+        // Thực hiện cập nhật
+        const updateSQL = `UPDATE users SET ${updateFields.join(', ')} WHERE id = ?`;
+        console.log('Update SQL:', updateSQL);
+        console.log('Update values:', updateValues);
+        
+        await pool.query(updateSQL, updateValues);
+        console.log('✅ Update successful');
 
         // Lấy thông tin user đã cập nhật để trả về
-        const [rows] = await pool.query(
-            'SELECT id, username, role, created_at FROM users WHERE id = ?',
-            [userId]
-        );
+        const [rows] = await pool.query('SELECT * FROM users WHERE id = ?', [userId]);
+        const updatedUser = rows[0];
 
-        // Trả về thông tin user đã cập nhật
+        // Trả về thông tin user đã cập nhật (chỉ các trường cần thiết)
         res.json({
             message: 'Cập nhật thông tin thành công',
-            user: rows[0]
+            user: {
+                id: updatedUser.id,
+                username: updatedUser.username,
+                role: updatedUser.role,
+                email: updatedUser.email || null,
+                email_verified: updatedUser.email_verified ? Boolean(updatedUser.email_verified) : null,
+                full_name: updatedUser.full_name || null,
+                phone: updatedUser.phone || null,
+                address: updatedUser.address || null,
+                date_of_birth: updatedUser.date_of_birth || null,
+                avatar_url: updatedUser.avatar_url || null,
+                created_at: updatedUser.created_at
+            }
         });
 
     } catch (error) {
-        console.error('Lỗi khi cập nhật profile:', error);
-        res.status(500).json({ message: 'Lỗi máy chủ nội bộ' });
+        console.error('❌ Lỗi khi cập nhật profile:', error);
+        console.error('Error details:', {
+            message: error.message,
+            code: error.code,
+            sqlMessage: error.sqlMessage,
+            sqlState: error.sqlState
+        });
+        
+        res.status(500).json({ 
+            message: 'Lỗi máy chủ nội bộ',
+            error: error.message,
+            code: error.code || 'UNKNOWN_ERROR'
+        });
     }
 });
 

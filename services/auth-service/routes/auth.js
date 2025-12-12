@@ -110,7 +110,7 @@ router.get('/me', async (req, res) => {
         const decoded = jwt.verify(token, JWT_SECRET);
 
         const [rows] = await pool.query(
-            'SELECT id, username, role, created_at FROM users WHERE id = ?',
+            'SELECT * FROM users WHERE id = ?',
             [decoded.id]
         );
 
@@ -118,9 +118,31 @@ router.get('/me', async (req, res) => {
             return res.status(404).json({ message: 'User không tồn tại' });
         }
 
-        res.json({ user: rows[0] });
+        const user = rows[0];
+        
+        // Xử lý an toàn với các trường có thể không tồn tại
+        res.json({ 
+            user: {
+                id: user.id,
+                username: user.username,
+                role: user.role,
+                email: (user.email !== undefined) ? user.email : null,
+                email_verified: (user.email_verified !== undefined && user.email_verified !== null) ? Boolean(user.email_verified) : null,
+                google_id: (user.google_id !== undefined) ? user.google_id : null,
+                full_name: (user.full_name !== undefined) ? user.full_name : null,
+                phone: (user.phone !== undefined) ? user.phone : null,
+                address: (user.address !== undefined) ? user.address : null,
+                date_of_birth: (user.date_of_birth !== undefined) ? user.date_of_birth : null,
+                avatar_url: (user.avatar_url !== undefined) ? user.avatar_url : null,
+                created_at: user.created_at || user.createdAt || null
+            }
+        });
     } catch (error) {
-        res.status(401).json({ message: 'Token không hợp lệ' });
+        console.error('Lỗi khi lấy thông tin user:', error);
+        if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
+            return res.status(401).json({ message: 'Token không hợp lệ' });
+        }
+        res.status(500).json({ message: 'Lỗi máy chủ nội bộ', error: error.message });
     }
 });
 
@@ -139,31 +161,100 @@ router.put('/profile', async (req, res) => {
         const decoded = jwt.verify(token, JWT_SECRET);
         const userId = decoded.id;
 
-        const { username } = req.body;
+        const { username, full_name, phone, address, date_of_birth, avatar_url } = req.body;
 
-        if (!username || username.trim() === '') {
-            return res.status(400).json({ message: 'Username không được để trống' });
+        // Validation: Kiểm tra username nếu có
+        if (username !== undefined) {
+            if (!username || username.trim() === '') {
+                return res.status(400).json({ message: 'Username không được để trống' });
+            }
+
+            const [existingUsers] = await pool.query(
+                'SELECT id FROM users WHERE username = ? AND id != ?',
+                [username, userId]
+            );
+
+            if (existingUsers.length > 0) {
+                return res.status(409).json({ message: 'Username đã tồn tại' });
+            }
         }
 
-        const [existingUsers] = await pool.query(
-            'SELECT id FROM users WHERE username = ? AND id != ?',
-            [username, userId]
-        );
-
-        if (existingUsers.length > 0) {
-            return res.status(409).json({ message: 'Username đã tồn tại' });
+        // Validation: Kiểm tra phone format nếu có
+        if (phone !== undefined && phone !== null && phone.trim() !== '') {
+            const phoneDigits = phone.replace(/\D/g, '');
+            if (phoneDigits.length < 10 || phoneDigits.length > 11) {
+                return res.status(400).json({ message: 'Số điện thoại không hợp lệ (phải có 10-11 chữ số)' });
+            }
         }
 
-        await pool.query('UPDATE users SET username = ? WHERE id = ?', [username.trim(), userId]);
+        // Validation: Kiểm tra date_of_birth nếu có
+        if (date_of_birth !== undefined && date_of_birth !== null && date_of_birth !== '') {
+            const birthDate = new Date(date_of_birth);
+            const today = new Date();
+            if (birthDate > today) {
+                return res.status(400).json({ message: 'Ngày sinh không thể lớn hơn ngày hiện tại' });
+            }
+            const age = today.getFullYear() - birthDate.getFullYear();
+            if (age < 13 || age > 120) {
+                return res.status(400).json({ message: 'Ngày sinh không hợp lệ' });
+            }
+        }
 
-        const [rows] = await pool.query(
-            'SELECT id, username, role, created_at FROM users WHERE id = ?',
-            [userId]
-        );
+        // Xây dựng câu lệnh UPDATE động
+        const updateFields = [];
+        const updateValues = [];
+
+        if (username !== undefined) {
+            updateFields.push('username = ?');
+            updateValues.push(username.trim());
+        }
+        if (full_name !== undefined) {
+            updateFields.push('full_name = ?');
+            updateValues.push(full_name ? full_name.trim() : null);
+        }
+        if (phone !== undefined) {
+            updateFields.push('phone = ?');
+            updateValues.push(phone ? phone.trim() : null);
+        }
+        if (address !== undefined) {
+            updateFields.push('address = ?');
+            updateValues.push(address ? address.trim() : null);
+        }
+        if (date_of_birth !== undefined) {
+            updateFields.push('date_of_birth = ?');
+            updateValues.push(date_of_birth || null);
+        }
+        if (avatar_url !== undefined) {
+            updateFields.push('avatar_url = ?');
+            updateValues.push(avatar_url || null);
+        }
+
+        if (updateFields.length === 0) {
+            return res.status(400).json({ message: 'Không có thông tin nào để cập nhật' });
+        }
+
+        updateValues.push(userId);
+        const updateSQL = `UPDATE users SET ${updateFields.join(', ')} WHERE id = ?`;
+        await pool.query(updateSQL, updateValues);
+
+        const [rows] = await pool.query('SELECT * FROM users WHERE id = ?', [userId]);
+        const updatedUser = rows[0];
 
         res.json({
             message: 'Cập nhật thông tin thành công',
-            user: rows[0]
+            user: {
+                id: updatedUser.id,
+                username: updatedUser.username,
+                role: updatedUser.role,
+                email: updatedUser.email || null,
+                email_verified: updatedUser.email_verified ? Boolean(updatedUser.email_verified) : null,
+                full_name: updatedUser.full_name || null,
+                phone: updatedUser.phone || null,
+                address: updatedUser.address || null,
+                date_of_birth: updatedUser.date_of_birth || null,
+                avatar_url: updatedUser.avatar_url || null,
+                created_at: updatedUser.created_at
+            }
         });
     } catch (error) {
         console.error('Lỗi khi cập nhật profile:', error);

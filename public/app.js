@@ -1468,9 +1468,10 @@ async function loadProfile() {
                         <div class="col-lg-4">
                             <div class="card mb-4">
                                 <div class="card-body text-center">
-                                    <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(user.username)}&background=dc2626&color=fff&size=150" 
+                                    <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(user.full_name || user.username)}&background=dc2626&color=fff&size=150" 
                                         alt="avatar" class="rounded-circle img-fluid" style="width: 150px;">
-                                    <h5 class="my-3">${user.username}</h5>
+                                    <h5 class="my-3">${user.full_name || user.username}</h5>
+                                    ${user.full_name ? `<p class="text-muted mb-1">@${user.username}</p>` : ''}
                                     <p class="text-muted mb-1">
                                         <span class="px-3 py-1 rounded-full text-white text-sm ${roleBadgeColor}">${roleDisplay}</span>
                                     </p>
@@ -1558,6 +1559,42 @@ async function loadProfile() {
                                             <p class="text-muted mb-0">${createdDate}</p>
                                         </div>
                                     </div>
+                                    <hr>
+                                    <div class="row">
+                                        <div class="col-sm-3">
+                                            <p class="mb-0">Họ và tên</p>
+                                        </div>
+                                        <div class="col-sm-9">
+                                            <p class="text-muted mb-0">${user.full_name || 'Chưa cập nhật'}</p>
+                                        </div>
+                                    </div>
+                                    <hr>
+                                    <div class="row">
+                                        <div class="col-sm-3">
+                                            <p class="mb-0">Số điện thoại</p>
+                                        </div>
+                                        <div class="col-sm-9">
+                                            <p class="text-muted mb-0">${user.phone || 'Chưa cập nhật'}</p>
+                                        </div>
+                                    </div>
+                                    <hr>
+                                    <div class="row">
+                                        <div class="col-sm-3">
+                                            <p class="mb-0">Địa chỉ</p>
+                                        </div>
+                                        <div class="col-sm-9">
+                                            <p class="text-muted mb-0">${user.address || 'Chưa cập nhật'}</p>
+                                        </div>
+                                    </div>
+                                    <hr>
+                                    <div class="row">
+                                        <div class="col-sm-3">
+                                            <p class="mb-0">Ngày sinh</p>
+                                        </div>
+                                        <div class="col-sm-9">
+                                            <p class="text-muted mb-0">${user.date_of_birth ? new Date(user.date_of_birth).toLocaleDateString('vi-VN') : 'Chưa cập nhật'}</p>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                             
@@ -1567,8 +1604,8 @@ async function loadProfile() {
                                         <div class="card-body">
                                             <h5 class="mb-4"><span class="text-primary font-italic me-1">Cài đặt</span> Tài khoản</h5>
                                             <div class="mb-3">
-                                                <button onclick="showEditUsername()" class="btn btn-outline-primary btn-sm w-100">
-                                                    <i class="fas fa-edit mr-2"></i>Cập nhật tên đăng nhập
+                                                <button onclick="showEditProfile()" class="btn btn-outline-primary btn-sm w-100">
+                                                    <i class="fas fa-edit mr-2"></i>Cập nhật thông tin
                                                 </button>
                                             </div>
                                             <div class="mb-3">
@@ -1604,21 +1641,54 @@ async function loadProfile() {
                 </div>
             </section>
             
-            <!-- Edit Username Modal -->
-            <div id="editUsernameModal" class="modal hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-                <div class="modal-content bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <!-- Edit Profile Modal -->
+            <div id="editProfileModal" class="modal hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center" style="overflow-y: auto;">
+                <div class="modal-content bg-white rounded-lg p-6 max-w-2xl w-full mx-4 my-8">
                     <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-2xl font-bold text-gray-800">Cập nhật tên đăng nhập</h2>
-                        <button onclick="closeEditModal()" class="text-gray-500 hover:text-gray-700">&times;</button>
+                        <h2 class="text-2xl font-bold text-gray-800">Cập nhật thông tin cá nhân</h2>
+                        <button onclick="closeEditModal()" class="text-gray-500 hover:text-gray-700 text-3xl">&times;</button>
                     </div>
-                    <div class="mb-4">
-                        <label class="block text-gray-700 text-sm font-bold mb-2">Tên đăng nhập mới</label>
-                        <input type="text" id="profileUsername" value="${user.username}" 
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-red-500" required>
-                    </div>
-                    <button onclick="updateProfile()" class="w-full bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 transition-colors font-bold">
-                        Cập nhật
-                    </button>
+                    <form onsubmit="updateProfile(event)">
+                        <div class="mb-4">
+                            <label class="block text-gray-700 text-sm font-bold mb-2">Tên đăng nhập</label>
+                            <input type="text" id="profileUsername" value="${user.username}" 
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-red-500" required>
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-gray-700 text-sm font-bold mb-2">Họ và tên</label>
+                            <input type="text" id="profileFullName" value="${user.full_name || ''}" 
+                                placeholder="Nhập họ và tên đầy đủ"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-red-500">
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-gray-700 text-sm font-bold mb-2">Số điện thoại</label>
+                            <input type="tel" id="profilePhone" value="${user.phone || ''}" 
+                                placeholder="Nhập số điện thoại (10-11 chữ số)"
+                                pattern="[0-9]{10,11}"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-red-500">
+                            <p class="text-xs text-gray-500 mt-1">Ví dụ: 0912345678 hoặc 0123456789</p>
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-gray-700 text-sm font-bold mb-2">Địa chỉ</label>
+                            <textarea id="profileAddress" rows="3" 
+                                placeholder="Nhập địa chỉ của bạn"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-red-500">${user.address || ''}</textarea>
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-gray-700 text-sm font-bold mb-2">Ngày sinh</label>
+                            <input type="date" id="profileDateOfBirth" value="${user.date_of_birth || ''}" 
+                                max="${new Date().toISOString().split('T')[0]}"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-red-500">
+                        </div>
+                        <div class="flex gap-2">
+                            <button type="button" onclick="closeEditModal()" class="flex-1 bg-gray-300 text-gray-800 py-2 rounded-lg hover:bg-gray-400 transition-colors font-bold">
+                                Hủy
+                            </button>
+                            <button type="submit" class="flex-1 bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 transition-colors font-bold">
+                                Cập nhật
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
             
@@ -1667,18 +1737,23 @@ async function loadProfile() {
 }
 
 function editProfile() {
-    showEditUsername();
+    showEditProfile();
 }
 
-function showEditUsername() {
-    const modal = document.getElementById('editUsernameModal');
+function showEditProfile() {
+    const modal = document.getElementById('editProfileModal');
     if (modal) {
         modal.classList.remove('hidden');
     }
 }
 
+function showEditUsername() {
+    // Giữ lại để tương thích, nhưng sẽ mở modal chỉnh sửa đầy đủ
+    showEditProfile();
+}
+
 function closeEditModal() {
-    const modal = document.getElementById('editUsernameModal');
+    const modal = document.getElementById('editProfileModal');
     if (modal) {
         modal.classList.add('hidden');
     }
@@ -1702,18 +1777,44 @@ function closePasswordModal() {
     }
 }
 
-async function updateProfile() {
+async function updateProfile(event) {
+    if (event) {
+        event.preventDefault();
+    }
+    
     const username = document.getElementById('profileUsername').value.trim();
+    const full_name = document.getElementById('profileFullName').value.trim();
+    const phone = document.getElementById('profilePhone').value.trim();
+    const address = document.getElementById('profileAddress').value.trim();
+    const date_of_birth = document.getElementById('profileDateOfBirth').value;
+    
     if (!username) {
         showToast('Tên đăng nhập không được để trống', 'error');
         return;
     }
     
+    // Validation phone
+    if (phone && phone.trim() !== '') {
+        const phoneDigits = phone.replace(/\D/g, '');
+        if (phoneDigits.length < 10 || phoneDigits.length > 11) {
+            showToast('Số điện thoại không hợp lệ (phải có 10-11 chữ số)', 'error');
+            return;
+        }
+    }
+    
     try {
         showLoading();
+        const updateData = {
+            username,
+            full_name: full_name || null,
+            phone: phone || null,
+            address: address || null,
+            date_of_birth: date_of_birth || null
+        };
+        
         await apiCall('/profile', {
             method: 'PUT',
-            body: JSON.stringify({ username })
+            body: JSON.stringify(updateData)
         });
         showToast('Cập nhật thông tin thành công!', 'success');
         closeEditModal();
@@ -1770,17 +1871,20 @@ async function loadCategoriesPage() {
             return;
         }
 
-        content.innerHTML = data.categories.map(cat => `
+        content.innerHTML = data.categories.map(cat => {
+            const route = cat.route || 'products';
+            return `
             <div 
                 class="category-card bg-white rounded-lg shadow-md p-6 text-center cursor-pointer hover:shadow-lg transition-shadow animate-fade-in"
-                onclick="viewCategoryProducts('${cat.name}')"
+                onclick="navigateTo('${route}')"
             >
-                <div class="text-4xl mb-3">📦</div>
+                <div class="text-4xl mb-3">${cat.icon || '📦'}</div>
                 <h3 class="font-bold text-gray-800 mb-2">${cat.name}</h3>
                 <div class="text-sm text-gray-500 mb-2">${cat.product_count || 0} sản phẩm</div>
                 ${cat.description ? `<p class="text-xs text-gray-600 mt-2">${cat.description}</p>` : ''}
             </div>
-        `).join('');
+        `;
+        }).join('');
     } catch (error) {
         document.getElementById('categoriesList').innerHTML = 
             `<div class="empty-state">Lỗi khi tải danh mục: ${error.message}</div>`;

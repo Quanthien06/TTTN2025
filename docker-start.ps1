@@ -8,15 +8,66 @@ Write-Host ""
 
 # Kiểm tra Docker
 Write-Host "Đang kiểm tra Docker..." -ForegroundColor Yellow
+
+# Kiểm tra Docker command có tồn tại không
 try {
-    $dockerVersion = docker --version
+    $dockerVersion = docker --version 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        throw "Docker command failed"
+    }
     Write-Host "✓ Docker: $dockerVersion" -ForegroundColor Green
     
-    $composeVersion = docker-compose --version
+    $composeVersion = docker-compose --version 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        throw "Docker Compose command failed"
+    }
     Write-Host "✓ Docker Compose: $composeVersion" -ForegroundColor Green
 } catch {
-    Write-Host "✗ Docker chưa được cài đặt hoặc chưa chạy!" -ForegroundColor Red
-    Write-Host "Vui lòng cài đặt Docker Desktop và khởi động lại." -ForegroundColor Red
+    Write-Host "✗ Docker chưa được cài đặt!" -ForegroundColor Red
+    Write-Host "Vui lòng cài đặt Docker Desktop từ: https://www.docker.com/products/docker-desktop" -ForegroundColor Red
+    exit 1
+}
+
+# Kiểm tra Docker Desktop có đang chạy không
+Write-Host "Đang kiểm tra Docker Desktop..." -ForegroundColor Yellow
+try {
+    $dockerInfo = docker info 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        # Kiểm tra xem có phải lỗi kết nối không
+        if ($dockerInfo -match "error during connect" -or $dockerInfo -match "Cannot connect" -or $dockerInfo -match "dockerDesktopLinuxEngine") {
+            Write-Host "✗ Docker Desktop chưa chạy!" -ForegroundColor Red
+            Write-Host ""
+            Write-Host "Các bước khắc phục:" -ForegroundColor Yellow
+            Write-Host "1. Mở Docker Desktop từ Start Menu" -ForegroundColor White
+            Write-Host "2. Đợi Docker Desktop khởi động hoàn toàn (biểu tượng Docker ở system tray)" -ForegroundColor White
+            Write-Host "3. Chạy lại script này" -ForegroundColor White
+            Write-Host ""
+            
+            # Kiểm tra xem Docker Desktop process có tồn tại không
+            $dockerProcess = Get-Process -Name "Docker Desktop" -ErrorAction SilentlyContinue
+            if ($dockerProcess) {
+                Write-Host "⚠ Docker Desktop process đã được tìm thấy nhưng chưa sẵn sàng." -ForegroundColor Yellow
+                Write-Host "   Vui lòng đợi Docker Desktop khởi động hoàn toàn." -ForegroundColor Yellow
+            } else {
+                Write-Host "⚠ Docker Desktop không chạy. Đang thử khởi động..." -ForegroundColor Yellow
+                $dockerDesktopPath = "${env:ProgramFiles}\Docker\Docker\Docker Desktop.exe"
+                if (Test-Path $dockerDesktopPath) {
+                    Write-Host "   Đang khởi động Docker Desktop..." -ForegroundColor Yellow
+                    Start-Process $dockerDesktopPath
+                    Write-Host "   Vui lòng đợi Docker Desktop khởi động (30-60 giây) và chạy lại script." -ForegroundColor Yellow
+                } else {
+                    Write-Host "   Không tìm thấy Docker Desktop. Vui lòng cài đặt từ:" -ForegroundColor Yellow
+                    Write-Host "   https://www.docker.com/products/docker-desktop" -ForegroundColor Cyan
+                }
+            }
+            exit 1
+        } else {
+            throw $dockerInfo
+        }
+    }
+    Write-Host "✓ Docker Desktop đang chạy" -ForegroundColor Green
+} catch {
+    Write-Host "✗ Lỗi khi kiểm tra Docker: $_" -ForegroundColor Red
     exit 1
 }
 
@@ -69,11 +120,25 @@ switch ($choice) {
         Write-Host ""
         Write-Host "Đang build và chạy tất cả services..." -ForegroundColor Yellow
         docker-compose up --build
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host ""
+            Write-Host "✗ Lỗi khi build/khởi động services!" -ForegroundColor Red
+            Write-Host "Kiểm tra Docker Desktop có đang chạy không." -ForegroundColor Yellow
+        }
     }
     "2" {
         Write-Host ""
         Write-Host "Đang chạy services ở background..." -ForegroundColor Yellow
         docker-compose up -d
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host ""
+            Write-Host "✗ Lỗi khi khởi động services!" -ForegroundColor Red
+            if ($LASTEXITCODE -eq 1) {
+                Write-Host "Kiểm tra Docker Desktop có đang chạy không." -ForegroundColor Yellow
+                Write-Host "Thử chạy: docker-compose ps" -ForegroundColor Gray
+            }
+            exit 1
+        }
         Write-Host ""
         Write-Host "✓ Services đã khởi động!" -ForegroundColor Green
         Write-Host "Truy cập: http://localhost:5000" -ForegroundColor Cyan
@@ -87,6 +152,10 @@ switch ($choice) {
         Write-Host "Nhấn Ctrl+C để dừng" -ForegroundColor Gray
         Write-Host ""
         docker-compose up
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host ""
+            Write-Host "✗ Lỗi khi khởi động services!" -ForegroundColor Red
+        }
     }
     "4" {
         Write-Host ""

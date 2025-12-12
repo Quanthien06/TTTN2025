@@ -14,27 +14,53 @@ router.get('/', async (req, res) => {
     const pool = req.app.locals.pool;
 
     try {
-        // Query lấy danh sách categories kèm số lượng sản phẩm mỗi danh mục
-        // LEFT JOIN: Lấy tất cả categories, kể cả không có sản phẩm
-        // COUNT(p.id): Đếm số sản phẩm trong mỗi category
-        // GROUP BY: Nhóm theo category id để tính toán COUNT
-        const [rows] = await pool.query(
-            `SELECT 
-                c.*,
-                COUNT(p.id) as product_count
-            FROM categories c
-            LEFT JOIN products p ON p.category = c.name
-            GROUP BY c.id
-            ORDER BY c.name ASC`
+        // Danh sách các category chính theo navigation (chỉ lấy các mục này)
+        const mainCategories = [
+            { name: 'Điện thoại, Tablet', icon: '📱', route: 'phone-tablet' },
+            { name: 'Laptop', icon: '💻', route: 'laptop' },
+            { name: 'Âm thanh, Mic thu âm', icon: '🎵', route: 'audio' },
+            { name: 'Đồng hồ, Camera', icon: '📷', route: 'watch-camera' },
+            { name: 'Phụ kiện', icon: '🔌', route: 'accessories' },
+            { name: 'PC, Màn hình, Máy in', icon: '🖥️', route: 'pc-monitor-printer' }
+        ];
+
+        // Lấy số lượng sản phẩm cho từng category chính
+        const categories = await Promise.all(
+            mainCategories.map(async (mainCat) => {
+                // Đếm số sản phẩm thuộc category này
+                // Lưu ý: products.category có thể chứa tên category chính hoặc sub-category
+                const categoryNames = [mainCat.name];
+                
+                // Thêm các sub-category nếu có
+                if (mainCat.name === 'Điện thoại, Tablet') {
+                    categoryNames.push('Điện thoại', 'Tablet', 'Phụ kiện điện thoại');
+                } else if (mainCat.name === 'PC, Màn hình, Máy in') {
+                    categoryNames.push('PC', 'Màn hình', 'Máy in', 'Máy tính để bàn', 'Linh kiện PC');
+                } else if (mainCat.name === 'Laptop') {
+                    categoryNames.push('Laptop Apple', 'Laptop Asus', 'Laptop Dell', 'Laptop Gaming', 'Laptop HP', 'Laptop Lenovo', 'Laptop Văn phòng');
+                }
+
+                // Tạo placeholders cho IN clause
+                const placeholders = categoryNames.map(() => '?').join(',');
+                const [productCountRows] = await pool.query(
+                    `SELECT COUNT(*) as count FROM products WHERE category IN (${placeholders})`,
+                    categoryNames
+                );
+
+                const product_count = parseInt(productCountRows[0]?.count || 0);
+
+                return {
+                    id: mainCategories.indexOf(mainCat) + 1,
+                    name: mainCat.name,
+                    slug: mainCat.route,
+                    product_count: product_count,
+                    icon: mainCat.icon,
+                    route: mainCat.route
+                };
+            })
         );
 
-        // Format dữ liệu - chuyển product_count sang số nguyên
-        const categories = rows.map(cat => ({
-            ...cat,
-            product_count: parseInt(cat.product_count || 0)
-        }));
-
-        // Trả về danh sách categories
+        // Trả về danh sách categories chính
         res.json({ categories });
 
     } catch (error) {

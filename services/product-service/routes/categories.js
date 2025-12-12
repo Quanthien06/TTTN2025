@@ -4,43 +4,56 @@
 const express = require('express');
 const router = express.Router();
 
-// GET /categories - Lấy danh sách categories từ products
+// GET /categories - Lấy danh sách categories chính theo navigation
 router.get('/', async (req, res) => {
     const pool = req.app.locals.pool;
 
     try {
-        // Lấy các category unique từ bảng products với số lượng sản phẩm
-        const [rows] = await pool.query(
-            `SELECT 
-                category as name,
-                COUNT(*) as product_count
-            FROM products
-            WHERE category IS NOT NULL AND category != ''
-            GROUP BY category
-            ORDER BY category ASC`
+        // Danh sách các category chính theo navigation (chỉ lấy các mục này)
+        const mainCategories = [
+            { name: 'Điện thoại, Tablet', icon: '📱', route: 'phone-tablet' },
+            { name: 'Laptop', icon: '💻', route: 'laptop' },
+            { name: 'Âm thanh, Mic thu âm', icon: '🎵', route: 'audio' },
+            { name: 'Đồng hồ, Camera', icon: '📷', route: 'watch-camera' },
+            { name: 'Phụ kiện', icon: '🔌', route: 'accessories' },
+            { name: 'PC, Màn hình, Máy in', icon: '🖥️', route: 'pc-monitor-printer' }
+        ];
+
+        // Lấy số lượng sản phẩm cho từng category chính
+        const categories = await Promise.all(
+            mainCategories.map(async (mainCat) => {
+                // Đếm số sản phẩm thuộc category này
+                // Lưu ý: products.category có thể chứa tên category chính hoặc sub-category
+                const categoryNames = [mainCat.name];
+                
+                // Thêm các sub-category nếu có
+                if (mainCat.name === 'Điện thoại, Tablet') {
+                    categoryNames.push('Điện thoại', 'Tablet', 'Phụ kiện điện thoại');
+                } else if (mainCat.name === 'PC, Màn hình, Máy in') {
+                    categoryNames.push('PC', 'Màn hình', 'Máy in', 'Máy tính để bàn', 'Linh kiện PC');
+                } else if (mainCat.name === 'Laptop') {
+                    categoryNames.push('Laptop Apple', 'Laptop Asus', 'Laptop Dell', 'Laptop Gaming', 'Laptop HP', 'Laptop Lenovo', 'Laptop Văn phòng');
+                }
+
+                // Tạo placeholders cho IN clause
+                const placeholders = categoryNames.map(() => '?').join(',');
+                const [productCountRows] = await pool.query(
+                    `SELECT COUNT(*) as count FROM products WHERE category IN (${placeholders})`,
+                    categoryNames
+                );
+
+                const product_count = parseInt(productCountRows[0]?.count || 0);
+
+                return {
+                    id: mainCategories.indexOf(mainCat) + 1,
+                    name: mainCat.name,
+                    slug: mainCat.route,
+                    product_count: product_count,
+                    icon: mainCat.icon,
+                    route: mainCat.route
+                };
+            })
         );
-
-        // Map category names với icons và route
-        const categoryConfig = {
-            'Điện thoại, Tablet': { icon: '📱', route: 'phone-tablet' },
-            'Laptop': { icon: '💻', route: 'laptop' },
-            'Âm thanh, Mic thu âm': { icon: '🎵', route: 'audio' },
-            'Đồng hồ, Camera': { icon: '📷', route: 'watch-camera' },
-            'Phụ kiện': { icon: '🔌', route: 'accessories' },
-            'PC, Màn hình, Máy in': { icon: '🖥️', route: 'pc-monitor-printer' }
-        };
-
-        const categories = rows.map((row, index) => {
-            const config = categoryConfig[row.name] || { icon: '📦', route: 'products' };
-            return {
-                id: index + 1,
-                name: row.name,
-                slug: config.route,
-                product_count: parseInt(row.product_count || 0),
-                icon: config.icon,
-                route: config.route
-            };
-        });
 
         res.json({ categories });
     } catch (error) {
