@@ -497,56 +497,18 @@
                 this.onerror = null;
             };
 
-            // Thumbnail images - load từ database images field (đã được format đúng)
+            // Thumbnail images - luôn hiển thị 4 thumbnails (1.jpg, 2.jpg, 3.jpg, 4.jpg)
             const thumbnailContainer = document.getElementById('thumbnailImages');
             
-            // Parse images từ database (đã được format thành array chứa /img/products/[slug]/2.jpg, 3.jpg, 4.jpg)
-            let thumbnailImages = [];
+            // Luôn có 4 thumbnails: 1.jpg, 2.jpg, 3.jpg, 4.jpg
+            const thumbnailImages = [
+                `${basePath}/1.jpg`,
+                `${basePath}/2.jpg`,
+                `${basePath}/3.jpg`,
+                `${basePath}/4.jpg`
+            ];
             
-            // Thêm main image (1.jpg) vào đầu
-            const mainImagePath = `${basePath}/1.jpg`;
-            thumbnailImages.push(mainImagePath);
-            
-            console.log('Base path:', basePath);
-            console.log('Product images (raw):', product.images);
-            console.log('Product images type:', typeof product.images);
-            
-            // Thêm các ảnh từ database images field (đã được format đúng)
-            if (product.images) {
-                try {
-                    let dbImagesArray;
-                    if (typeof product.images === 'string') {
-                        dbImagesArray = JSON.parse(product.images);
-                    } else if (Array.isArray(product.images)) {
-                        dbImagesArray = product.images;
-                    } else {
-                        dbImagesArray = [];
-                    }
-                    
-                    console.log('Parsed images array:', dbImagesArray);
-                    
-                    if (Array.isArray(dbImagesArray) && dbImagesArray.length > 0) {
-                        thumbnailImages = thumbnailImages.concat(dbImagesArray);
-                        console.log('Added images from database:', dbImagesArray.length);
-                    }
-                } catch (e) {
-                    console.error('Error parsing images:', e);
-                }
-            }
-            
-            // Nếu không có ảnh từ database, thử load từ folder structure
-            if (thumbnailImages.length === 1) {
-                console.log('No images from database, trying folder structure');
-                // Chỉ có main image, thử thêm 2.jpg, 3.jpg, 4.jpg
-                for (let i = 2; i <= 4; i++) {
-                    thumbnailImages.push(`${basePath}/${i}.jpg`);
-                }
-            }
-            
-            console.log('Final thumbnail images to render:', thumbnailImages);
-            console.log('Total thumbnails:', thumbnailImages.length);
-            
-            // Render thumbnails - ẩn nếu ảnh không load được
+            // Render 4 thumbnails - ẩn nếu ảnh không load được
             thumbnailContainer.innerHTML = thumbnailImages.map((img, idx) => `
                 <div 
                     class="product-thumbnail ${idx === 0 ? 'active' : ''} bg-gray-100 rounded-lg overflow-hidden aspect-square cursor-pointer"
@@ -557,8 +519,8 @@
                         src="${img}" 
                         alt="Thumbnail ${idx + 1}" 
                         class="w-full h-full object-cover"
-                        onerror="console.log('Image failed to load:', '${img}'); this.parentElement.style.display='none';"
-                        onload="console.log('Image loaded:', '${img}'); this.parentElement.style.display='block';"
+                        onerror="this.parentElement.style.display='none';"
+                        onload="this.parentElement.style.display='block';"
                     />
                 </div>
             `).join('');

@@ -19,7 +19,8 @@ if ($connections) {
         }
         Write-Host ""
         
-        $confirm = Read-Host "Ban co muon dung va restart server? (y/n)"
+        # Auto confirm để restart nhanh
+        $confirm = "y"
         if ($confirm -eq "y" -or $confirm -eq "Y") {
             foreach ($proc in $processes) {
                 try {

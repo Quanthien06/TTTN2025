@@ -63,8 +63,6 @@ app.use(passport.session());
 
 // Middleware giúp Express đọc dữ liệu JSON
 app.use(express.json());
-// Phục vụ file tĩnh trong thư mục public
-app.use(express.static(path.join(__dirname, 'public')));
 
 // 2. Tạo một "Connection Pool" (Bể kết nối)
 const pool = mysql.createPool({
@@ -104,11 +102,20 @@ const htmlPageRoutes = new Set([
     'news-detail', 'news-details'
 ]);
 
+// Serve static files từ public folder
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Route cho các trang HTML - phải đặt SAU static files
 app.get('/:page.html', (req, res, next) => {
     const page = req.params.page;
     if (htmlPageRoutes.has(page)) {
         const target = page === 'home' ? '/' : `/?page=${page}`;
         return res.redirect(target);
+    }
+    // Nếu không phải route đặc biệt, serve file HTML trực tiếp
+    const filePath = path.join(__dirname, 'public', `${page}.html`);
+    if (require('fs').existsSync(filePath)) {
+        return res.sendFile(filePath);
     }
     next();
 });
