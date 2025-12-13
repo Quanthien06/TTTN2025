@@ -915,6 +915,38 @@ async function loadNews() {
     }
 }
 
+// Tạo slug từ tên sản phẩm (dùng chung cho cả app.js và product-details.html)
+function createSlug(name) {
+    if (!name) return '';
+    return name
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .trim();
+}
+
+// Lấy ảnh sản phẩm từ folder structure hoặc database
+function getProductImage(product) {
+    // Tạo slug từ tên sản phẩm
+    const slug = product.slug || createSlug(product.name);
+    const basePath = `/img/products/${slug}`;
+    
+    // Ưu tiên load từ folder structure: /img/products/[slug]/1.jpg
+    const folderImage = `${basePath}/1.jpg`;
+    
+    // Fallback về database nếu folder không có ảnh
+    const fallbackImage = product.main_image_url || product.image_url || product.image || '/img/placeholder.png';
+    
+    // Trả về cả 2 để xử lý onerror
+    return {
+        primary: folderImage,
+        fallback: fallbackImage
+    };
+}
+
 function renderProducts(products, container) {
     if (container) {
         container.className = 'products-grid grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6';
@@ -935,8 +967,10 @@ function renderProducts(products, container) {
         const productSlug = product.slug || `product-${product.id}`;
         const productDetailUrl = `/product-details.html?slug=${encodeURIComponent(productSlug)}`;
         
-        // Sử dụng main_image_url nếu có, không thì dùng image_url hoặc image
-        const mainImage = product.main_image_url || product.image_url || product.image || '/img/placeholder.png';
+        // Lấy ảnh từ folder structure hoặc database
+        const imageData = getProductImage(product);
+        const mainImage = imageData.primary;
+        const fallbackImage = imageData.fallback;
 
         return `
         <a href="${productDetailUrl}" 
@@ -953,7 +987,7 @@ function renderProducts(products, container) {
                     alt="${product.name}"
                     loading="lazy"
                     class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                    onerror="this.src='/img/placeholder.png'"
+                    onerror="this.src='${fallbackImage}'; this.onerror=null;"
                 />
             </div>
             <div class="body p-4 flex flex-col flex-1">

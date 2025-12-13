@@ -36,6 +36,12 @@
         .product-thumbnail.active {
             border-color: #dc2626;
         }
+        .tab-button {
+            transition: all 0.3s ease;
+        }
+        .tab-content {
+            min-height: 200px;
+        }
     </style>
 </head>
 <body class="bg-gray-50">
@@ -126,10 +132,53 @@
                             <span id="productOriginalPrice" class="hidden text-xl text-gray-400 line-through"></span>
                         </div>
 
-                        <!-- Description -->
-                        <div>
-                            <h3 class="text-lg font-semibold text-gray-900 mb-2">Mô tả sản phẩm</h3>
-                            <p id="productDescription" class="text-gray-700 leading-relaxed"></p>
+                        <!-- Product Tabs -->
+                        <div class="mt-8 border-t pt-6">
+                            <div class="flex border-b mb-4">
+                                <button 
+                                    onclick="switchTab('details')" 
+                                    id="tabDetails"
+                                    class="tab-button px-6 py-3 font-semibold text-gray-700 border-b-2 border-red-600 text-red-600"
+                                >
+                                    Details
+                                </button>
+                                <button 
+                                    onclick="switchTab('info')" 
+                                    id="tabInfo"
+                                    class="tab-button px-6 py-3 font-semibold text-gray-500 hover:text-gray-700"
+                                >
+                                    Info
+                                </button>
+                                <button 
+                                    onclick="switchTab('rating')" 
+                                    id="tabRating"
+                                    class="tab-button px-6 py-3 font-semibold text-gray-500 hover:text-gray-700"
+                                >
+                                    Rating
+                                </button>
+                            </div>
+
+                            <!-- Tab Content: Details -->
+                            <div id="tabContentDetails" class="tab-content">
+                                <h3 class="text-lg font-semibold text-gray-900 mb-2">Mô tả sản phẩm</h3>
+                                <p id="productDescription" class="text-gray-700 leading-relaxed"></p>
+                            </div>
+
+                            <!-- Tab Content: Info (Technical Specifications) -->
+                            <div id="tabContentInfo" class="tab-content hidden">
+                                <h3 class="text-lg font-semibold text-gray-900 mb-4">Thông tin kỹ thuật</h3>
+                                <div id="productSpecs" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <!-- Technical specs will be loaded here -->
+                                </div>
+                            </div>
+
+                            <!-- Tab Content: Rating -->
+                            <div id="tabContentRating" class="tab-content hidden">
+                                <h3 class="text-lg font-semibold text-gray-900 mb-4">Đánh giá sản phẩm</h3>
+                                <div id="ratingSummary" class="mb-6">
+                                    <!-- Rating summary will be loaded here -->
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Stock Status -->
@@ -189,6 +238,92 @@
                             </button>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <!-- Related Products Section (Shopee Style) -->
+            <div class="mt-12">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-2xl font-bold text-gray-900">CÓ THỂ BẠN CŨNG THÍCH</h2>
+                </div>
+                <div id="relatedProducts" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                    <!-- Related products will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Rating & Reviews Section (Shopee Style) -->
+            <div class="mt-12 bg-white rounded-lg shadow-lg p-6">
+                <h2 class="text-2xl font-bold text-gray-900 mb-6">ĐÁNH GIÁ SẢN PHẨM</h2>
+                
+                <!-- Rating Summary -->
+                <div id="ratingSummaryHeader" class="mb-6 pb-6 border-b">
+                    <div class="flex items-center gap-8">
+                        <div class="text-center">
+                            <div class="text-5xl font-bold text-red-600 mb-2" id="averageRating">0</div>
+                            <div class="text-red-600 text-2xl mb-2" id="ratingStars">★★★★★</div>
+                            <div class="text-sm text-gray-500" id="totalReviews">0 đánh giá</div>
+                        </div>
+                        <div class="flex-1">
+                            <!-- Rating filters will be loaded here -->
+                            <div id="ratingFilters" class="flex flex-wrap gap-2">
+                                <!-- Filters will be dynamically loaded -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Comment Form (only if logged in) -->
+                <div id="commentFormContainer" class="hidden mb-8 border-b pb-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Viết đánh giá của bạn</h3>
+                    <form id="commentForm" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Đánh giá (sao)</label>
+                            <div class="flex items-center gap-2">
+                                <select id="commentRating" class="border rounded-lg px-3 py-2 focus:ring-2 focus:ring-red-500 focus:border-red-500">
+                                    <option value="5">5 sao - Tuyệt vời</option>
+                                    <option value="4">4 sao - Tốt</option>
+                                    <option value="3">3 sao - Bình thường</option>
+                                    <option value="2">2 sao - Không tốt</option>
+                                    <option value="1">1 sao - Rất tệ</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Bình luận</label>
+                            <textarea 
+                                id="commentText" 
+                                rows="4" 
+                                class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                                placeholder="Chia sẻ trải nghiệm của bạn về sản phẩm này..."
+                                required
+                            ></textarea>
+                        </div>
+                        <button 
+                            type="submit" 
+                            class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg transition-colors"
+                        >
+                            <i class="fas fa-paper-plane mr-2"></i>
+                            Gửi đánh giá
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Login prompt (if not logged in) -->
+                <div id="loginPrompt" class="mb-8 border-b pb-6">
+                    <p class="text-gray-600 mb-4">Vui lòng <a href="/login.html" class="text-red-600 hover:underline font-semibold">đăng nhập</a> để viết đánh giá.</p>
+                </div>
+
+                <!-- Comments List -->
+                <div id="commentsList" class="space-y-6">
+                    <div class="text-center text-gray-500 py-8">
+                        <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
+                        <p>Đang tải bình luận...</p>
+                    </div>
+                </div>
+
+                <!-- Pagination -->
+                <div id="commentsPagination" class="mt-6 flex justify-center items-center gap-2">
+                    <!-- Pagination will be loaded here -->
                 </div>
             </div>
         </div>
@@ -277,24 +412,56 @@
             document.getElementById('loadingState').classList.add('hidden');
             document.getElementById('productDetails').classList.remove('hidden');
 
-            // Parse images
-            let images = [];
+            // Parse images từ database
+            let dbImages = [];
             if (product.images) {
                 try {
-                    images = typeof product.images === 'string' ? JSON.parse(product.images) : product.images;
+                    dbImages = typeof product.images === 'string' ? JSON.parse(product.images) : product.images;
                 } catch (e) {
-                    images = [];
+                    dbImages = [];
                 }
             }
             
-            // Main image
-            const mainImage = product.main_image_url || product.image_url || product.image || '/img/placeholder.png';
+            // Load ảnh từ folder structure: /img/products/[slug]/1.jpg, 2.jpg, 3.jpg, 4.jpg
+            const slug = product.slug || createSlug(product.name);
+            const basePath = `/img/products/${slug}`;
+            
+            // Tạo danh sách ảnh từ folder structure (ưu tiên)
+            const folderImages = [
+                `${basePath}/1.jpg`,
+                `${basePath}/2.jpg`,
+                `${basePath}/3.jpg`,
+                `${basePath}/4.jpg`
+            ];
+            
+            // Fallback về database nếu folder không có ảnh
+            const fallbackMainImage = product.main_image_url || product.image_url || product.image || '/img/placeholder.png';
+            const fallbackImages = [fallbackMainImage, ...dbImages].slice(0, 4);
+            
+            // Sử dụng ảnh từ folder, fallback về database nếu không có
+            const mainImage = folderImages[0];
+            const allImages = folderImages;
+            
+            // Sử dụng ảnh từ folder, nếu không có thì dùng fallback
             document.getElementById('mainProductImage').src = mainImage;
             document.getElementById('mainProductImage').alt = product.name;
+            document.getElementById('mainProductImage').onerror = function() {
+                // Nếu ảnh từ folder không load được, dùng ảnh từ database
+                this.src = fallbackMainImage;
+                // Cập nhật thumbnails
+                const thumbnailContainer = document.getElementById('thumbnailImages');
+                thumbnailContainer.innerHTML = fallbackImages.map((img, index) => `
+                    <div 
+                        class="product-thumbnail ${index === 0 ? 'active' : ''} bg-gray-100 rounded-lg overflow-hidden aspect-square cursor-pointer"
+                        onclick="changeMainImage('${img}', ${index})"
+                    >
+                        <img src="${img}" alt="Thumbnail ${index + 1}" class="w-full h-full object-cover" />
+                    </div>
+                `).join('');
+            };
 
             // Thumbnail images
             const thumbnailContainer = document.getElementById('thumbnailImages');
-            const allImages = [mainImage, ...images].slice(0, 4); // Tối đa 4 ảnh
             
             thumbnailContainer.innerHTML = allImages.map((img, index) => `
                 <div 
@@ -342,14 +509,32 @@
             if (currentUser) {
                 document.getElementById('addToCartBtn').classList.remove('hidden');
                 document.getElementById('loginToBuyBtn').classList.add('hidden');
+                document.getElementById('commentFormContainer').classList.remove('hidden');
+                document.getElementById('loginPrompt').classList.add('hidden');
             } else {
                 document.getElementById('addToCartBtn').classList.add('hidden');
                 document.getElementById('loginToBuyBtn').classList.remove('hidden');
+                document.getElementById('commentFormContainer').classList.add('hidden');
+                document.getElementById('loginPrompt').classList.remove('hidden');
             }
+
+            // Load product specs and related products
+            loadProductSpecs(product);
+            loadRelatedProducts(product);
+            loadComments(product.id);
         }
 
-        function changeMainImage(imageUrl, index) {
-            document.getElementById('mainProductImage').src = imageUrl;
+        function changeMainImage(imageUrl, index, fallbackUrl = null) {
+            const mainImg = document.getElementById('mainProductImage');
+            mainImg.src = imageUrl;
+            
+            // Nếu ảnh không load được, dùng fallback
+            if (fallbackUrl) {
+                mainImg.onerror = function() {
+                    this.src = fallbackUrl;
+                    this.onerror = null;
+                };
+            }
             
             // Update active thumbnail
             document.querySelectorAll('.product-thumbnail').forEach((thumb, i) => {
@@ -423,6 +608,538 @@
             document.getElementById('loadingState').classList.add('hidden');
             document.getElementById('errorState').classList.remove('hidden');
             document.getElementById('errorMessage').textContent = message;
+        }
+
+        // Helper function để lấy ảnh sản phẩm (dùng cho related products)
+        function getProductImageForRelated(p) {
+            const slug = p.slug || createSlug(p.name);
+            const basePath = `/img/products/${slug}`;
+            return `${basePath}/1.jpg`;
+        }
+
+        // Load related products (same category, exclude current product)
+        async function loadRelatedProducts(product) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/products?category=${encodeURIComponent(product.category)}&limit=4`);
+                const data = await response.json();
+                
+                // Filter out current product
+                const relatedProducts = (data.products || []).filter(p => p.id !== product.id).slice(0, 4);
+                
+                const container = document.getElementById('relatedProducts');
+                if (relatedProducts.length === 0) {
+                    container.innerHTML = '<p class="text-gray-500 col-span-full text-center py-8">Chưa có sản phẩm liên quan</p>';
+                    return;
+                }
+
+                container.innerHTML = relatedProducts.map(p => {
+                    const discount = p.original_price && p.original_price > p.price 
+                        ? Math.round(((p.original_price - p.price) / p.original_price) * 100) 
+                        : 0;
+                    
+                    return `
+                        <div class="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-lg transition-all cursor-pointer border border-gray-100" onclick="window.location.href='/product-details.html?slug=${p.slug || p.id}'">
+                            <div class="relative aspect-square bg-gray-100 overflow-hidden">
+                                <img 
+                                    src="${getProductImageForRelated(p)}" 
+                                    alt="${p.name}"
+                                    class="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                                    onerror="this.src='${p.main_image_url || p.image_url || p.image || '/img/placeholder.png'}'; this.onerror=null;"
+                                />
+                                ${discount > 0 ? `
+                                    <div class="absolute top-2 right-2 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded">
+                                        -${discount}%
+                                    </div>
+                                ` : ''}
+                            </div>
+                            <div class="p-3">
+                                <h3 class="font-medium text-gray-900 mb-2 line-clamp-2 text-sm h-10">${p.name}</h3>
+                                <div class="flex items-center gap-1 mb-2">
+                                    <span class="text-yellow-500 text-xs">★★★★★</span>
+                                    <span class="text-gray-500 text-xs">(0)</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <p class="text-red-600 font-bold text-base">${formatPrice(p.price)}</p>
+                                    ${p.original_price && p.original_price > p.price ? `
+                                        <p class="text-gray-400 text-xs line-through">${formatPrice(p.original_price)}</p>
+                                    ` : ''}
+                                </div>
+                                <p class="text-gray-500 text-xs mt-1">Đã bán 0</p>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } catch (error) {
+                console.error('Error loading related products:', error);
+                document.getElementById('relatedProducts').innerHTML = '<p class="text-gray-500 col-span-full text-center py-8">Không thể tải sản phẩm liên quan</p>';
+            }
+        }
+
+        // Switch tabs
+        function switchTab(tabName) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.add('hidden');
+            });
+            
+            // Remove active class from all buttons
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('border-b-2', 'border-red-600', 'text-red-600');
+                btn.classList.add('text-gray-500');
+            });
+            
+            // Show selected tab content
+            const contentId = `tabContent${tabName.charAt(0).toUpperCase() + tabName.slice(1)}`;
+            const buttonId = `tab${tabName.charAt(0).toUpperCase() + tabName.slice(1)}`;
+            
+            document.getElementById(contentId).classList.remove('hidden');
+            const button = document.getElementById(buttonId);
+            button.classList.remove('text-gray-500');
+            button.classList.add('border-b-2', 'border-red-600', 'text-red-600');
+            
+            // Load rating data if switching to rating tab
+            if (tabName === 'rating' && currentProduct) {
+                loadRatingSummary(currentProduct.id);
+            }
+        }
+
+        // Load product technical specifications
+        function loadProductSpecs(product) {
+            const specs = [];
+            
+            if (product.brand) specs.push({ label: 'Thương hiệu', value: product.brand });
+            if (product.category) specs.push({ label: 'Danh mục', value: product.category });
+            if (product.processor_name) specs.push({ label: 'CPU', value: product.processor_name });
+            if (product.ram_gb) specs.push({ label: 'RAM', value: `${product.ram_gb} GB` });
+            if (product.ssd_gb) specs.push({ label: 'SSD', value: `${product.ssd_gb} GB` });
+            if (product.hard_disk_gb) specs.push({ label: 'HDD', value: `${product.hard_disk_gb} GB` });
+            if (product.operating_system) specs.push({ label: 'Hệ điều hành', value: product.operating_system });
+            if (product.graphics) specs.push({ label: 'Card đồ họa', value: product.graphics });
+            if (product.screen_size_inches) specs.push({ label: 'Kích thước màn hình', value: `${product.screen_size_inches}"` });
+            if (product.resolution) specs.push({ label: 'Độ phân giải', value: product.resolution });
+            if (product.no_of_cores) specs.push({ label: 'Số nhân CPU', value: product.no_of_cores });
+            if (product.no_of_threads) specs.push({ label: 'Số luồng CPU', value: product.no_of_threads });
+            if (product.stock_quantity !== undefined) specs.push({ label: 'Tồn kho', value: `${product.stock_quantity} sản phẩm` });
+            
+            const specsContainer = document.getElementById('productSpecs');
+            if (specs.length === 0) {
+                specsContainer.innerHTML = '<p class="text-gray-500">Chưa có thông tin kỹ thuật</p>';
+            } else {
+                specsContainer.innerHTML = specs.map(spec => `
+                    <div class="flex justify-between py-2 border-b">
+                        <span class="font-medium text-gray-700">${spec.label}:</span>
+                        <span class="text-gray-900">${spec.value}</span>
+                    </div>
+                `).join('');
+            }
+        }
+
+        let currentRatingFilter = 'all';
+        let currentCommentsPage = 1;
+        const commentsPerPage = 5;
+
+        // Load rating summary and filters
+        async function loadRatingSummary(productId) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/comments/product/${productId}`);
+                
+                if (!response.ok) {
+                    throw new Error('Failed to load ratings');
+                }
+                
+                // Check if response is JSON
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    const text = await response.text();
+                    console.error('Non-JSON response:', text.substring(0, 200));
+                    throw new Error('Server returned non-JSON response');
+                }
+                
+                const data = await response.json();
+                const comments = data.comments || [];
+                
+                if (comments.length === 0) {
+                    document.getElementById('ratingSummaryHeader').innerHTML = `
+                        <div class="text-center text-gray-500 py-8">
+                            <i class="fas fa-star text-4xl mb-4 text-gray-300"></i>
+                            <p>Chưa có đánh giá nào</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                // Calculate rating distribution
+                const ratingCounts = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+                let totalRating = 0;
+                let commentsWithText = 0;
+                
+                comments.forEach(comment => {
+                    const rating = comment.rating || 5;
+                    if (ratingCounts[rating] !== undefined) {
+                        ratingCounts[rating]++;
+                    }
+                    totalRating += rating;
+                    if (comment.comment && comment.comment.trim().length > 0) {
+                        commentsWithText++;
+                    }
+                });
+                
+                const averageRating = (totalRating / comments.length).toFixed(1);
+                const totalComments = comments.length;
+                
+                // Update rating display
+                document.getElementById('averageRating').textContent = averageRating;
+                const fullStars = Math.round(averageRating);
+                document.getElementById('ratingStars').innerHTML = 
+                    '<span class="text-red-600">★</span>'.repeat(fullStars) + 
+                    '<span class="text-gray-300">★</span>'.repeat(5 - fullStars);
+                document.getElementById('totalReviews').textContent = `${totalComments} đánh giá`;
+                
+                // Render rating filters (Shopee style)
+                const filtersHtml = `
+                    <button 
+                        onclick="filterComments('all', ${productId})" 
+                        class="filter-btn px-4 py-2 rounded border ${currentRatingFilter === 'all' ? 'bg-red-600 text-white border-red-600' : 'bg-white text-gray-700 border-gray-300 hover:border-red-600'}"
+                    >
+                        Tất Cả (${totalComments})
+                    </button>
+                    <button 
+                        onclick="filterComments(5, ${productId})" 
+                        class="filter-btn px-4 py-2 rounded border ${currentRatingFilter === 5 ? 'bg-red-600 text-white border-red-600' : 'bg-white text-gray-700 border-gray-300 hover:border-red-600'}"
+                    >
+                        5 Sao (${ratingCounts[5]})
+                    </button>
+                    <button 
+                        onclick="filterComments(4, ${productId})" 
+                        class="filter-btn px-4 py-2 rounded border ${currentRatingFilter === 4 ? 'bg-red-600 text-white border-red-600' : 'bg-white text-gray-700 border-gray-300 hover:border-red-600'}"
+                    >
+                        4 Sao (${ratingCounts[4]})
+                    </button>
+                    <button 
+                        onclick="filterComments(3, ${productId})" 
+                        class="filter-btn px-4 py-2 rounded border ${currentRatingFilter === 3 ? 'bg-red-600 text-white border-red-600' : 'bg-white text-gray-700 border-gray-300 hover:border-red-600'}"
+                    >
+                        3 Sao (${ratingCounts[3]})
+                    </button>
+                    <button 
+                        onclick="filterComments(2, ${productId})" 
+                        class="filter-btn px-4 py-2 rounded border ${currentRatingFilter === 2 ? 'bg-red-600 text-white border-red-600' : 'bg-white text-gray-700 border-gray-300 hover:border-red-600'}"
+                    >
+                        2 Sao (${ratingCounts[2]})
+                    </button>
+                    <button 
+                        onclick="filterComments(1, ${productId})" 
+                        class="filter-btn px-4 py-2 rounded border ${currentRatingFilter === 1 ? 'bg-red-600 text-white border-red-600' : 'bg-white text-gray-700 border-gray-300 hover:border-red-600'}"
+                    >
+                        1 Sao (${ratingCounts[1]})
+                    </button>
+                    <button 
+                        onclick="filterComments('withComment', ${productId})" 
+                        class="filter-btn px-4 py-2 rounded border ${currentRatingFilter === 'withComment' ? 'bg-red-600 text-white border-red-600' : 'bg-white text-gray-700 border-gray-300 hover:border-red-600'}"
+                    >
+                        Có Bình Luận (${commentsWithText})
+                    </button>
+                `;
+                
+                document.getElementById('ratingFilters').innerHTML = filtersHtml;
+                
+            } catch (error) {
+                console.error('Error loading rating summary:', error);
+            }
+        }
+
+        // Filter comments by rating
+        function filterComments(rating, productId) {
+            currentRatingFilter = rating;
+            currentCommentsPage = 1;
+            loadComments(productId);
+        }
+
+        // Load comments for product (Shopee style)
+        async function loadComments(productId) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/comments/product/${productId}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                // Check if response is JSON
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    const text = await response.text();
+                    console.error('Non-JSON response:', text.substring(0, 200));
+                    throw new Error('Server returned non-JSON response');
+                }
+                
+                const data = await response.json();
+                let comments = data.comments || [];
+                
+                // Filter comments by rating if filter is active
+                if (currentRatingFilter !== 'all') {
+                    if (currentRatingFilter === 'withComment') {
+                        comments = comments.filter(c => c.comment && c.comment.trim().length > 0);
+                    } else {
+                        comments = comments.filter(c => (c.rating || 5) === currentRatingFilter);
+                    }
+                }
+                
+                const commentsList = document.getElementById('commentsList');
+                
+                if (comments.length === 0) {
+                    commentsList.innerHTML = `
+                        <div class="text-center text-gray-500 py-8">
+                            <i class="fas fa-comments text-4xl mb-4 text-gray-300"></i>
+                            <p>Chưa có bình luận nào. Hãy là người đầu tiên đánh giá sản phẩm này!</p>
+                        </div>
+                    `;
+                    document.getElementById('commentsPagination').innerHTML = '';
+                    return;
+                }
+
+                // Pagination
+                const totalPages = Math.ceil(comments.length / commentsPerPage);
+                const startIndex = (currentCommentsPage - 1) * commentsPerPage;
+                const endIndex = startIndex + commentsPerPage;
+                const paginatedComments = comments.slice(startIndex, endIndex);
+
+                // Render comments (Shopee style)
+                commentsList.innerHTML = paginatedComments.map(comment => {
+                    const date = new Date(comment.created_at);
+                    const formattedDate = date.toLocaleDateString('vi-VN', { 
+                        year: 'numeric', 
+                        month: '2-digit', 
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+                    
+                    const rating = comment.rating || 5;
+                    const stars = '<span class="text-red-600">★</span>'.repeat(rating) + 
+                                 '<span class="text-gray-300">★</span>'.repeat(5 - rating);
+                    
+                    return `
+                        <div class="border-b pb-6 last:border-b-0">
+                            <div class="flex items-start gap-4">
+                                <div class="w-12 h-12 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white font-semibold text-lg flex-shrink-0">
+                                    ${(comment.username || 'U').charAt(0).toUpperCase()}
+                                </div>
+                                <div class="flex-1">
+                                    <div class="mb-2">
+                                        <div class="flex items-center gap-2 mb-1">
+                                            <span class="font-semibold text-gray-900">${comment.username || 'Người dùng'}</span>
+                                            <span class="text-red-600">${stars}</span>
+                                        </div>
+                                        <span class="text-sm text-gray-500">${formattedDate}</span>
+                                        ${currentProduct && currentProduct.brand ? `
+                                            <span class="text-sm text-gray-500"> | Phân loại hàng: ${currentProduct.brand}</span>
+                                        ` : ''}
+                                    </div>
+                                    <p class="text-gray-700 leading-relaxed mb-3">${comment.comment || ''}</p>
+                                    <div class="flex items-center gap-4">
+                                        <button class="text-gray-500 hover:text-red-600 text-sm flex items-center gap-1 transition-colors">
+                                            <i class="far fa-thumbs-up"></i>
+                                            <span>Hữu Ích?</span>
+                                        </button>
+                                        ${currentUser && (currentUser.id === comment.user_id || currentUser.role === 'admin') ? `
+                                            <button 
+                                                onclick="deleteComment(${comment.id})" 
+                                                class="text-red-500 hover:text-red-700 text-sm"
+                                                title="Xóa bình luận"
+                                            >
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                // Render pagination
+                if (totalPages > 1) {
+                    let paginationHtml = '<div class="flex items-center gap-2">';
+                    
+                    if (currentCommentsPage > 1) {
+                        paginationHtml += `
+                            <button 
+                                onclick="changeCommentsPage(${currentCommentsPage - 1}, ${productId})" 
+                                class="px-3 py-2 border rounded hover:bg-red-50 hover:border-red-600"
+                            >
+                                &lt;
+                            </button>
+                        `;
+                    }
+                    
+                    for (let i = 1; i <= totalPages; i++) {
+                        if (i === 1 || i === totalPages || (i >= currentCommentsPage - 1 && i <= currentCommentsPage + 1)) {
+                            paginationHtml += `
+                                <button 
+                                    onclick="changeCommentsPage(${i}, ${productId})" 
+                                    class="px-4 py-2 border rounded ${i === currentCommentsPage ? 'bg-red-600 text-white border-red-600' : 'hover:bg-red-50 hover:border-red-600'}"
+                                >
+                                    ${i}
+                                </button>
+                            `;
+                        } else if (i === currentCommentsPage - 2 || i === currentCommentsPage + 2) {
+                            paginationHtml += '<span class="px-2">...</span>';
+                        }
+                    }
+                    
+                    if (currentCommentsPage < totalPages) {
+                        paginationHtml += `
+                            <button 
+                                onclick="changeCommentsPage(${currentCommentsPage + 1}, ${productId})" 
+                                class="px-3 py-2 border rounded hover:bg-red-50 hover:border-red-600"
+                            >
+                                &gt;
+                            </button>
+                        `;
+                    }
+                    
+                    paginationHtml += '</div>';
+                    document.getElementById('commentsPagination').innerHTML = paginationHtml;
+                } else {
+                    document.getElementById('commentsPagination').innerHTML = '';
+                }
+            } catch (error) {
+                console.error('Error loading comments:', error);
+                document.getElementById('commentsList').innerHTML = `
+                    <div class="text-center text-red-500 py-8">
+                        <i class="fas fa-exclamation-triangle text-2xl mb-2"></i>
+                        <p>Không thể tải bình luận: ${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Change comments page
+        function changeCommentsPage(page, productId) {
+            currentCommentsPage = page;
+            loadComments(productId);
+            window.scrollTo({ top: document.getElementById('commentsList').offsetTop - 100, behavior: 'smooth' });
+        }
+
+        // Helper function to get time ago
+        function getTimeAgo(date) {
+            const now = new Date();
+            const diff = now - date;
+            const seconds = Math.floor(diff / 1000);
+            const minutes = Math.floor(seconds / 60);
+            const hours = Math.floor(minutes / 60);
+            const days = Math.floor(hours / 24);
+            const weeks = Math.floor(days / 7);
+            
+            if (weeks > 0) return `${weeks} ${weeks === 1 ? 'tuần' : 'tuần'} trước`;
+            if (days > 0) return `${days} ${days === 1 ? 'ngày' : 'ngày'} trước`;
+            if (hours > 0) return `${hours} ${hours === 1 ? 'giờ' : 'giờ'} trước`;
+            if (minutes > 0) return `${minutes} ${minutes === 1 ? 'phút' : 'phút'} trước`;
+            return 'Vừa xong';
+        }
+
+        // Submit comment form
+        document.getElementById('commentForm')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            if (!currentUser) {
+                showToast('Vui lòng đăng nhập để bình luận', 'error');
+                window.location.href = '/login.html';
+                return;
+            }
+
+            if (!currentProduct) {
+                showToast('Lỗi: Không tìm thấy sản phẩm', 'error');
+                return;
+            }
+
+            const commentText = document.getElementById('commentText').value.trim();
+            const rating = parseInt(document.getElementById('commentRating').value);
+
+            if (!commentText) {
+                showToast('Vui lòng nhập nội dung bình luận', 'error');
+                return;
+            }
+
+            try {
+                const token = getToken();
+                if (!token) {
+                    showToast('Vui lòng đăng nhập lại', 'error');
+                    window.location.href = '/login.html';
+                    return;
+                }
+
+                const response = await fetch(`${API_BASE_URL}/comments`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        product_id: currentProduct.id,
+                        comment: commentText,
+                        rating: rating
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.message || 'Lỗi khi thêm bình luận');
+                }
+
+                showToast('Thêm bình luận thành công!', 'success');
+                
+                // Clear form
+                document.getElementById('commentText').value = '';
+                document.getElementById('commentRating').value = '5';
+                
+                // Reload comments
+                loadComments(currentProduct.id);
+                
+            } catch (error) {
+                console.error('Error submitting comment:', error);
+                showToast(error.message || 'Lỗi khi thêm bình luận', 'error');
+            }
+        });
+
+        // Delete comment
+        async function deleteComment(commentId) {
+            if (!confirm('Bạn có chắc chắn muốn xóa bình luận này?')) {
+                return;
+            }
+
+            try {
+                const token = getToken();
+                if (!token) {
+                    showToast('Vui lòng đăng nhập lại', 'error');
+                    return;
+                }
+
+                const response = await fetch(`${API_BASE_URL}/comments/${commentId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.message || 'Lỗi khi xóa bình luận');
+                }
+
+                showToast('Xóa bình luận thành công!', 'success');
+                
+                // Reload comments
+                if (currentProduct) {
+                    loadComments(currentProduct.id);
+                }
+                
+            } catch (error) {
+                console.error('Error deleting comment:', error);
+                showToast(error.message || 'Lỗi khi xóa bình luận', 'error');
+            }
         }
 
         // Load product on page load

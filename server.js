@@ -33,6 +33,7 @@ const cartRouter = require('./routes/cart');
 const orderRouter = require('./routes/orders');
 const categoriesRouter = require('./routes/categories'); // Router cho Categories API
 const newsRouter = require('./routes/news'); // Router cho Tech News
+const commentsRouter = require('./routes/comments'); // Router cho Comments API
 // Import middleware xác thực
 const authenticateToken = require('./middleware/auth'); 
 
@@ -131,6 +132,8 @@ app.use('/api/orders', orderRouter);
 app.use('/api/categories', categoriesRouter);
 // Tin công nghệ
 app.use('/api/news', newsRouter);
+// Comments cho sản phẩm
+app.use('/api/comments', commentsRouter);
 
 
 // 7. Lắng nghe

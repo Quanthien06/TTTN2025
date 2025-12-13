@@ -6,7 +6,7 @@ const authenticateToken = require('../middleware/auth');
 router.post('/', authenticateToken, async (req, res) => {
     const pool = req.app.locals.pool;
     const userId = req.user.id;
-    const { shipping_address, phone } = req.body;
+    const { shipping_address, phone, payment_method, payment_details } = req.body;
 
     try {
         // 1. Lấy cart active của user
@@ -39,9 +39,22 @@ router.post('/', authenticateToken, async (req, res) => {
         const total = totalRows[0].total || 0;
 
         // 4. Tạo đơn hàng
+        // Lưu payment_method vào shipping_address (có thể mở rộng thêm cột payment_method sau)
+        const paymentInfo = payment_method ? `\n[Payment Method: ${payment_method}]` : '';
+        const fullShippingAddress = shipping_address + paymentInfo;
+        
+        console.log('Creating order with data:', {
+            userId,
+            total,
+            shipping_address: fullShippingAddress,
+            phone: phone || null,
+            payment_method,
+            payment_details
+        });
+        
         const [orderResult] = await pool.query(
-            'INSERT INTO orders (user_id, total, shipping_address, phone, status) VALUES (?, ?, ?, ?, ?)',
-            [userId, total, shipping_address, phone, 'pending']
+            'INSERT INTO orders (user_id, total, shipping_address, shipping_phone, status) VALUES (?, ?, ?, ?, ?)',
+            [userId, total, fullShippingAddress, phone || null, 'pending']
         );
         const orderId = orderResult.insertId;
 
@@ -90,7 +103,16 @@ router.post('/', authenticateToken, async (req, res) => {
 
     } catch (error) {
         console.error('Lỗi khi tạo đơn hàng:', error);
-        res.status(500).json({ message: 'Lỗi máy chủ nội bộ' });
+        console.error('Error details:', {
+            message: error.message,
+            code: error.code,
+            sqlMessage: error.sqlMessage,
+            stack: error.stack
+        });
+        res.status(500).json({ 
+            message: 'Lỗi máy chủ nội bộ',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
     }
 });
 

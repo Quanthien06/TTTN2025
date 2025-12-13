@@ -274,6 +274,37 @@
             return new Intl.NumberFormat('vi-VN').format(price) + ' ₫';
         }
 
+        // Tạo slug từ tên sản phẩm
+        function createSlug(name) {
+            if (!name) return '';
+            return name
+                .toLowerCase()
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .replace(/[^a-z0-9\s-]/g, '')
+                .replace(/\s+/g, '-')
+                .replace(/-+/g, '-')
+                .trim();
+        }
+
+        // Lấy ảnh sản phẩm từ folder structure hoặc database
+        function getProductImage(item) {
+            // Ưu tiên dùng slug từ item, nếu không có thì tạo từ tên
+            const slug = item.product_slug || createSlug(item.product_name);
+            const basePath = `/img/products/${slug}`;
+            
+            // Ưu tiên load từ folder structure: /img/products/[slug]/1.jpg
+            const folderImage = `${basePath}/1.jpg`;
+            
+            // Fallback về database hoặc placeholder
+            const fallbackImage = item.product_image || item.product_main_image_url || '/img/placeholder.png';
+            
+            return {
+                primary: folderImage,
+                fallback: fallbackImage
+            };
+        }
+
         // Hiển thị toast
         function showToast(message, type = 'success') {
             const toast = document.getElementById('toast');
@@ -368,15 +399,17 @@
         // Render mobile view
         function renderMobileView() {
             const container = document.getElementById('cartMobileView');
-            container.innerHTML = cartData.items.map(item => `
+            container.innerHTML = cartData.items.map(item => {
+                const imageData = getProductImage(item);
+                return `
                 <div class="bg-white rounded-lg shadow-md p-4">
                     <div class="flex justify-between items-start mb-4">
                         <div class="flex items-start space-x-3 flex-1">
                             <img 
-                                src="${item.product_image || 'https://via.placeholder.com/80'}" 
+                                src="${imageData.primary}" 
                                 alt="${item.product_name}"
                                 class="w-20 h-20 object-cover rounded"
-                                onerror="this.src='https://via.placeholder.com/80'"
+                                onerror="this.src='${imageData.fallback}'; this.onerror=null;"
                             >
                             <div class="flex-1">
                                 <h3 class="font-semibold text-lg">${item.product_name}</h3>
@@ -415,21 +448,24 @@
                         </div>
                     </div>
                 </div>
-            `).join('');
+            `;
+            }).join('');
         }
 
         // Render desktop view
         function renderDesktopView() {
             const tbody = document.getElementById('cartTableBody');
-            tbody.innerHTML = cartData.items.map(item => `
+            tbody.innerHTML = cartData.items.map(item => {
+                const imageData = getProductImage(item);
+                return `
                 <tr class="border-t border-gray-200 hover:bg-gray-50 transition">
                     <td class="py-4 px-4">
                         <div class="flex items-center space-x-3">
                             <img 
-                                src="${item.product_image || 'https://via.placeholder.com/80'}" 
+                                src="${imageData.primary}" 
                                 alt="${item.product_name}"
                                 class="w-20 h-20 object-cover rounded"
-                                onerror="this.src='https://via.placeholder.com/80'"
+                                onerror="this.src='${imageData.fallback}'; this.onerror=null;"
                             >
                             <div>
                                 <h3 class="font-medium">${item.product_name}</h3>
@@ -472,7 +508,8 @@
                         </button>
                     </td>
                 </tr>
-            `).join('');
+            `;
+            }).join('');
         }
 
         // Cập nhật số lượng
