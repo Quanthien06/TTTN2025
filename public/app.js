@@ -192,7 +192,7 @@ async function checkAuth() {
         saveUserInfo(data.user); // Cập nhật cache
         updateUIForAuth(true);
         loadCartCount();
-        redirectIfAdmin();
+        checkAdminAccess();
         console.log('checkAuth success:', currentUser);
     } catch (error) {
         console.error('checkAuth error:', error.message);
@@ -206,7 +206,7 @@ async function checkAuth() {
             // Có thể API /me tạm thời lỗi nhưng token vẫn hợp lệ
             currentUser = cached;
             updateUIForAuth(true);
-            redirectIfAdmin();
+            checkAdminAccess();
             console.log('checkAuth: Using cached user after error (keeping token):', currentUser);
         } else if (error.message.includes('Token không hợp lệ') || error.message.includes('401')) {
             // Chỉ xóa token nếu thực sự không hợp lệ VÀ không có cache
@@ -220,6 +220,7 @@ async function checkAuth() {
             if (cached) {
                 currentUser = cached;
                 updateUIForAuth(true);
+                checkAdminAccess();
                 console.log('checkAuth: Network/server error, keeping cached user');
             } else {
                 currentUser = null;
@@ -230,12 +231,16 @@ async function checkAuth() {
     }
 }
 
-// Nếu user là admin, chuyển sang trang admin
-function redirectIfAdmin() {
+// Kiểm tra và hiển thị nút admin (không redirect tự động)
+function checkAdminAccess() {
     const isAdmin = currentUser && currentUser.role === 'admin';
-    const onAdminPage = window.location.pathname.includes('/admin');
-    if (isAdmin && !onAdminPage) {
-        window.location.href = '/admin.html';
+    const adminMenuLink = document.getElementById('adminMenuLink');
+    if (adminMenuLink) {
+        if (isAdmin) {
+            adminMenuLink.classList.remove('hidden');
+        } else {
+            adminMenuLink.classList.add('hidden');
+        }
     }
 }
 
@@ -278,9 +283,9 @@ async function login(username, password) {
         closeModal('loginModal');
         showToast(`Đăng nhập thành công! Xin chào, ${currentUser.username}!`, 'success');
         
-        // Load cart count và redirect nếu là admin
+        // Load cart count và kiểm tra admin access
         loadCartCount();
-        redirectIfAdmin();
+        checkAdminAccess();
         
         // Delay việc verify token qua /me để đảm bảo token đã được lưu vào localStorage
         // Và reset flag sau khi verify xong
@@ -292,6 +297,7 @@ async function login(username, password) {
                     currentUser = verifyData.user;
                     saveUserInfo(verifyData.user);
                     updateUIForAuth(true);
+                    checkAdminAccess();
                     console.log('Login: Token verified successfully');
                 }
             } catch (error) {
@@ -387,6 +393,9 @@ function updateUIForAuth(isLoggedIn) {
             userName.textContent = `Xin chào, ${username}!`;
             console.log('Updated userName to:', `Xin chào, ${username}!`);
         }
+        
+        // Kiểm tra và hiển thị nút admin
+        checkAdminAccess();
     } else {
         // Hiển thị nút đăng nhập/đăng ký
         if (navAuth) {

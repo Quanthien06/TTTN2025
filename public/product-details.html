@@ -449,6 +449,18 @@
             }
         }
 
+        // Helper function để tạo slug từ tên sản phẩm
+        function createSlug(name) {
+            return name
+                .toLowerCase()
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .replace(/[^a-z0-9\s-]/g, '')
+                .replace(/\s+/g, '-')
+                .replace(/-+/g, '-')
+                .trim();
+        }
+
         function renderProductDetail(product) {
             // Hide loading, show product details
             document.getElementById('loadingState').classList.add('hidden');
@@ -468,49 +480,86 @@
             const slug = product.slug || createSlug(product.name);
             const basePath = `/img/products/${slug}`;
             
-            // Tạo danh sách ảnh từ folder structure (ưu tiên)
-            const folderImages = [
-                `${basePath}/1.jpg`,
-                `${basePath}/2.jpg`,
-                `${basePath}/3.jpg`,
-                `${basePath}/4.jpg`
-            ];
+            console.log('Product slug:', slug);
+            console.log('Base path:', basePath);
             
             // Fallback về database nếu folder không có ảnh
             const fallbackMainImage = product.main_image_url || product.image_url || product.image || '/img/placeholder.png';
             const fallbackImages = [fallbackMainImage, ...dbImages].slice(0, 4);
             
-            // Sử dụng ảnh từ folder, fallback về database nếu không có
-            const mainImage = folderImages[0];
-            const allImages = folderImages;
-            
-            // Sử dụng ảnh từ folder, nếu không có thì dùng fallback
+            // Main image luôn là 1.jpg từ folder
+            const mainImage = `${basePath}/1.jpg`;
             document.getElementById('mainProductImage').src = mainImage;
             document.getElementById('mainProductImage').alt = product.name;
             document.getElementById('mainProductImage').onerror = function() {
                 // Nếu ảnh từ folder không load được, dùng ảnh từ database
                 this.src = fallbackMainImage;
-                // Cập nhật thumbnails
-                const thumbnailContainer = document.getElementById('thumbnailImages');
-                thumbnailContainer.innerHTML = fallbackImages.map((img, index) => `
-                    <div 
-                        class="product-thumbnail ${index === 0 ? 'active' : ''} bg-gray-100 rounded-lg overflow-hidden aspect-square cursor-pointer"
-                        onclick="changeMainImage('${img}', ${index})"
-                    >
-                        <img src="${img}" alt="Thumbnail ${index + 1}" class="w-full h-full object-cover" />
-                    </div>
-                `).join('');
+                this.onerror = null;
             };
 
-            // Thumbnail images
+            // Thumbnail images - load từ database images field (đã được format đúng)
             const thumbnailContainer = document.getElementById('thumbnailImages');
             
-            thumbnailContainer.innerHTML = allImages.map((img, index) => `
+            // Parse images từ database (đã được format thành array chứa /img/products/[slug]/2.jpg, 3.jpg, 4.jpg)
+            let thumbnailImages = [];
+            
+            // Thêm main image (1.jpg) vào đầu
+            const mainImagePath = `${basePath}/1.jpg`;
+            thumbnailImages.push(mainImagePath);
+            
+            console.log('Base path:', basePath);
+            console.log('Product images (raw):', product.images);
+            console.log('Product images type:', typeof product.images);
+            
+            // Thêm các ảnh từ database images field (đã được format đúng)
+            if (product.images) {
+                try {
+                    let dbImagesArray;
+                    if (typeof product.images === 'string') {
+                        dbImagesArray = JSON.parse(product.images);
+                    } else if (Array.isArray(product.images)) {
+                        dbImagesArray = product.images;
+                    } else {
+                        dbImagesArray = [];
+                    }
+                    
+                    console.log('Parsed images array:', dbImagesArray);
+                    
+                    if (Array.isArray(dbImagesArray) && dbImagesArray.length > 0) {
+                        thumbnailImages = thumbnailImages.concat(dbImagesArray);
+                        console.log('Added images from database:', dbImagesArray.length);
+                    }
+                } catch (e) {
+                    console.error('Error parsing images:', e);
+                }
+            }
+            
+            // Nếu không có ảnh từ database, thử load từ folder structure
+            if (thumbnailImages.length === 1) {
+                console.log('No images from database, trying folder structure');
+                // Chỉ có main image, thử thêm 2.jpg, 3.jpg, 4.jpg
+                for (let i = 2; i <= 4; i++) {
+                    thumbnailImages.push(`${basePath}/${i}.jpg`);
+                }
+            }
+            
+            console.log('Final thumbnail images to render:', thumbnailImages);
+            console.log('Total thumbnails:', thumbnailImages.length);
+            
+            // Render thumbnails - ẩn nếu ảnh không load được
+            thumbnailContainer.innerHTML = thumbnailImages.map((img, idx) => `
                 <div 
-                    class="product-thumbnail ${index === 0 ? 'active' : ''} bg-gray-100 rounded-lg overflow-hidden aspect-square cursor-pointer"
-                    onclick="changeMainImage('${img}', ${index})"
+                    class="product-thumbnail ${idx === 0 ? 'active' : ''} bg-gray-100 rounded-lg overflow-hidden aspect-square cursor-pointer"
+                    onclick="changeMainImage('${img}', ${idx})"
+                    data-thumb-index="${idx}"
                 >
-                    <img src="${img}" alt="Thumbnail ${index + 1}" class="w-full h-full object-cover" />
+                    <img 
+                        src="${img}" 
+                        alt="Thumbnail ${idx + 1}" 
+                        class="w-full h-full object-cover"
+                        onerror="console.log('Image failed to load:', '${img}'); this.parentElement.style.display='none';"
+                        onload="console.log('Image loaded:', '${img}'); this.parentElement.style.display='block';"
+                    />
                 </div>
             `).join('');
 

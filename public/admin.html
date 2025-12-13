@@ -534,7 +534,8 @@
                 loadDashboard();
             } catch (error) {
                 console.error('Auth error:', error);
-                window.location.href = '/login.html';
+                // Nếu lỗi auth, chuyển về trang chủ thay vì login (vì có thể user chưa đăng nhập)
+                window.location.href = '/';
             }
         }
         
