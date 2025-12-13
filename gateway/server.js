@@ -53,6 +53,11 @@ async function verifyToken(req, res, next) {
         return false;
     });
 
+    // GET /api/comments/product/:id là public, POST /api/comments cần auth
+    if (req.path.startsWith('/api/comments/product/') && req.method === 'GET') {
+        return next();
+    }
+
     if (isPublicRoute) {
         return next();
     }
@@ -70,9 +75,15 @@ async function verifyToken(req, res, next) {
     // Verify token với Auth Service
     try {
         const response = await axios.post(`${SERVICES.auth}/verify-token`, { token });
-        req.user = response.data.user;
+        // Auth service trả về { user: { id, username, role } }
+        req.user = response.data.user || response.data;
+        if (!req.user || !req.user.id) {
+            console.error('Auth service response không hợp lệ:', response.data);
+            return res.status(401).json({ message: 'Token không hợp lệ' });
+        }
         next();
     } catch (error) {
+        console.error('Lỗi verify token:', error.message);
         if (error.response) {
             return res.status(error.response.status).json(error.response.data);
         }
@@ -352,6 +363,141 @@ app.use('/api/news', async (req, res) => {
         res.status(error.response?.status || 500).json(
             error.response?.data || { message: 'Lỗi server' }
         );
+    }
+});
+
+// ============================================
+// COMMENTS ENDPOINTS → Xử lý trực tiếp trong Gateway
+// ============================================
+
+const mysql = require('mysql2/promise');
+
+// Tạo connection pool cho comments
+const commentsPool = mysql.createPool({
+    host: process.env.DB_HOST || 'host.docker.internal',
+    user: process.env.DB_USER || 'root',
+    password: process.env.DB_PASSWORD || '',
+    database: process.env.DB_NAME || 'tttn2025',
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0
+});
+
+// GET /api/comments/product/:productId - Public endpoint
+app.get('/api/comments/product/:productId', async (req, res) => {
+    try {
+        const productId = parseInt(req.params.productId);
+        if (isNaN(productId)) {
+            return res.status(400).json({ message: 'ID sản phẩm không hợp lệ' });
+        }
+
+        const [comments] = await commentsPool.query(
+            `SELECT id, product_id, user_id, username, comment, rating, created_at, updated_at
+             FROM product_comments 
+             WHERE product_id = ? 
+             ORDER BY created_at DESC`,
+            [productId]
+        );
+
+        res.json({
+            comments: comments,
+            count: comments.length
+        });
+    } catch (error) {
+        console.error('Lỗi khi lấy comments:', error);
+        res.status(500).json({ message: 'Lỗi máy chủ nội bộ' });
+    }
+});
+
+// POST /api/comments - Cần auth (đã được verifyToken middleware xử lý)
+app.post('/api/comments', async (req, res) => {
+    try {
+        // Kiểm tra req.user có tồn tại không
+        if (!req.user) {
+            return res.status(401).json({ message: 'Vui lòng đăng nhập để bình luận' });
+        }
+        
+        const userId = req.user.id;
+        const username = req.user.username || 'Người dùng';
+        const { product_id, comment, rating = 5 } = req.body;
+
+        if (!product_id) {
+            return res.status(400).json({ message: 'ID sản phẩm là bắt buộc' });
+        }
+
+        if (!comment || comment.trim() === '') {
+            return res.status(400).json({ message: 'Nội dung comment không được để trống' });
+        }
+
+        const ratingNum = parseInt(rating);
+        if (isNaN(ratingNum) || ratingNum < 1 || ratingNum > 5) {
+            return res.status(400).json({ message: 'Đánh giá phải từ 1 đến 5 sao' });
+        }
+
+        // Kiểm tra sản phẩm có tồn tại không
+        const [products] = await commentsPool.query('SELECT id FROM products WHERE id = ?', [product_id]);
+        if (products.length === 0) {
+            return res.status(404).json({ message: 'Sản phẩm không tồn tại' });
+        }
+
+        // Thêm comment
+        const [result] = await commentsPool.query(
+            `INSERT INTO product_comments (product_id, user_id, username, comment, rating) 
+             VALUES (?, ?, ?, ?, ?)`,
+            [product_id, userId, username, comment.trim(), ratingNum]
+        );
+
+        // Lấy comment vừa tạo
+        const [newComments] = await commentsPool.query(
+            'SELECT * FROM product_comments WHERE id = ?',
+            [result.insertId]
+        );
+
+        res.status(201).json({
+            message: 'Thêm comment thành công',
+            comment: newComments[0]
+        });
+    } catch (error) {
+        console.error('Lỗi khi thêm comment:', error);
+        res.status(500).json({ message: 'Lỗi máy chủ nội bộ' });
+    }
+});
+
+// DELETE /api/comments/:id - Cần auth
+app.delete('/api/comments/:id', async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const userRole = req.user.role;
+        const commentId = parseInt(req.params.id);
+
+        if (isNaN(commentId)) {
+            return res.status(400).json({ message: 'ID comment không hợp lệ' });
+        }
+
+        // Kiểm tra comment có tồn tại không
+        const [comments] = await commentsPool.query(
+            'SELECT * FROM product_comments WHERE id = ?',
+            [commentId]
+        );
+
+        if (comments.length === 0) {
+            return res.status(404).json({ message: 'Comment không tồn tại' });
+        }
+
+        const comment = comments[0];
+
+        // Kiểm tra quyền
+        if (comment.user_id !== userId && userRole !== 'admin') {
+            return res.status(403).json({ message: 'Bạn không có quyền xóa comment này' });
+        }
+
+        // Xóa comment
+        await commentsPool.query('DELETE FROM product_comments WHERE id = ?', [commentId]);
+
+        res.json({ message: 'Xóa comment thành công' });
+    } catch (error) {
+        console.error('Lỗi khi xóa comment:', error);
+        res.status(500).json({ message: 'Lỗi máy chủ nội bộ' });
     }
 });
 

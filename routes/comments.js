@@ -10,6 +10,7 @@ const authenticateToken = require('../middleware/auth');
 // Endpoint công khai, không cần đăng nhập
 // ============================================
 router.get('/product/:productId', async (req, res) => {
+    console.log(`[GET] /api/comments/product/${req.params.productId}`);
     const pool = req.app.locals.pool;
     const productId = parseInt(req.params.productId);
 
@@ -52,6 +53,7 @@ router.get('/product/:productId', async (req, res) => {
 // Body: { product_id, comment, rating (optional, 1-5) }
 // ============================================
 router.post('/', authenticateToken, async (req, res) => {
+    console.log('[POST] /api/comments - Body:', { product_id: req.body.product_id, comment: req.body.comment?.substring(0, 50), rating: req.body.rating });
     const pool = req.app.locals.pool;
     const userId = req.user.id;
     const username = req.user.username || 'Người dùng';

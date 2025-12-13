@@ -34,6 +34,8 @@ const orderRouter = require('./routes/orders');
 const categoriesRouter = require('./routes/categories'); // Router cho Categories API
 const newsRouter = require('./routes/news'); // Router cho Tech News
 const commentsRouter = require('./routes/comments'); // Router cho Comments API
+const usersRouter = require('./routes/users'); // Router cho Users Management API (Admin)
+const statsRouter = require('./routes/stats'); // Router cho Statistics API (Admin)
 // Import middleware xác thực
 const authenticateToken = require('./middleware/auth'); 
 
@@ -111,6 +113,13 @@ app.get('/:page.html', (req, res, next) => {
     next();
 });
 
+// Comments cho sản phẩm - Đăng ký TRƯỚC authRouter để tránh bị chặn
+app.use('/api/comments', (req, res, next) => {
+    console.log(`[COMMENTS] ${req.method} ${req.originalUrl || req.path}`);
+    next();
+}, commentsRouter);
+console.log('✓ Comments router đã được đăng ký tại /api/comments');
+
 // Gắn router xác thực vào đường dẫn /api (chứa /register và /login)
 app.use('/api', authRouter);
 // Gắn router OAuth2 vào đường dẫn /api/auth
@@ -132,8 +141,10 @@ app.use('/api/orders', orderRouter);
 app.use('/api/categories', categoriesRouter);
 // Tin công nghệ
 app.use('/api/news', newsRouter);
-// Comments cho sản phẩm
-app.use('/api/comments', commentsRouter);
+// Users Management (Admin only)
+app.use('/api/users', usersRouter);
+// Statistics/Dashboard (Admin only)
+app.use('/api/stats', statsRouter);
 
 
 // 7. Lắng nghe

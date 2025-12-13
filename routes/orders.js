@@ -116,6 +116,76 @@ router.post('/', authenticateToken, async (req, res) => {
     }
 });
 
+// GET /api/orders/admin - Lấy tất cả đơn hàng (admin only)
+router.get('/admin', authenticateToken, async (req, res) => {
+    const pool = req.app.locals.pool;
+    
+    // Kiểm tra quyền admin
+    if (req.user.role !== 'admin') {
+        return res.status(403).json({ message: 'Chỉ admin mới có quyền xem tất cả đơn hàng' });
+    }
+    
+    const { page = 1, limit = 20, status = '' } = req.query;
+    
+    try {
+        const pageNum = parseInt(page);
+        const limitNum = parseInt(limit);
+        const offset = (pageNum - 1) * limitNum;
+        
+        let whereClause = '';
+        let queryParams = [];
+        
+        if (status) {
+            whereClause = 'WHERE o.status = ?';
+            queryParams.push(status);
+        }
+        
+        // Lấy tổng số đơn hàng
+        const [countRows] = await pool.query(
+            `SELECT COUNT(*) as total FROM orders o ${whereClause}`,
+            queryParams
+        );
+        const total = countRows[0].total;
+        
+        // Lấy đơn hàng với pagination
+        const [orders] = await pool.query(
+            `SELECT o.*, 
+                u.username,
+                COUNT(oi.id) as item_count,
+                SUM(oi.quantity) as total_quantity
+            FROM orders o
+            LEFT JOIN users u ON o.user_id = u.id
+            LEFT JOIN order_items oi ON o.id = oi.order_id
+            ${whereClause}
+            GROUP BY o.id
+            ORDER BY o.created_at DESC
+            LIMIT ? OFFSET ?`,
+            [...queryParams, limitNum, offset]
+        );
+
+        const formattedOrders = orders.map(order => ({
+            ...order,
+            total: parseFloat(order.total),
+            item_count: parseInt(order.item_count || 0),
+            total_quantity: parseInt(order.total_quantity || 0)
+        }));
+
+        res.json({
+            orders: formattedOrders,
+            pagination: {
+                currentPage: pageNum,
+                totalPages: Math.ceil(total / limitNum),
+                totalItems: total,
+                itemsPerPage: limitNum
+            }
+        });
+
+    } catch (error) {
+        console.error('Lỗi khi lấy danh sách đơn hàng:', error);
+        res.status(500).json({ message: 'Lỗi máy chủ nội bộ' });
+    }
+});
+
 // GET /api/orders - Lấy danh sách đơn hàng của user
 router.get('/', authenticateToken, async (req, res) => {
     const pool = req.app.locals.pool;
@@ -157,13 +227,22 @@ router.get('/:id', authenticateToken, async (req, res) => {
     const pool = req.app.locals.pool;
     const userId = req.user.id;
     const orderId = req.params.id;
+    const isAdmin = req.user.role === 'admin';
 
     try {
-        // Kiểm tra đơn hàng thuộc về user
-        const [orders] = await pool.query(
-            'SELECT * FROM orders WHERE id = ? AND user_id = ?',
-            [orderId, userId]
-        );
+        // Admin có thể xem tất cả đơn hàng, user chỉ xem đơn hàng của mình
+        let orders;
+        if (isAdmin) {
+            [orders] = await pool.query(
+                'SELECT o.*, u.username FROM orders o LEFT JOIN users u ON o.user_id = u.id WHERE o.id = ?',
+                [orderId]
+            );
+        } else {
+            [orders] = await pool.query(
+                'SELECT * FROM orders WHERE id = ? AND user_id = ?',
+                [orderId, userId]
+            );
+        }
 
         if (orders.length === 0) {
             return res.status(404).json({ message: 'Đơn hàng không tồn tại' });
@@ -190,12 +269,10 @@ router.get('/:id', authenticateToken, async (req, res) => {
         }));
 
         res.json({
-            order: {
-                ...order,
-                total: parseFloat(order.total),
-                items: formattedItems,
-                item_count: formattedItems.length
-            }
+            ...order,
+            total: parseFloat(order.total),
+            items: formattedItems,
+            item_count: formattedItems.length
         });
 
     } catch (error) {

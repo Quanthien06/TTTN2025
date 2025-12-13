@@ -285,17 +285,40 @@ router.put('/:id', authenticateToken, async (req, res) => {
         }
         
         const { id } = req.params; 
-        const { name, category, price, description } = req.body;
+        const { name, category, price, original_price, brand, stock_quantity, description, main_image_url } = req.body;
 
         if (!name || !price) {
             return res.status(400).json({ message: 'Tên và giá sản phẩm là bắt buộc' });
         }
         
-        const sql = 'UPDATE products SET name = ?, category = ?, price = ?, description = ? WHERE id = ?';
-        const [result] = await pool.query(sql, [name, category, price, description, id]);
+        // Xây dựng câu lệnh UPDATE động
+        const updateFields = [];
+        const updateValues = [];
+        
+        if (name !== undefined) updateFields.push('name = ?'), updateValues.push(name);
+        if (category !== undefined) updateFields.push('category = ?'), updateValues.push(category);
+        if (price !== undefined) updateFields.push('price = ?'), updateValues.push(price);
+        if (original_price !== undefined) updateFields.push('original_price = ?'), updateValues.push(original_price);
+        if (brand !== undefined) updateFields.push('brand = ?'), updateValues.push(brand);
+        if (stock_quantity !== undefined) updateFields.push('stock_quantity = ?'), updateValues.push(stock_quantity);
+        if (description !== undefined) updateFields.push('description = ?'), updateValues.push(description);
+        if (main_image_url !== undefined) updateFields.push('main_image_url = ?'), updateValues.push(main_image_url);
+        
+        if (updateFields.length === 0) {
+            return res.status(400).json({ message: 'Không có thông tin nào để cập nhật' });
+        }
+        
+        updateValues.push(id);
+        const sql = `UPDATE products SET ${updateFields.join(', ')} WHERE id = ?`;
+        const [result] = await pool.query(sql, updateValues);
 
         if (result.affectedRows > 0) {
-            res.json({ message: `Cập nhật sản phẩm ID ${id} thành công!` });
+            // Lấy sản phẩm đã cập nhật
+            const [products] = await pool.query('SELECT * FROM products WHERE id = ?', [id]);
+            res.json({ 
+                message: `Cập nhật sản phẩm ID ${id} thành công!`,
+                product: products[0]
+            });
         } else {
             res.status(404).json({ message: 'Không tìm thấy sản phẩm để cập nhật' });
         }

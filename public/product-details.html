@@ -160,8 +160,48 @@
 
                             <!-- Tab Content: Details -->
                             <div id="tabContentDetails" class="tab-content">
-                                <h3 class="text-lg font-semibold text-gray-900 mb-2">Mô tả sản phẩm</h3>
-                                <p id="productDescription" class="text-gray-700 leading-relaxed"></p>
+                                <h3 class="text-lg font-semibold text-gray-900 mb-4">Chi tiết sản phẩm</h3>
+                                
+                                <!-- Product Overview -->
+                                <div class="mb-6 p-4 bg-gray-50 rounded-lg">
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                        <div>
+                                            <span class="text-sm font-medium text-gray-500">Thương hiệu:</span>
+                                            <span id="detailBrand" class="ml-2 text-gray-900 font-semibold"></span>
+                                        </div>
+                                        <div>
+                                            <span class="text-sm font-medium text-gray-500">Danh mục:</span>
+                                            <span id="detailCategory" class="ml-2 text-gray-900 font-semibold"></span>
+                                        </div>
+                                        <div>
+                                            <span class="text-sm font-medium text-gray-500">Giá hiện tại:</span>
+                                            <span id="detailPrice" class="ml-2 text-red-600 font-bold text-lg"></span>
+                                        </div>
+                                        <div>
+                                            <span class="text-sm font-medium text-gray-500">Giá gốc:</span>
+                                            <span id="detailOriginalPrice" class="ml-2 text-gray-400 line-through"></span>
+                                        </div>
+                                        <div>
+                                            <span class="text-sm font-medium text-gray-500">Tình trạng:</span>
+                                            <span id="detailStock" class="ml-2 text-gray-900 font-semibold"></span>
+                                        </div>
+                                        <div id="detailDiscount" class="hidden">
+                                            <span class="text-sm font-medium text-gray-500">Giảm giá:</span>
+                                            <span id="detailDiscountPercent" class="ml-2 text-red-600 font-bold"></span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Product Description -->
+                                <div class="mb-6">
+                                    <h4 class="text-md font-semibold text-gray-900 mb-3">Mô tả sản phẩm</h4>
+                                    <div id="productDescription" class="text-gray-700 leading-relaxed whitespace-pre-line"></div>
+                                </div>
+
+                                <!-- Product Highlights -->
+                                <div id="productHighlights" class="mt-6">
+                                    <!-- Highlights will be loaded here -->
+                                </div>
                             </div>
 
                             <!-- Tab Content: Info (Technical Specifications) -->
@@ -257,16 +297,18 @@
                 
                 <!-- Rating Summary -->
                 <div id="ratingSummaryHeader" class="mb-6 pb-6 border-b">
-                    <div class="flex items-center gap-8">
-                        <div class="text-center">
-                            <div class="text-5xl font-bold text-red-600 mb-2" id="averageRating">0</div>
-                            <div class="text-red-600 text-2xl mb-2" id="ratingStars">★★★★★</div>
+                    <div class="flex flex-col md:flex-row gap-6">
+                        <!-- Overall Rating (Left) -->
+                        <div class="flex-shrink-0">
+                            <div class="text-5xl font-bold text-orange-500 mb-2" id="averageRating">0</div>
+                            <div class="text-orange-500 text-2xl mb-2" id="ratingStars">★★★★★</div>
                             <div class="text-sm text-gray-500" id="totalReviews">0 đánh giá</div>
                         </div>
+                        
+                        <!-- Rating Filters (Right) -->
                         <div class="flex-1">
-                            <!-- Rating filters will be loaded here -->
-                            <div id="ratingFilters" class="flex flex-wrap gap-2">
-                                <!-- Filters will be dynamically loaded -->
+                            <div id="ratingFilters" class="space-y-2">
+                                <!-- Rating filters will be loaded here -->
                             </div>
                         </div>
                     </div>
@@ -518,7 +560,8 @@
                 document.getElementById('loginPrompt').classList.remove('hidden');
             }
 
-            // Load product specs and related products
+            // Load product details, specs and related products
+            loadProductDetails(product);
             loadProductSpecs(product);
             loadRelatedProducts(product);
             loadComments(product.id);
@@ -703,34 +746,171 @@
             }
         }
 
-        // Load product technical specifications
+        // Load product details (chi tiết hơn)
+        function loadProductDetails(product) {
+            // Brand
+            document.getElementById('detailBrand').textContent = product.brand || 'Chưa có thông tin';
+            
+            // Category
+            document.getElementById('detailCategory').textContent = product.category || 'Chưa phân loại';
+            
+            // Price
+            document.getElementById('detailPrice').textContent = formatPrice(product.price);
+            
+            // Original price
+            if (product.original_price && product.original_price > product.price) {
+                document.getElementById('detailOriginalPrice').textContent = formatPrice(product.original_price);
+                document.getElementById('detailOriginalPrice').classList.remove('hidden');
+                const discount = Math.round(((product.original_price - product.price) / product.original_price) * 100);
+                document.getElementById('detailDiscountPercent').textContent = `${discount}%`;
+                document.getElementById('detailDiscount').classList.remove('hidden');
+            } else {
+                document.getElementById('detailOriginalPrice').classList.add('hidden');
+                document.getElementById('detailDiscount').classList.add('hidden');
+            }
+            
+            // Stock
+            const stock = product.stock_quantity || product.stock || 0;
+            const stockElement = document.getElementById('detailStock');
+            if (stock > 0) {
+                stockElement.textContent = `Còn ${stock} sản phẩm`;
+                stockElement.classList.remove('text-red-600');
+                stockElement.classList.add('text-green-600');
+            } else {
+                stockElement.textContent = 'Hết hàng';
+                stockElement.classList.remove('text-green-600');
+                stockElement.classList.add('text-red-600');
+            }
+            
+            // Description
+            const descElement = document.getElementById('productDescription');
+            if (product.description && product.description.trim()) {
+                descElement.textContent = product.description;
+            } else {
+                descElement.innerHTML = '<p class="text-gray-400 italic">Chưa có mô tả chi tiết về sản phẩm này.</p>';
+            }
+            
+            // Product Highlights (tự động tạo từ thông tin kỹ thuật)
+            const highlights = [];
+            if (product.processor_name) highlights.push(`Chip ${product.processor_name}`);
+            if (product.ram_gb) highlights.push(`RAM ${product.ram_gb}GB`);
+            if (product.ssd_gb) highlights.push(`SSD ${product.ssd_gb}GB`);
+            if (product.screen_size_inches) highlights.push(`Màn hình ${product.screen_size_inches}"`);
+            if (product.graphics) highlights.push(`Card đồ họa ${product.graphics}`);
+            
+            const highlightsContainer = document.getElementById('productHighlights');
+            if (highlights.length > 0) {
+                highlightsContainer.innerHTML = `
+                    <h4 class="text-md font-semibold text-gray-900 mb-3">Điểm nổi bật</h4>
+                    <div class="flex flex-wrap gap-2">
+                        ${highlights.map(h => `
+                            <span class="px-3 py-1 bg-red-50 text-red-700 rounded-full text-sm font-medium">
+                                ${h}
+                            </span>
+                        `).join('')}
+                    </div>
+                `;
+            } else {
+                highlightsContainer.innerHTML = '';
+            }
+        }
+
+        // Load product technical specifications (từ database)
         function loadProductSpecs(product) {
             const specs = [];
             
-            if (product.brand) specs.push({ label: 'Thương hiệu', value: product.brand });
-            if (product.category) specs.push({ label: 'Danh mục', value: product.category });
-            if (product.processor_name) specs.push({ label: 'CPU', value: product.processor_name });
-            if (product.ram_gb) specs.push({ label: 'RAM', value: `${product.ram_gb} GB` });
-            if (product.ssd_gb) specs.push({ label: 'SSD', value: `${product.ssd_gb} GB` });
-            if (product.hard_disk_gb) specs.push({ label: 'HDD', value: `${product.hard_disk_gb} GB` });
-            if (product.operating_system) specs.push({ label: 'Hệ điều hành', value: product.operating_system });
-            if (product.graphics) specs.push({ label: 'Card đồ họa', value: product.graphics });
-            if (product.screen_size_inches) specs.push({ label: 'Kích thước màn hình', value: `${product.screen_size_inches}"` });
-            if (product.resolution) specs.push({ label: 'Độ phân giải', value: product.resolution });
-            if (product.no_of_cores) specs.push({ label: 'Số nhân CPU', value: product.no_of_cores });
-            if (product.no_of_threads) specs.push({ label: 'Số luồng CPU', value: product.no_of_threads });
-            if (product.stock_quantity !== undefined) specs.push({ label: 'Tồn kho', value: `${product.stock_quantity} sản phẩm` });
+            // Thông tin cơ bản
+            if (product.brand) specs.push({ label: 'Thương hiệu', value: product.brand, category: 'basic' });
+            if (product.category) specs.push({ label: 'Danh mục', value: product.category, category: 'basic' });
+            
+            // Thông tin kỹ thuật - CPU
+            if (product.processor_name) specs.push({ label: 'CPU / Bộ xử lý', value: product.processor_name, category: 'cpu' });
+            if (product.no_of_cores) specs.push({ label: 'Số nhân CPU', value: `${product.no_of_cores} nhân`, category: 'cpu' });
+            if (product.no_of_threads) specs.push({ label: 'Số luồng CPU', value: `${product.no_of_threads} luồng`, category: 'cpu' });
+            
+            // Thông tin kỹ thuật - Bộ nhớ
+            if (product.ram_gb) {
+                const ram = typeof product.ram_gb === 'string' ? parseInt(product.ram_gb) : product.ram_gb;
+                specs.push({ label: 'RAM', value: `${ram} GB`, category: 'memory' });
+            }
+            if (product.ssd_gb) {
+                const ssd = typeof product.ssd_gb === 'string' ? parseInt(product.ssd_gb) : product.ssd_gb;
+                specs.push({ label: 'SSD', value: `${ssd} GB`, category: 'memory' });
+            }
+            if (product.hard_disk_gb && product.hard_disk_gb > 0) {
+                const hdd = typeof product.hard_disk_gb === 'string' ? parseInt(product.hard_disk_gb) : product.hard_disk_gb;
+                specs.push({ label: 'HDD', value: `${hdd} GB`, category: 'memory' });
+            }
+            
+            // Thông tin kỹ thuật - Màn hình
+            if (product.screen_size_inches) {
+                const screenSize = typeof product.screen_size_inches === 'string' 
+                    ? parseFloat(product.screen_size_inches) 
+                    : product.screen_size_inches;
+                specs.push({ label: 'Kích thước màn hình', value: `${screenSize}"`, category: 'display' });
+            }
+            if (product.resolution) specs.push({ label: 'Độ phân giải', value: product.resolution, category: 'display' });
+            
+            // Thông tin kỹ thuật - Đồ họa & Hệ điều hành
+            if (product.graphics) specs.push({ label: 'Card đồ họa', value: product.graphics, category: 'graphics' });
+            if (product.operating_system) specs.push({ label: 'Hệ điều hành', value: product.operating_system, category: 'os' });
+            
+            // Thông tin kỹ thuật - Đánh giá
+            if (product.spec_score) specs.push({ label: 'Điểm đánh giá', value: `${product.spec_score}/100`, category: 'rating' });
+            
+            // Thông tin bán hàng
+            if (product.stock_quantity !== undefined) {
+                const stock = product.stock_quantity || 0;
+                specs.push({ label: 'Tồn kho', value: stock > 0 ? `${stock} sản phẩm` : 'Hết hàng', category: 'stock' });
+            }
             
             const specsContainer = document.getElementById('productSpecs');
             if (specs.length === 0) {
-                specsContainer.innerHTML = '<p class="text-gray-500">Chưa có thông tin kỹ thuật</p>';
+                specsContainer.innerHTML = '<p class="text-gray-500 col-span-full text-center py-8">Chưa có thông tin kỹ thuật</p>';
             } else {
-                specsContainer.innerHTML = specs.map(spec => `
-                    <div class="flex justify-between py-2 border-b">
-                        <span class="font-medium text-gray-700">${spec.label}:</span>
-                        <span class="text-gray-900">${spec.value}</span>
-                    </div>
-                `).join('');
+                // Nhóm theo category
+                const groupedSpecs = {
+                    basic: specs.filter(s => s.category === 'basic'),
+                    cpu: specs.filter(s => s.category === 'cpu'),
+                    memory: specs.filter(s => s.category === 'memory'),
+                    display: specs.filter(s => s.category === 'display'),
+                    graphics: specs.filter(s => s.category === 'graphics'),
+                    os: specs.filter(s => s.category === 'os'),
+                    rating: specs.filter(s => s.category === 'rating'),
+                    stock: specs.filter(s => s.category === 'stock')
+                };
+                
+                const categoryLabels = {
+                    basic: 'Thông tin cơ bản',
+                    cpu: 'Bộ xử lý',
+                    memory: 'Bộ nhớ',
+                    display: 'Màn hình',
+                    graphics: 'Đồ họa',
+                    os: 'Hệ điều hành',
+                    rating: 'Đánh giá',
+                    stock: 'Tồn kho'
+                };
+                
+                let html = '';
+                Object.keys(groupedSpecs).forEach(category => {
+                    if (groupedSpecs[category].length > 0) {
+                        html += `
+                            <div class="col-span-full mb-4">
+                                <h4 class="font-semibold text-gray-800 mb-2 pb-2 border-b">${categoryLabels[category]}</h4>
+                                <div class="space-y-2">
+                                    ${groupedSpecs[category].map(spec => `
+                                        <div class="flex justify-between py-2 border-b border-gray-100">
+                                            <span class="font-medium text-gray-700">${spec.label}:</span>
+                                            <span class="text-gray-900 text-right">${spec.value}</span>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        `;
+                    }
+                });
+                
+                specsContainer.innerHTML = html;
             }
         }
 
@@ -787,58 +967,78 @@
                 const averageRating = (totalRating / comments.length).toFixed(1);
                 const totalComments = comments.length;
                 
-                // Update rating display
-                document.getElementById('averageRating').textContent = averageRating;
+                // Format số lượng (3,8k format)
+                function formatCount(count) {
+                    if (count >= 1000) {
+                        return (count / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
+                    }
+                    return count.toString();
+                }
+                
+                // Update rating display (Shopee style - màu cam)
+                document.getElementById('averageRating').textContent = `${averageRating} trên 5`;
                 const fullStars = Math.round(averageRating);
                 document.getElementById('ratingStars').innerHTML = 
-                    '<span class="text-red-600">★</span>'.repeat(fullStars) + 
+                    '<span class="text-orange-500">★</span>'.repeat(fullStars) + 
                     '<span class="text-gray-300">★</span>'.repeat(5 - fullStars);
                 document.getElementById('totalReviews').textContent = `${totalComments} đánh giá`;
                 
-                // Render rating filters (Shopee style)
+                // Render rating filters (Shopee style - 2 hàng)
                 const filtersHtml = `
-                    <button 
-                        onclick="filterComments('all', ${productId})" 
-                        class="filter-btn px-4 py-2 rounded border ${currentRatingFilter === 'all' ? 'bg-red-600 text-white border-red-600' : 'bg-white text-gray-700 border-gray-300 hover:border-red-600'}"
-                    >
-                        Tất Cả (${totalComments})
-                    </button>
-                    <button 
-                        onclick="filterComments(5, ${productId})" 
-                        class="filter-btn px-4 py-2 rounded border ${currentRatingFilter === 5 ? 'bg-red-600 text-white border-red-600' : 'bg-white text-gray-700 border-gray-300 hover:border-red-600'}"
-                    >
-                        5 Sao (${ratingCounts[5]})
-                    </button>
-                    <button 
-                        onclick="filterComments(4, ${productId})" 
-                        class="filter-btn px-4 py-2 rounded border ${currentRatingFilter === 4 ? 'bg-red-600 text-white border-red-600' : 'bg-white text-gray-700 border-gray-300 hover:border-red-600'}"
-                    >
-                        4 Sao (${ratingCounts[4]})
-                    </button>
-                    <button 
-                        onclick="filterComments(3, ${productId})" 
-                        class="filter-btn px-4 py-2 rounded border ${currentRatingFilter === 3 ? 'bg-red-600 text-white border-red-600' : 'bg-white text-gray-700 border-gray-300 hover:border-red-600'}"
-                    >
-                        3 Sao (${ratingCounts[3]})
-                    </button>
-                    <button 
-                        onclick="filterComments(2, ${productId})" 
-                        class="filter-btn px-4 py-2 rounded border ${currentRatingFilter === 2 ? 'bg-red-600 text-white border-red-600' : 'bg-white text-gray-700 border-gray-300 hover:border-red-600'}"
-                    >
-                        2 Sao (${ratingCounts[2]})
-                    </button>
-                    <button 
-                        onclick="filterComments(1, ${productId})" 
-                        class="filter-btn px-4 py-2 rounded border ${currentRatingFilter === 1 ? 'bg-red-600 text-white border-red-600' : 'bg-white text-gray-700 border-gray-300 hover:border-red-600'}"
-                    >
-                        1 Sao (${ratingCounts[1]})
-                    </button>
-                    <button 
-                        onclick="filterComments('withComment', ${productId})" 
-                        class="filter-btn px-4 py-2 rounded border ${currentRatingFilter === 'withComment' ? 'bg-red-600 text-white border-red-600' : 'bg-white text-gray-700 border-gray-300 hover:border-red-600'}"
-                    >
-                        Có Bình Luận (${commentsWithText})
-                    </button>
+                    <div class="flex flex-wrap gap-2 mb-2">
+                        <button 
+                            onclick="filterComments('all', ${productId})" 
+                            class="filter-btn px-4 py-2 rounded border transition-all ${currentRatingFilter === 'all' ? 'bg-orange-50 text-orange-600 border-orange-500 font-semibold' : 'bg-white text-gray-700 border-gray-300 hover:border-orange-500 hover:text-orange-600'}"
+                        >
+                            Tất Cả (${formatCount(totalComments)})
+                        </button>
+                        <button 
+                            onclick="filterComments(5, ${productId})" 
+                            class="filter-btn px-4 py-2 rounded border transition-all ${currentRatingFilter === 5 ? 'bg-orange-50 text-orange-600 border-orange-500 font-semibold' : 'bg-white text-gray-700 border-gray-300 hover:border-orange-500 hover:text-orange-600'}"
+                        >
+                            5 Sao (${formatCount(ratingCounts[5])})
+                        </button>
+                        <button 
+                            onclick="filterComments(4, ${productId})" 
+                            class="filter-btn px-4 py-2 rounded border transition-all ${currentRatingFilter === 4 ? 'bg-orange-50 text-orange-600 border-orange-500 font-semibold' : 'bg-white text-gray-700 border-gray-300 hover:border-orange-500 hover:text-orange-600'}"
+                        >
+                            4 Sao (${formatCount(ratingCounts[4])})
+                        </button>
+                        <button 
+                            onclick="filterComments(3, ${productId})" 
+                            class="filter-btn px-4 py-2 rounded border transition-all ${currentRatingFilter === 3 ? 'bg-orange-50 text-orange-600 border-orange-500 font-semibold' : 'bg-white text-gray-700 border-gray-300 hover:border-orange-500 hover:text-orange-600'}"
+                        >
+                            3 Sao (${formatCount(ratingCounts[3])})
+                        </button>
+                        <button 
+                            onclick="filterComments(2, ${productId})" 
+                            class="filter-btn px-4 py-2 rounded border transition-all ${currentRatingFilter === 2 ? 'bg-orange-50 text-orange-600 border-orange-500 font-semibold' : 'bg-white text-gray-700 border-gray-300 hover:border-orange-500 hover:text-orange-600'}"
+                        >
+                            2 Sao (${formatCount(ratingCounts[2])})
+                        </button>
+                        <button 
+                            onclick="filterComments(1, ${productId})" 
+                            class="filter-btn px-4 py-2 rounded border transition-all ${currentRatingFilter === 1 ? 'bg-orange-50 text-orange-600 border-orange-500 font-semibold' : 'bg-white text-gray-700 border-gray-300 hover:border-orange-500 hover:text-orange-600'}"
+                        >
+                            1 Sao (${formatCount(ratingCounts[1])})
+                        </button>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <button 
+                            onclick="filterComments('withComment', ${productId})" 
+                            class="filter-btn px-4 py-2 rounded border transition-all ${currentRatingFilter === 'withComment' ? 'bg-orange-50 text-orange-600 border-orange-500 font-semibold' : 'bg-white text-gray-700 border-gray-300 hover:border-orange-500 hover:text-orange-600'}"
+                        >
+                            Có Bình Luận (${formatCount(commentsWithText)})
+                        </button>
+                        <button 
+                            onclick="filterComments('withMedia', ${productId})" 
+                            class="filter-btn px-4 py-2 rounded border transition-all ${currentRatingFilter === 'withMedia' ? 'bg-orange-50 text-orange-600 border-orange-500 font-semibold' : 'bg-white text-gray-700 border-gray-300 hover:border-orange-500 hover:text-orange-600'}"
+                            disabled
+                            title="Tính năng đang phát triển"
+                        >
+                            Có Hình Ảnh / Video (0)
+                        </button>
+                    </div>
                 `;
                 
                 document.getElementById('ratingFilters').innerHTML = filtersHtml;
@@ -858,9 +1058,17 @@
         // Load comments for product (Shopee style)
         async function loadComments(productId) {
             try {
-                const response = await fetch(`${API_BASE_URL}/comments/product/${productId}`);
+                // GET comments là public, không cần Authorization header
+                const response = await fetch(`${API_BASE_URL}/comments/product/${productId}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
                 
                 if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('Error loading comments:', response.status, errorText);
                     throw new Error(`HTTP ${response.status}`);
                 }
                 
@@ -879,6 +1087,9 @@
                 if (currentRatingFilter !== 'all') {
                     if (currentRatingFilter === 'withComment') {
                         comments = comments.filter(c => c.comment && c.comment.trim().length > 0);
+                    } else if (currentRatingFilter === 'withMedia') {
+                        // Filter comments with media (placeholder for future feature)
+                        comments = comments.filter(c => false); // Chưa có media
                     } else {
                         comments = comments.filter(c => (c.rating || 5) === currentRatingFilter);
                     }
@@ -1082,10 +1293,18 @@
                     })
                 });
 
+                // Kiểm tra content-type trước khi parse JSON
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    const text = await response.text();
+                    console.error('Non-JSON response:', text.substring(0, 200));
+                    throw new Error(`Server trả về lỗi: ${response.status} ${response.statusText}`);
+                }
+
                 const data = await response.json();
 
                 if (!response.ok) {
-                    throw new Error(data.message || 'Lỗi khi thêm bình luận');
+                    throw new Error(data.message || `Lỗi ${response.status}: ${response.statusText}`);
                 }
 
                 showToast('Thêm bình luận thành công!', 'success');
@@ -1094,12 +1313,13 @@
                 document.getElementById('commentText').value = '';
                 document.getElementById('commentRating').value = '5';
                 
-                // Reload comments
+                // Reload comments và rating summary
                 loadComments(currentProduct.id);
+                loadRatingSummary(currentProduct.id);
                 
             } catch (error) {
                 console.error('Error submitting comment:', error);
-                showToast(error.message || 'Lỗi khi thêm bình luận', 'error');
+                showToast(error.message || 'Lỗi khi thêm bình luận. Vui lòng thử lại sau.', 'error');
             }
         });
 

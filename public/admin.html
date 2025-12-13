@@ -1,0 +1,1412 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - TechStore</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .sidebar-gradient {
+            background: linear-gradient(180deg, #10b981 0%, #059669 100%);
+        }
+        .sidebar-item {
+            transition: all 0.3s ease;
+        }
+        .sidebar-item:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        .sidebar-item.active {
+            background-color: rgba(255, 255, 255, 0.2);
+            border-left: 4px solid white;
+        }
+        .card-stat {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .card-stat:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Sidebar -->
+    <div class="fixed left-0 top-0 h-full w-64 sidebar-gradient text-white z-50">
+        <div class="p-6">
+            <h2 class="text-xl font-bold mb-8">MENU</h2>
+            
+            <!-- Dashboard Section -->
+            <div class="mb-6">
+                <h3 class="text-xs font-semibold uppercase mb-3 opacity-75">DASHBOARDS</h3>
+                <div class="space-y-1">
+                    <div class="sidebar-item active px-4 py-2 rounded cursor-pointer" onclick="switchView('dashboard')">
+                        <i class="fas fa-chart-line mr-3"></i>
+                        <span>Analytics</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Management Section -->
+            <div class="mb-6">
+                <h3 class="text-xs font-semibold uppercase mb-3 opacity-75">QUẢN LÝ</h3>
+                <div class="space-y-1">
+                    <div class="sidebar-item px-4 py-2 rounded cursor-pointer" onclick="switchView('products')">
+                        <i class="fas fa-box mr-3"></i>
+                        <span>Sản Phẩm</span>
+                    </div>
+                    <div class="sidebar-item px-4 py-2 rounded cursor-pointer" onclick="switchView('users')">
+                        <i class="fas fa-users mr-3"></i>
+                        <span>Người Dùng</span>
+                    </div>
+                    <div class="sidebar-item px-4 py-2 rounded cursor-pointer" onclick="switchView('orders')">
+                        <i class="fas fa-shopping-cart mr-3"></i>
+                        <span>Đơn Hàng</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Logout -->
+            <div class="mt-8 pt-8 border-t border-white border-opacity-20">
+                <div class="sidebar-item px-4 py-2 rounded cursor-pointer" onclick="logout()">
+                    <i class="fas fa-sign-out-alt mr-3"></i>
+                    <span>Đăng Xuất</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Main Content -->
+    <div class="ml-64 min-h-screen">
+        <!-- Header -->
+        <header class="bg-white shadow-sm sticky top-0 z-40">
+            <div class="px-8 py-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900">Analytics Dashboard</h1>
+                        <p class="text-sm text-gray-500 mt-1">Quản lý và theo dõi hệ thống TechStore</p>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <span id="adminUsername" class="text-gray-700 font-medium"></span>
+                        <a href="/" class="text-blue-600 hover:text-blue-700">
+                            <i class="fas fa-home mr-2"></i>Về Trang Chủ
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </header>
+        
+        <!-- Content Area -->
+        <main class="p-8">
+            <!-- Dashboard View -->
+            <div id="dashboardView" class="view-section">
+                <!-- Stats Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <div class="card-stat bg-white rounded-lg shadow-md p-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-gray-500 text-sm mb-1">Tổng Doanh Thu</p>
+                                <h3 class="text-3xl font-bold text-gray-900" id="totalRevenue">0 ₫</h3>
+                                <p class="text-green-600 text-sm mt-2">
+                                    <i class="fas fa-arrow-up mr-1"></i>
+                                    <span id="revenueGrowth">0%</span> so với tháng trước
+                                </p>
+                            </div>
+                            <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+                                <i class="fas fa-dollar-sign text-green-600 text-2xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card-stat bg-white rounded-lg shadow-md p-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-gray-500 text-sm mb-1">Tổng Đơn Hàng</p>
+                                <h3 class="text-3xl font-bold text-gray-900" id="totalOrders">0</h3>
+                                <p class="text-blue-600 text-sm mt-2">
+                                    <i class="fas fa-arrow-up mr-1"></i>
+                                    <span id="ordersGrowth">0</span> đơn mới hôm nay
+                                </p>
+                            </div>
+                            <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
+                                <i class="fas fa-shopping-bag text-blue-600 text-2xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card-stat bg-white rounded-lg shadow-md p-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-gray-500 text-sm mb-1">Tổng Sản Phẩm</p>
+                                <h3 class="text-3xl font-bold text-gray-900" id="totalProducts">0</h3>
+                                <p class="text-purple-600 text-sm mt-2">
+                                    <i class="fas fa-box mr-1"></i>
+                                    <span id="productsInStock">0</span> sản phẩm còn hàng
+                                </p>
+                            </div>
+                            <div class="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center">
+                                <i class="fas fa-boxes text-purple-600 text-2xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card-stat bg-white rounded-lg shadow-md p-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-gray-500 text-sm mb-1">Tổng Người Dùng</p>
+                                <h3 class="text-3xl font-bold text-gray-900" id="totalUsers">0</h3>
+                                <p class="text-orange-600 text-sm mt-2">
+                                    <i class="fas fa-users mr-1"></i>
+                                    <span id="activeUsers">0</span> người dùng hoạt động
+                                </p>
+                            </div>
+                            <div class="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center">
+                                <i class="fas fa-user-friends text-orange-600 text-2xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Charts Row -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                    <!-- Revenue Chart -->
+                    <div class="bg-white rounded-lg shadow-md p-6">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Doanh Thu Theo Tháng</h3>
+                        <canvas id="revenueChart" height="300"></canvas>
+                    </div>
+                    
+                    <!-- Orders Chart -->
+                    <div class="bg-white rounded-lg shadow-md p-6">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Đơn Hàng Theo Trạng Thái</h3>
+                        <canvas id="ordersChart" height="300"></canvas>
+                    </div>
+                </div>
+                
+                <!-- Recent Orders -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-gray-900">Đơn Hàng Gần Đây</h3>
+                        <button onclick="switchView('orders')" class="text-blue-600 hover:text-blue-700 text-sm">
+                            Xem Tất Cả <i class="fas fa-arrow-right ml-1"></i>
+                        </button>
+                    </div>
+                    <div id="recentOrders" class="overflow-x-auto">
+                        <!-- Recent orders will be loaded here -->
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Products View -->
+            <div id="productsView" class="view-section hidden">
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-2xl font-bold text-gray-900">Quản Lý Sản Phẩm</h2>
+                        <button onclick="showProductModal()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg">
+                            <i class="fas fa-plus mr-2"></i>Thêm Sản Phẩm
+                        </button>
+                    </div>
+                    
+                    <!-- Search and Filter -->
+                    <div class="mb-6 flex gap-4">
+                        <input type="text" id="productSearch" placeholder="Tìm kiếm sản phẩm..." 
+                               class="flex-1 border rounded-lg px-4 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                               onkeyup="filterProducts()">
+                        <select id="productCategoryFilter" onchange="filterProducts()"
+                                class="border rounded-lg px-4 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                            <option value="">Tất cả danh mục</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Products Table -->
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ảnh</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tên</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Danh Mục</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Giá</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tồn Kho</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Thao Tác</th>
+                                </tr>
+                            </thead>
+                            <tbody id="productsTableBody" class="bg-white divide-y divide-gray-200">
+                                <!-- Products will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Pagination -->
+                    <div id="productsPagination" class="mt-6 flex justify-center gap-2">
+                        <!-- Pagination will be loaded here -->
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Users View -->
+            <div id="usersView" class="view-section hidden">
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-2xl font-bold text-gray-900">Quản Lý Người Dùng</h2>
+                        <button onclick="showUserModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
+                            <i class="fas fa-user-plus mr-2"></i>Thêm Người Dùng
+                        </button>
+                    </div>
+                    
+                    <!-- Search -->
+                    <div class="mb-6">
+                        <input type="text" id="userSearch" placeholder="Tìm kiếm người dùng..." 
+                               class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                               onkeyup="filterUsers()">
+                    </div>
+                    
+                    <!-- Users Table -->
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Username</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Vai Trò</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ngày Tạo</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Thao Tác</th>
+                                </tr>
+                            </thead>
+                            <tbody id="usersTableBody" class="bg-white divide-y divide-gray-200">
+                                <!-- Users will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Pagination -->
+                    <div id="usersPagination" class="mt-6 flex justify-center gap-2">
+                        <!-- Pagination will be loaded here -->
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Orders View -->
+            <div id="ordersView" class="view-section hidden">
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-2xl font-bold text-gray-900">Quản Lý Đơn Hàng</h2>
+                        <div class="flex gap-2">
+                            <select id="orderStatusFilter" onchange="filterOrders()"
+                                    class="border rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="">Tất cả trạng thái</option>
+                                <option value="pending">Chờ xử lý</option>
+                                <option value="processing">Đang xử lý</option>
+                                <option value="shipped">Đã giao hàng</option>
+                                <option value="delivered">Đã nhận hàng</option>
+                                <option value="cancelled">Đã hủy</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Orders Table -->
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Người Đặt</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tổng Tiền</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Trạng Thái</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ngày Đặt</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Thao Tác</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ordersTableBody" class="bg-white divide-y divide-gray-200">
+                                <!-- Orders will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Pagination -->
+                    <div id="ordersPagination" class="mt-6 flex justify-center gap-2">
+                        <!-- Pagination will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <!-- Product Modal -->
+    <div id="productModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+        <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-xl font-bold text-gray-900" id="productModalTitle">Thêm Sản Phẩm</h3>
+                    <button onclick="closeProductModal()" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                
+                <form id="productForm" onsubmit="saveProduct(event)">
+                    <input type="hidden" id="productId">
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Tên Sản Phẩm *</label>
+                            <input type="text" id="productName" required
+                                   class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Danh Mục *</label>
+                            <input type="text" id="productCategory" required
+                                   class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Giá *</label>
+                            <input type="number" id="productPrice" required step="0.01"
+                                   class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Giá Gốc</label>
+                            <input type="number" id="productOriginalPrice" step="0.01"
+                                   class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Thương Hiệu</label>
+                            <input type="text" id="productBrand"
+                                   class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Tồn Kho *</label>
+                            <input type="number" id="productStock" required
+                                   class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Mô Tả</label>
+                        <textarea id="productDescription" rows="4"
+                                  class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500"></textarea>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">URL Ảnh Chính</label>
+                        <input type="text" id="productMainImage"
+                               class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                    </div>
+                    
+                    <div class="flex justify-end gap-3">
+                        <button type="button" onclick="closeProductModal()" 
+                                class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                            Hủy
+                        </button>
+                        <button type="submit" 
+                                class="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg">
+                            Lưu
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- User Modal -->
+    <div id="userModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+        <div class="bg-white rounded-lg shadow-xl max-w-lg w-full mx-4">
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-xl font-bold text-gray-900" id="userModalTitle">Thêm Người Dùng</h3>
+                    <button onclick="closeUserModal()" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                
+                <form id="userForm" onsubmit="saveUser(event)">
+                    <input type="hidden" id="userId">
+                    
+                    <div class="space-y-4 mb-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Username *</label>
+                            <input type="text" id="userUsername" required
+                                   class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                            <input type="email" id="userEmail"
+                                   class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div id="userPasswordField">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Password *</label>
+                            <input type="password" id="userPassword"
+                                   class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Vai Trò *</label>
+                            <select id="userRole" required
+                                    class="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="user">User</option>
+                                <option value="admin">Admin</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-end gap-3">
+                        <button type="button" onclick="closeUserModal()" 
+                                class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                            Hủy
+                        </button>
+                        <button type="submit" 
+                                class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg">
+                            Lưu
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Order Detail Modal -->
+    <div id="orderDetailModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+        <div class="bg-white rounded-lg shadow-xl max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-xl font-bold text-gray-900">Chi Tiết Đơn Hàng #<span id="orderDetailId"></span></h3>
+                    <button onclick="closeOrderDetailModal()" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                
+                <div id="orderDetailContent">
+                    <!-- Order details will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const API_BASE_URL = 'http://localhost:5000/api';
+        let currentUser = null;
+        let currentView = 'dashboard';
+        let revenueChart = null;
+        let ordersChart = null;
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            checkAuth();
+        });
+        
+        // Check authentication
+        async function checkAuth() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = '/login.html';
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/me`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Unauthorized');
+                }
+                
+                const data = await response.json();
+                currentUser = data.user;
+                
+                if (currentUser.role !== 'admin') {
+                    alert('Bạn không có quyền truy cập trang này!');
+                    window.location.href = '/';
+                    return;
+                }
+                
+                document.getElementById('adminUsername').textContent = currentUser.username;
+                loadDashboard();
+            } catch (error) {
+                console.error('Auth error:', error);
+                window.location.href = '/login.html';
+            }
+        }
+        
+        // Get token
+        function getToken() {
+            return localStorage.getItem('token');
+        }
+        
+        // Switch view
+        function switchView(view) {
+            currentView = view;
+            
+            // Update sidebar active state
+            document.querySelectorAll('.sidebar-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            event.target.closest('.sidebar-item').classList.add('active');
+            
+            // Show/hide views
+            document.querySelectorAll('.view-section').forEach(section => {
+                section.classList.add('hidden');
+            });
+            
+            document.getElementById(`${view}View`).classList.remove('hidden');
+            
+            // Load data for view
+            if (view === 'dashboard') {
+                loadDashboard();
+            } else if (view === 'products') {
+                loadProducts();
+            } else if (view === 'users') {
+                loadUsers();
+            } else if (view === 'orders') {
+                loadOrders();
+            }
+        }
+        
+        // Load Dashboard
+        async function loadDashboard() {
+            try {
+                const token = getToken();
+                
+                // Load stats
+                const [statsRes, ordersRes] = await Promise.all([
+                    fetch(`${API_BASE_URL}/stats/overview`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    }),
+                    fetch(`${API_BASE_URL}/orders?limit=5`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    })
+                ]);
+                
+                if (statsRes.ok) {
+                    const stats = await statsRes.json();
+                    updateStats(stats);
+                }
+                
+                if (ordersRes.ok) {
+                    const ordersData = await ordersRes.json();
+                    // API có thể trả về orders trực tiếp hoặc trong object
+                    const orders = ordersData.orders || ordersData || [];
+                    renderRecentOrders(orders.slice(0, 5)); // Chỉ hiển thị 5 đơn gần nhất
+                }
+                
+                // Load charts
+                loadCharts();
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+            }
+        }
+        
+        // Update stats
+        function updateStats(stats) {
+            document.getElementById('totalRevenue').textContent = formatPrice(stats.totalRevenue || 0);
+            document.getElementById('revenueGrowth').textContent = `${stats.revenueGrowth || 0}%`;
+            document.getElementById('totalOrders').textContent = stats.totalOrders || 0;
+            document.getElementById('ordersGrowth').textContent = stats.newOrdersToday || 0;
+            document.getElementById('totalProducts').textContent = stats.totalProducts || 0;
+            document.getElementById('productsInStock').textContent = stats.productsInStock || 0;
+            document.getElementById('totalUsers').textContent = stats.totalUsers || 0;
+            document.getElementById('activeUsers').textContent = stats.activeUsers || 0;
+        }
+        
+        // Load Charts
+        async function loadCharts() {
+            try {
+                const token = getToken();
+                const response = await fetch(`${API_BASE_URL}/stats/revenue`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    renderRevenueChart(data);
+                    renderOrdersChart(data);
+                }
+            } catch (error) {
+                console.error('Error loading charts:', error);
+            }
+        }
+        
+        // Render Revenue Chart
+        function renderRevenueChart(data) {
+            const ctx = document.getElementById('revenueChart');
+            if (revenueChart) {
+                revenueChart.destroy();
+            }
+            
+            revenueChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.months || ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10', 'T11', 'T12'],
+                    datasets: [{
+                        label: 'Doanh Thu (₫)',
+                        data: data.revenue || [],
+                        borderColor: 'rgb(34, 197, 94)',
+                        backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Render Orders Chart
+        function renderOrdersChart(data) {
+            const ctx = document.getElementById('ordersChart');
+            if (ordersChart) {
+                ordersChart.destroy();
+            }
+            
+            ordersChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Chờ xử lý', 'Đang xử lý', 'Đã giao hàng', 'Đã nhận hàng', 'Đã hủy'],
+                    datasets: [{
+                        data: [
+                            data.ordersByStatus?.pending || 0,
+                            data.ordersByStatus?.processing || 0,
+                            data.ordersByStatus?.shipped || 0,
+                            data.ordersByStatus?.delivered || 0,
+                            data.ordersByStatus?.cancelled || 0
+                        ],
+                        backgroundColor: [
+                            'rgb(251, 191, 36)',
+                            'rgb(59, 130, 246)',
+                            'rgb(139, 92, 246)',
+                            'rgb(34, 197, 94)',
+                            'rgb(239, 68, 68)'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+        }
+        
+        // Render Recent Orders
+        function renderRecentOrders(orders) {
+            const container = document.getElementById('recentOrders');
+            if (!orders || orders.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-center py-4">Chưa có đơn hàng nào</p>';
+                return;
+            }
+            
+            container.innerHTML = orders.map(order => `
+                <div class="flex items-center justify-between py-3 border-b">
+                    <div>
+                        <p class="font-medium">Đơn hàng #${order.id}</p>
+                        <p class="text-sm text-gray-500">${order.username || order.user_id || 'N/A'}</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="font-semibold">${formatPrice(order.total || 0)}</p>
+                        <span class="px-2 py-1 rounded text-xs ${getStatusColor(order.status)}">
+                            ${getStatusText(order.status)}
+                        </span>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        // Load Products
+        async function loadProducts(page = 1) {
+            try {
+                const token = getToken();
+                const search = document.getElementById('productSearch')?.value || '';
+                const category = document.getElementById('productCategoryFilter')?.value || '';
+                
+                let url = `${API_BASE_URL}/products?page=${page}&limit=20`;
+                if (search) url += `&q=${encodeURIComponent(search)}`;
+                if (category) url += `&category=${encodeURIComponent(category)}`;
+                
+                const response = await fetch(url, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    renderProducts(data.products || []);
+                    renderProductPagination(data.pagination || {});
+                    loadCategories();
+                }
+            } catch (error) {
+                console.error('Error loading products:', error);
+            }
+        }
+        
+        // Render Products
+        function renderProducts(products) {
+            const tbody = document.getElementById('productsTableBody');
+            if (products.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="px-4 py-8 text-center text-gray-500">Không có sản phẩm nào</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = products.map(product => {
+                const slug = product.slug || createSlug(product.name);
+                const imageUrl = `/img/products/${slug}/1.jpg`;
+                
+                return `
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3">${product.id}</td>
+                        <td class="px-4 py-3">
+                            <img src="${imageUrl}" alt="${product.name}" 
+                                 class="w-16 h-16 object-cover rounded"
+                                 onerror="this.src='/img/placeholder.png'">
+                        </td>
+                        <td class="px-4 py-3 font-medium">${product.name}</td>
+                        <td class="px-4 py-3">${product.category || 'N/A'}</td>
+                        <td class="px-4 py-3">${formatPrice(product.price)}</td>
+                        <td class="px-4 py-3">${product.stock_quantity || product.stock || 0}</td>
+                        <td class="px-4 py-3">
+                            <div class="flex gap-2">
+                                <button onclick="editProduct(${product.id})" 
+                                        class="text-blue-600 hover:text-blue-700">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button onclick="deleteProduct(${product.id})" 
+                                        class="text-red-600 hover:text-red-700">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+        
+        // Load Users
+        async function loadUsers(page = 1) {
+            try {
+                const token = getToken();
+                const search = document.getElementById('userSearch')?.value || '';
+                
+                let url = `${API_BASE_URL}/users?page=${page}&limit=20`;
+                if (search) url += `&search=${encodeURIComponent(search)}`;
+                
+                const response = await fetch(url, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    renderUsers(data.users || []);
+                    renderUserPagination(data.pagination || {});
+                }
+            } catch (error) {
+                console.error('Error loading users:', error);
+            }
+        }
+        
+        // Render Users
+        function renderUsers(users) {
+            const tbody = document.getElementById('usersTableBody');
+            if (users.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="px-4 py-8 text-center text-gray-500">Không có người dùng nào</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = users.map(user => `
+                <tr class="hover:bg-gray-50">
+                    <td class="px-4 py-3">${user.id}</td>
+                    <td class="px-4 py-3 font-medium">${user.username}</td>
+                    <td class="px-4 py-3">${user.email || 'N/A'}</td>
+                    <td class="px-4 py-3">
+                        <span class="px-2 py-1 rounded text-xs ${user.role === 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-700'}">
+                            ${user.role === 'admin' ? 'Admin' : 'User'}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3">${formatDate(user.created_at)}</td>
+                    <td class="px-4 py-3">
+                        <div class="flex gap-2">
+                            <button onclick="editUser(${user.id})" 
+                                    class="text-blue-600 hover:text-blue-700">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button onclick="deleteUser(${user.id})" 
+                                    class="text-red-600 hover:text-red-700">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+        
+        // Load Orders
+        async function loadOrders(page = 1) {
+            try {
+                const token = getToken();
+                const status = document.getElementById('orderStatusFilter')?.value || '';
+                
+                let url = `${API_BASE_URL}/orders/admin?page=${page}&limit=20`;
+                if (status) url += `&status=${encodeURIComponent(status)}`;
+                
+                const response = await fetch(url, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    renderOrders(data.orders || []);
+                    renderOrderPagination(data.pagination || {});
+                }
+            } catch (error) {
+                console.error('Error loading orders:', error);
+            }
+        }
+        
+        // Render Orders
+        function renderOrders(orders) {
+            const tbody = document.getElementById('ordersTableBody');
+            if (orders.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="px-4 py-8 text-center text-gray-500">Không có đơn hàng nào</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = orders.map(order => `
+                <tr class="hover:bg-gray-50">
+                    <td class="px-4 py-3">#${order.id}</td>
+                    <td class="px-4 py-3">${order.username || 'N/A'}</td>
+                    <td class="px-4 py-3 font-semibold">${formatPrice(order.total)}</td>
+                    <td class="px-4 py-3">
+                        <span class="px-2 py-1 rounded text-xs ${getStatusColor(order.status)}">
+                            ${getStatusText(order.status)}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3">${formatDate(order.created_at)}</td>
+                    <td class="px-4 py-3">
+                        <div class="flex gap-2">
+                            <button onclick="viewOrderDetail(${order.id})" 
+                                    class="text-blue-600 hover:text-blue-700">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button onclick="updateOrderStatus(${order.id})" 
+                                    class="text-green-600 hover:text-green-700">
+                                <i class="fas fa-check"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+        
+        // Product CRUD
+        function showProductModal(product = null) {
+            const modal = document.getElementById('productModal');
+            const form = document.getElementById('productForm');
+            const title = document.getElementById('productModalTitle');
+            
+            if (product) {
+                title.textContent = 'Sửa Sản Phẩm';
+                document.getElementById('productId').value = product.id;
+                document.getElementById('productName').value = product.name || '';
+                document.getElementById('productCategory').value = product.category || '';
+                document.getElementById('productPrice').value = product.price || '';
+                document.getElementById('productOriginalPrice').value = product.original_price || '';
+                document.getElementById('productBrand').value = product.brand || '';
+                document.getElementById('productStock').value = product.stock_quantity || product.stock || '';
+                document.getElementById('productDescription').value = product.description || '';
+                document.getElementById('productMainImage').value = product.main_image_url || product.image_url || '';
+            } else {
+                title.textContent = 'Thêm Sản Phẩm';
+                form.reset();
+                document.getElementById('productId').value = '';
+            }
+            
+            modal.classList.remove('hidden');
+        }
+        
+        function closeProductModal() {
+            document.getElementById('productModal').classList.add('hidden');
+        }
+        
+        async function saveProduct(event) {
+            event.preventDefault();
+            
+            const token = getToken();
+            const productId = document.getElementById('productId').value;
+            const productData = {
+                name: document.getElementById('productName').value,
+                category: document.getElementById('productCategory').value,
+                price: parseFloat(document.getElementById('productPrice').value),
+                original_price: document.getElementById('productOriginalPrice').value ? parseFloat(document.getElementById('productOriginalPrice').value) : null,
+                brand: document.getElementById('productBrand').value || null,
+                stock_quantity: parseInt(document.getElementById('productStock').value),
+                description: document.getElementById('productDescription').value || null,
+                main_image_url: document.getElementById('productMainImage').value || null
+            };
+            
+            try {
+                const url = productId ? `${API_BASE_URL}/products/${productId}` : `${API_BASE_URL}/products`;
+                const method = productId ? 'PUT' : 'POST';
+                
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(productData)
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    alert(productId ? 'Cập nhật sản phẩm thành công!' : 'Thêm sản phẩm thành công!');
+                    closeProductModal();
+                    loadProducts();
+                } else {
+                    alert(data.message || 'Có lỗi xảy ra!');
+                }
+            } catch (error) {
+                console.error('Error saving product:', error);
+                alert('Có lỗi xảy ra khi lưu sản phẩm!');
+            }
+        }
+        
+        async function editProduct(id) {
+            try {
+                const token = getToken();
+                const response = await fetch(`${API_BASE_URL}/products/${id}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (response.ok) {
+                    const product = await response.json();
+                    showProductModal(product);
+                }
+            } catch (error) {
+                console.error('Error loading product:', error);
+            }
+        }
+        
+        async function deleteProduct(id) {
+            if (!confirm('Bạn có chắc chắn muốn xóa sản phẩm này?')) {
+                return;
+            }
+            
+            try {
+                const token = getToken();
+                const response = await fetch(`${API_BASE_URL}/products/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (response.ok) {
+                    alert('Xóa sản phẩm thành công!');
+                    loadProducts();
+                } else {
+                    const data = await response.json();
+                    alert(data.message || 'Có lỗi xảy ra!');
+                }
+            } catch (error) {
+                console.error('Error deleting product:', error);
+                alert('Có lỗi xảy ra khi xóa sản phẩm!');
+            }
+        }
+        
+        // User CRUD
+        function showUserModal(user = null) {
+            const modal = document.getElementById('userModal');
+            const form = document.getElementById('userForm');
+            const title = document.getElementById('userModalTitle');
+            const passwordField = document.getElementById('userPasswordField');
+            
+            if (user) {
+                title.textContent = 'Sửa Người Dùng';
+                document.getElementById('userId').value = user.id;
+                document.getElementById('userUsername').value = user.username || '';
+                document.getElementById('userEmail').value = user.email || '';
+                document.getElementById('userRole').value = user.role || 'user';
+                passwordField.style.display = 'none';
+                document.getElementById('userPassword').removeAttribute('required');
+            } else {
+                title.textContent = 'Thêm Người Dùng';
+                form.reset();
+                document.getElementById('userId').value = '';
+                passwordField.style.display = 'block';
+                document.getElementById('userPassword').setAttribute('required', 'required');
+            }
+            
+            modal.classList.remove('hidden');
+        }
+        
+        function closeUserModal() {
+            document.getElementById('userModal').classList.add('hidden');
+        }
+        
+        async function saveUser(event) {
+            event.preventDefault();
+            
+            const token = getToken();
+            const userId = document.getElementById('userId').value;
+            const userData = {
+                username: document.getElementById('userUsername').value,
+                email: document.getElementById('userEmail').value || null,
+                role: document.getElementById('userRole').value
+            };
+            
+            if (!userId) {
+                userData.password = document.getElementById('userPassword').value;
+            }
+            
+            try {
+                const url = userId ? `${API_BASE_URL}/users/${userId}` : `${API_BASE_URL}/users`;
+                const method = userId ? 'PUT' : 'POST';
+                
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(userData)
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    alert(userId ? 'Cập nhật người dùng thành công!' : 'Thêm người dùng thành công!');
+                    closeUserModal();
+                    loadUsers();
+                } else {
+                    alert(data.message || 'Có lỗi xảy ra!');
+                }
+            } catch (error) {
+                console.error('Error saving user:', error);
+                alert('Có lỗi xảy ra khi lưu người dùng!');
+            }
+        }
+        
+        async function editUser(id) {
+            try {
+                const token = getToken();
+                const response = await fetch(`${API_BASE_URL}/users/${id}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (response.ok) {
+                    const user = await response.json();
+                    showUserModal(user);
+                }
+            } catch (error) {
+                console.error('Error loading user:', error);
+            }
+        }
+        
+        async function deleteUser(id) {
+            if (!confirm('Bạn có chắc chắn muốn xóa người dùng này?')) {
+                return;
+            }
+            
+            try {
+                const token = getToken();
+                const response = await fetch(`${API_BASE_URL}/users/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (response.ok) {
+                    alert('Xóa người dùng thành công!');
+                    loadUsers();
+                } else {
+                    const data = await response.json();
+                    alert(data.message || 'Có lỗi xảy ra!');
+                }
+            } catch (error) {
+                console.error('Error deleting user:', error);
+                alert('Có lỗi xảy ra khi xóa người dùng!');
+            }
+        }
+        
+        // Order Management
+        async function viewOrderDetail(id) {
+            try {
+                const token = getToken();
+                const response = await fetch(`${API_BASE_URL}/orders/${id}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    // API có thể trả về order trực tiếp hoặc trong object
+                    const order = data.order || data;
+                    renderOrderDetail(order);
+                    document.getElementById('orderDetailModal').classList.remove('hidden');
+                    document.getElementById('orderDetailId').textContent = order.id;
+                }
+            } catch (error) {
+                console.error('Error loading order:', error);
+            }
+        }
+        
+        function renderOrderDetail(order) {
+            const container = document.getElementById('orderDetailContent');
+            container.innerHTML = `
+                <div class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <p class="text-sm text-gray-500">Người đặt</p>
+                            <p class="font-medium">${order.username || 'N/A'}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500">Tổng tiền</p>
+                            <p class="font-semibold text-lg">${formatPrice(order.total)}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500">Trạng thái</p>
+                            <span class="px-2 py-1 rounded text-xs ${getStatusColor(order.status)}">
+                                ${getStatusText(order.status)}
+                            </span>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500">Ngày đặt</p>
+                            <p>${formatDate(order.created_at)}</p>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <p class="text-sm text-gray-500 mb-2">Địa chỉ giao hàng</p>
+                        <p>${order.shipping_address || 'N/A'}</p>
+                    </div>
+                    
+                    <div>
+                        <p class="text-sm text-gray-500 mb-2">Sản phẩm</p>
+                        <div class="space-y-2">
+                            ${(order.items || []).map(item => `
+                                <div class="flex items-center justify-between p-3 bg-gray-50 rounded">
+                                    <div>
+                                        <p class="font-medium">${item.product_name}</p>
+                                        <p class="text-sm text-gray-500">Số lượng: ${item.quantity}</p>
+                                    </div>
+                                    <p class="font-semibold">${formatPrice(item.price * item.quantity)}</p>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    
+                    <div class="pt-4 border-t">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Cập nhật trạng thái</label>
+                        <select id="orderStatusSelect" class="w-full border rounded-lg px-4 py-2">
+                            <option value="pending" ${order.status === 'pending' ? 'selected' : ''}>Chờ xử lý</option>
+                            <option value="processing" ${order.status === 'processing' ? 'selected' : ''}>Đang xử lý</option>
+                            <option value="shipped" ${order.status === 'shipped' ? 'selected' : ''}>Đã giao hàng</option>
+                            <option value="delivered" ${order.status === 'delivered' ? 'selected' : ''}>Đã nhận hàng</option>
+                            <option value="cancelled" ${order.status === 'cancelled' ? 'selected' : ''}>Đã hủy</option>
+                        </select>
+                        <button onclick="saveOrderStatus(${order.id})" 
+                                class="mt-3 w-full bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg">
+                            Cập nhật Trạng Thái
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function closeOrderDetailModal() {
+            document.getElementById('orderDetailModal').classList.add('hidden');
+        }
+        
+        async function saveOrderStatus(orderId) {
+            const status = document.getElementById('orderStatusSelect').value;
+            
+            try {
+                const token = getToken();
+                const response = await fetch(`${API_BASE_URL}/orders/${orderId}/status`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ status })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    alert('Cập nhật trạng thái đơn hàng thành công!');
+                    closeOrderDetailModal();
+                    loadOrders();
+                    if (currentView === 'dashboard') {
+                        loadDashboard();
+                    }
+                } else {
+                    alert(data.message || 'Có lỗi xảy ra!');
+                }
+            } catch (error) {
+                console.error('Error updating order status:', error);
+                alert('Có lỗi xảy ra khi cập nhật trạng thái!');
+            }
+        }
+        
+        async function updateOrderStatus(id) {
+            await viewOrderDetail(id);
+        }
+        
+        // Helper functions
+        function formatPrice(price) {
+            return new Intl.NumberFormat('vi-VN').format(price) + ' ₫';
+        }
+        
+        function formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('vi-VN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+        
+        function getStatusColor(status) {
+            const colors = {
+                'pending': 'bg-yellow-100 text-yellow-700',
+                'processing': 'bg-blue-100 text-blue-700',
+                'shipped': 'bg-purple-100 text-purple-700',
+                'delivered': 'bg-green-100 text-green-700',
+                'cancelled': 'bg-red-100 text-red-700'
+            };
+            return colors[status] || 'bg-gray-100 text-gray-700';
+        }
+        
+        function getStatusText(status) {
+            const texts = {
+                'pending': 'Chờ xử lý',
+                'processing': 'Đang xử lý',
+                'shipped': 'Đã giao hàng',
+                'delivered': 'Đã nhận hàng',
+                'cancelled': 'Đã hủy'
+            };
+            return texts[status] || status;
+        }
+        
+        function createSlug(name) {
+            return name
+                .toLowerCase()
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .replace(/[^a-z0-9\s-]/g, '')
+                .replace(/\s+/g, '-')
+                .replace(/-+/g, '-')
+                .trim();
+        }
+        
+        function filterProducts() {
+            loadProducts(1);
+        }
+        
+        function filterUsers() {
+            loadUsers(1);
+        }
+        
+        function filterOrders() {
+            loadOrders(1);
+        }
+        
+        async function loadCategories() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/categories`);
+                if (response.ok) {
+                    const data = await response.json();
+                    const select = document.getElementById('productCategoryFilter');
+                    if (select) {
+                        const currentValue = select.value;
+                        select.innerHTML = '<option value="">Tất cả danh mục</option>' +
+                            (data.categories || []).map(cat => 
+                                `<option value="${cat.name}" ${cat.name === currentValue ? 'selected' : ''}>${cat.name}</option>`
+                            ).join('');
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading categories:', error);
+            }
+        }
+        
+        function renderProductPagination(pagination) {
+            const container = document.getElementById('productsPagination');
+            if (!pagination || !pagination.totalPages || pagination.totalPages <= 1) {
+                container.innerHTML = '';
+                return;
+            }
+            
+            let html = '';
+            for (let i = 1; i <= pagination.totalPages; i++) {
+                html += `
+                    <button onclick="loadProducts(${i})" 
+                            class="px-4 py-2 border rounded-lg ${i === pagination.currentPage ? 'bg-green-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}">
+                        ${i}
+                    </button>
+                `;
+            }
+            container.innerHTML = html;
+        }
+        
+        function renderUserPagination(pagination) {
+            const container = document.getElementById('usersPagination');
+            if (!pagination || !pagination.totalPages || pagination.totalPages <= 1) {
+                container.innerHTML = '';
+                return;
+            }
+            
+            let html = '';
+            for (let i = 1; i <= pagination.totalPages; i++) {
+                html += `
+                    <button onclick="loadUsers(${i})" 
+                            class="px-4 py-2 border rounded-lg ${i === pagination.currentPage ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}">
+                        ${i}
+                    </button>
+                `;
+            }
+            container.innerHTML = html;
+        }
+        
+        function renderOrderPagination(pagination) {
+            const container = document.getElementById('ordersPagination');
+            if (!pagination || !pagination.totalPages || pagination.totalPages <= 1) {
+                container.innerHTML = '';
+                return;
+            }
+            
+            let html = '';
+            for (let i = 1; i <= pagination.totalPages; i++) {
+                html += `
+                    <button onclick="loadOrders(${i})" 
+                            class="px-4 py-2 border rounded-lg ${i === pagination.currentPage ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}">
+                        ${i}
+                    </button>
+                `;
+            }
+            container.innerHTML = html;
+        }
+        
+        function logout() {
+            if (confirm('Bạn có chắc chắn muốn đăng xuất?')) {
+                localStorage.removeItem('token');
+                window.location.href = '/login.html';
+            }
+        }
+    </script>
+</body>
+</html>
+
