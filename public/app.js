@@ -1042,12 +1042,20 @@ function renderProducts(products, container) {
                     <p class="text-sm text-gray-600 mb-3 line-clamp-2 flex-1">${product.description}</p>
                 ` : '<div class="flex-1"></div>'}
                 ${currentUser ? `
-                    <button 
-                        onclick="event.preventDefault(); event.stopPropagation(); addToCart(${product.id}, '${product.name.replace(/'/g, "\\'")}', ${product.price})"
-                        class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 px-4 rounded-lg transition-colors mt-auto"
-                    >
-                        Thêm vào giỏ
-                    </button>
+                    <div class="flex gap-2 mt-auto">
+                        <button 
+                            onclick="event.preventDefault(); event.stopPropagation(); addToCart(${product.id}, '${product.name.replace(/'/g, "\\'")}', ${product.price})"
+                            class="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 px-4 rounded-lg transition-colors"
+                        >
+                            Thêm vào giỏ
+                        </button>
+                        <button 
+                            onclick="event.preventDefault(); event.stopPropagation(); buyNow(${product.id}, '${product.name.replace(/'/g, "\\'")}', ${product.price})"
+                            class="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-bold py-2.5 px-4 rounded-lg transition-colors"
+                        >
+                            Mua ngay
+                        </button>
+                    </div>
                 ` : `
                     <div 
                         onclick="event.preventDefault(); event.stopPropagation(); window.location.href='/login.html'"
@@ -1331,6 +1339,25 @@ async function addToCart(productId, productName, price) {
     } catch (error) {
         showToast(error.message, 'error');
     } finally {
+        hideLoading();
+    }
+}
+
+async function buyNow(productId, productName, price) {
+    try {
+        showLoading();
+        // Thêm sản phẩm vào giỏ hàng
+        await apiCall('/cart/items', {
+            method: 'POST',
+            body: JSON.stringify({ product_id: productId, quantity: 1 })
+        });
+        
+        loadCartCount();
+        
+        // Chuyển thẳng đến trang checkout
+        window.location.href = '/checkout.html';
+    } catch (error) {
+        showToast(error.message, 'error');
         hideLoading();
     }
 }
@@ -2513,6 +2540,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Make functions available globally for onclick handlers
 window.addToCart = addToCart;
+window.buyNow = buyNow;
 window.navigateTo = navigateTo;
 window.viewCategory = viewCategory;
 window.viewCategoryProducts = viewCategoryProducts;

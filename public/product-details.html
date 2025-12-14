@@ -285,14 +285,24 @@
                                 </div>
                             </div>
                             
-                            <button 
-                                id="addToCartBtn"
-                                onclick="handleAddToCart()"
-                                class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-4 px-6 rounded-lg transition-colors text-lg"
-                            >
-                                <i class="fas fa-shopping-cart mr-2"></i>
-                                Thêm vào giỏ hàng
-                            </button>
+                            <div class="flex gap-3">
+                                <button 
+                                    id="addToCartBtn"
+                                    onclick="handleAddToCart()"
+                                    class="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-4 px-6 rounded-lg transition-colors text-lg"
+                                >
+                                    <i class="fas fa-shopping-cart mr-2"></i>
+                                    Thêm vào giỏ hàng
+                                </button>
+                                <button 
+                                    id="buyNowBtn"
+                                    onclick="handleBuyNow()"
+                                    class="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-bold py-4 px-6 rounded-lg transition-colors text-lg"
+                                >
+                                    <i class="fas fa-bolt mr-2"></i>
+                                    Mua ngay
+                                </button>
+                            </div>
                             
                             <button 
                                 id="loginToBuyBtn"
@@ -579,19 +589,40 @@
                     <i class="fas fa-times-circle text-red-500"></i>
                     <span class="text-sm text-red-600 font-semibold">Hết hàng</span>
                 `;
-                document.getElementById('addToCartBtn').disabled = true;
-                document.getElementById('addToCartBtn').classList.add('opacity-50', 'cursor-not-allowed');
+                const addToCartBtn = document.getElementById('addToCartBtn');
+                const buyNowBtn = document.getElementById('buyNowBtn');
+                if (addToCartBtn) {
+                    addToCartBtn.disabled = true;
+                    addToCartBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                }
+                if (buyNowBtn) {
+                    buyNowBtn.disabled = true;
+                    buyNowBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                }
+            } else {
+                const addToCartBtn = document.getElementById('addToCartBtn');
+                const buyNowBtn = document.getElementById('buyNowBtn');
+                if (addToCartBtn) {
+                    addToCartBtn.disabled = false;
+                    addToCartBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                }
+                if (buyNowBtn) {
+                    buyNowBtn.disabled = false;
+                    buyNowBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                }
             }
 
             // Check user login
             currentUser = getCachedUser();
             if (currentUser) {
                 document.getElementById('addToCartBtn').classList.remove('hidden');
+                document.getElementById('buyNowBtn').classList.remove('hidden');
                 document.getElementById('loginToBuyBtn').classList.add('hidden');
                 document.getElementById('commentFormContainer').classList.remove('hidden');
                 document.getElementById('loginPrompt').classList.add('hidden');
             } else {
                 document.getElementById('addToCartBtn').classList.add('hidden');
+                document.getElementById('buyNowBtn').classList.add('hidden');
                 document.getElementById('loginToBuyBtn').classList.remove('hidden');
                 document.getElementById('commentFormContainer').classList.add('hidden');
                 document.getElementById('loginPrompt').classList.remove('hidden');
@@ -684,6 +715,60 @@
             } catch (error) {
                 console.error('Error adding to cart:', error);
                 showToast(error.message || 'Lỗi khi thêm vào giỏ hàng', 'error');
+            }
+        }
+
+        async function handleBuyNow() {
+            if (!currentUser) {
+                window.location.href = '/login.html';
+                return;
+            }
+
+            if (!currentProduct) {
+                showToast('Lỗi: Không tìm thấy sản phẩm', 'error');
+                return;
+            }
+
+            try {
+                const token = getToken();
+                if (!token) {
+                    showToast('Vui lòng đăng nhập để mua sản phẩm', 'error');
+                    window.location.href = '/login.html';
+                    return;
+                }
+
+                // Thêm sản phẩm vào giỏ hàng
+                const response = await fetch(`${API_BASE_URL}/cart/items`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        product_id: currentProduct.id,
+                        quantity: currentQuantity
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.message || 'Lỗi khi thêm vào giỏ hàng');
+                }
+
+                showToast(`Đã thêm ${currentQuantity} sản phẩm vào giỏ hàng!`, 'success');
+                
+                // Cập nhật số lượng trong giỏ hàng
+                loadCartCount();
+                
+                // Chuyển đến trang checkout
+                setTimeout(() => {
+                    window.location.href = '/checkout.html';
+                }, 300);
+                
+            } catch (error) {
+                console.error('Error in buy now:', error);
+                showToast(error.message || 'Lỗi khi thực hiện mua ngay', 'error');
             }
         }
 
