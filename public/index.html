@@ -143,7 +143,7 @@
             border-radius: 0.5rem;
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
             min-width: 200px;
-            z-index: 50;
+            z-index: 60;
             opacity: 0;
             visibility: hidden;
             transition: opacity 0.2s ease-in-out, visibility 0.2s ease-in-out;
@@ -163,8 +163,8 @@
 </head>
 
 <body class="bg-gray-50">
-    <!-- Top Bar (Red Banner) -->
-    <div class="bg-red-600 text-white py-2 text-xs">
+    <!-- Top Bar (Red Banner) - Fixed -->
+    <div class="bg-red-600 text-white py-2 text-xs fixed top-0 left-0 right-0 z-[60] hidden md:block">
         <div class="container mx-auto px-4">
             <div class="flex items-center justify-between flex-wrap gap-2">
                 <div class="flex items-center gap-4 flex-wrap">
@@ -182,11 +182,11 @@
         </div>
     </div>
 
-    <!-- Main Header -->
-    <header class="bg-white shadow-md sticky top-0 z-50">
+    <!-- Main Header - Fixed below top bar -->
+    <header class="bg-white shadow-md fixed left-0 right-0 z-50 md:top-[40px] top-0">
         <div class="container mx-auto px-4">
             <!-- Header Content -->
-            <div class="flex items-center justify-between py-4 gap-4">
+            <div class="flex items-center justify-between py-4 gap-4" style="margin-top: 30px;">
                 <!-- Logo -->
                 <div class="flex items-center">
                     <a href="#" onclick="navigateTo('home'); return false;" class="flex items-center gap-2">
@@ -209,7 +209,7 @@
                             </svg>
                         </button>
                         <!-- Search Suggestions Dropdown -->
-                        <div id="searchSuggestions" class="hidden absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-96 overflow-y-auto">
+                        <div id="searchSuggestions" class="hidden absolute z-[100] w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-96 overflow-y-auto">
                             <div id="searchSuggestionsContent" class="py-2">
                                 <!-- Suggestions will be populated here -->
                             </div>
@@ -245,7 +245,7 @@
                                 </svg>
                             </button>
                             <div id="userMenuDropdown"
-                                class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2">
+                                class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-[60]">
                                 <a href="/profile.html" onclick="document.getElementById('userMenuDropdown').classList.add('hidden');"
                                     class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
                                     <i class="fas fa-user mr-2"></i>Hồ sơ
@@ -350,8 +350,20 @@
         </div>
     </header>
 
-    <!-- Main Content -->
-    <main class="main-content" id="mainContent">
+    <!-- Main Content - Add padding-top to account for fixed header -->
+    <main class="main-content pt-24 md:pt-40" id="mainContent" style="padding-top: 120px;">
+        <style>
+            @media (min-width: 768px) {
+                main.main-content {
+                    padding-top: 160px !important;
+                }
+            }
+            @media (max-width: 767px) {
+                main.main-content {
+                    padding-top: 120px !important;
+                }
+            }
+        </style>
         <!-- Home Page -->
         <section class="page" id="pageHome" data-page="home">
             <!-- Hero Slider -->
@@ -359,13 +371,13 @@
                 <div class="slider-container relative w-full h-full">
                     <!-- Slide 1 -->
                     <div class="slide absolute inset-0 w-full h-full opacity-100 transition-opacity duration-500 ease-in-out" data-slide="0">
-                        <img src="/img/slider/slider1.jpg" alt="Slide 1" class="w-full h-full object-cover" loading="eager" onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'1200\' height=\'500\'><rect width=\'1200\' height=\'500\' fill=\'%23f3f4f6\'/><text x=\'50%25\' y=\'50%25\' dominant-baseline=\'middle\' text-anchor=\'middle\' fill=\'%239ca3af\' font-size=\'24\'>Slide 1</text></svg>'">
-                        <div class="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center z-10">
+                        <img src="./img/slider/slider1.jpg" alt="Slide 1" class="w-full h-full object-cover" loading="eager" onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'1200\' height=\'500\'><rect width=\'1200\' height=\'500\' fill=\'%23f3f4f6\'/><text x=\'50%25\' y=\'50%25\' dominant-baseline=\'middle\' text-anchor=\'middle\' fill=\'%239ca3af\' font-size=\'24\'>Slide 1</text></svg>'">
+                        <div class="absolute inset-0 flex items-center justify-center z-10">
                             <div class="text-center text-white px-4">
-                                <h2 class="text-4xl md:text-5xl font-bold mb-4" style="text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">Chào mừng đến TechStore</h2>
-                                <p class="text-xl md:text-2xl mb-6" style="text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">Nơi mua sắm trực tuyến uy tín, chất lượng</p>
+                                <h2 class="text-4xl md:text-5xl font-bold mb-4" style="text-shadow: 2px 2px 8px rgba(0,0,0,0.8), 0 0 10px rgba(0,0,0,0.5);">Chào mừng đến TechStore</h2>
+                                <p class="text-xl md:text-2xl mb-6" style="text-shadow: 2px 2px 8px rgba(0,0,0,0.8), 0 0 10px rgba(0,0,0,0.5);">Nơi mua sắm trực tuyến uy tín, chất lượng</p>
                                 <button onclick="navigateTo('products')"
-                                    class="bg-white text-red-600 px-8 py-3 rounded-lg font-bold hover:bg-gray-100 transition-colors">
+                                    class="bg-white text-red-600 px-8 py-3 rounded-lg font-bold hover:bg-gray-100 transition-colors shadow-lg">
                                     Khám phá sản phẩm
                                 </button>
                             </div>
@@ -374,12 +386,12 @@
                     <!-- Slide 2 -->
                     <div class="slide absolute inset-0 w-full h-full opacity-0 transition-opacity duration-500 ease-in-out" data-slide="1">
                         <img src="/img/slider/slider2.png" alt="Slide 2" class="w-full h-full object-cover" loading="eager" onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'1200\' height=\'500\'><rect width=\'1200\' height=\'500\' fill=\'%23f3f4f6\'/><text x=\'50%25\' y=\'50%25\' dominant-baseline=\'middle\' text-anchor=\'middle\' fill=\'%239ca3af\' font-size=\'24\'>Slide 2</text></svg>'">
-                        <div class="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center z-10">
+                        <div class="absolute inset-0 flex items-center justify-center z-10">
                             <div class="text-center text-white px-4">
-                                <h2 class="text-4xl md:text-5xl font-bold mb-4" style="text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">Sản phẩm công nghệ hàng đầu</h2>
-                                <p class="text-xl md:text-2xl mb-6" style="text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">Đa dạng sản phẩm, giá cả hợp lý</p>
+                                <h2 class="text-4xl md:text-5xl font-bold mb-4" style="text-shadow: 2px 2px 8px rgba(0,0,0,0.8), 0 0 10px rgba(0,0,0,0.5);">Sản phẩm công nghệ hàng đầu</h2>
+                                <p class="text-xl md:text-2xl mb-6" style="text-shadow: 2px 2px 8px rgba(0,0,0,0.8), 0 0 10px rgba(0,0,0,0.5);">Đa dạng sản phẩm, giá cả hợp lý</p>
                                 <button onclick="navigateTo('products')"
-                                    class="bg-white text-red-600 px-8 py-3 rounded-lg font-bold hover:bg-gray-100 transition-colors">
+                                    class="bg-white text-red-600 px-8 py-3 rounded-lg font-bold hover:bg-gray-100 transition-colors shadow-lg">
                                     Xem ngay
                                 </button>
                             </div>
@@ -388,12 +400,12 @@
                     <!-- Slide 3 -->
                     <div class="slide absolute inset-0 w-full h-full opacity-0 transition-opacity duration-500 ease-in-out" data-slide="2">
                         <img src="/img/slider/slider3.png" alt="Slide 3" class="w-full h-full object-cover" loading="eager" onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'1200\' height=\'500\'><rect width=\'1200\' height=\'500\' fill=\'%23f3f4f6\'/><text x=\'50%25\' y=\'50%25\' dominant-baseline=\'middle\' text-anchor=\'middle\' fill=\'%239ca3af\' font-size=\'24\'>Slide 3</text></svg>'">
-                        <div class="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center z-10">
+                        <div class="absolute inset-0 flex items-center justify-center z-10">
                             <div class="text-center text-white px-4">
-                                <h2 class="text-4xl md:text-5xl font-bold mb-4" style="text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">Ưu đãi đặc biệt</h2>
-                                <p class="text-xl md:text-2xl mb-6" style="text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">Giảm giá lên đến 50% cho khách hàng mới</p>
+                                <h2 class="text-4xl md:text-5xl font-bold mb-4" style="text-shadow: 2px 2px 8px rgba(0,0,0,0.8), 0 0 10px rgba(0,0,0,0.5);">Ưu đãi đặc biệt</h2>
+                                <p class="text-xl md:text-2xl mb-6" style="text-shadow: 2px 2px 8px rgba(0,0,0,0.8), 0 0 10px rgba(0,0,0,0.5);">Giảm giá lên đến 50% cho khách hàng mới</p>
                                 <button onclick="navigateTo('products')"
-                                    class="bg-white text-red-600 px-8 py-3 rounded-lg font-bold hover:bg-gray-100 transition-colors">
+                                    class="bg-white text-red-600 px-8 py-3 rounded-lg font-bold hover:bg-gray-100 transition-colors shadow-lg">
                                     Mua ngay
                                 </button>
                             </div>
@@ -690,6 +702,128 @@
     <!-- Notification Toast -->
     <div class="toast fixed bottom-4 right-4 bg-white border border-gray-200 rounded-lg shadow-lg p-4 hidden z-50"
         id="toast"></div>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-gray-300 mt-12">
+        <div class="container mx-auto px-4 py-12">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                <!-- About Section -->
+                <div>
+                    <div class="flex items-center gap-2 mb-4">
+                        <span class="text-3xl">🛍️</span>
+                        <span class="text-2xl font-bold text-white">TechStore</span>
+                    </div>
+                    <p class="text-sm mb-4 text-gray-400">
+                        TechStore - Nơi mua sắm công nghệ uy tín, chất lượng. Chúng tôi cam kết mang đến những sản phẩm công nghệ chính hãng với giá tốt nhất.
+                    </p>
+                    <div class="flex gap-4">
+                        <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" 
+                           class="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-red-600 transition-colors">
+                            <i class="fab fa-facebook-f"></i>
+                        </a>
+                        <a href="https://instagram.com" target="_blank" rel="noopener noreferrer"
+                           class="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-red-600 transition-colors">
+                            <i class="fab fa-instagram"></i>
+                        </a>
+                        <a href="https://youtube.com" target="_blank" rel="noopener noreferrer"
+                           class="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-red-600 transition-colors">
+                            <i class="fab fa-youtube"></i>
+                        </a>
+                        <a href="https://zalo.me" target="_blank" rel="noopener noreferrer"
+                           class="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-red-600 transition-colors">
+                            <i class="fab fa-zalo"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Quick Links -->
+                <div>
+                    <h3 class="text-white font-bold text-lg mb-4">Liên kết nhanh</h3>
+                    <ul class="space-y-2">
+                        <li>
+                            <a href="/" onclick="navigateTo('home'); return false;" 
+                               class="text-gray-400 hover:text-red-500 transition-colors">Trang chủ</a>
+                        </li>
+                        <li>
+                            <a href="/" onclick="navigateTo('products'); return false;" 
+                               class="text-gray-400 hover:text-red-500 transition-colors">Sản phẩm</a>
+                        </li>
+                        <li>
+                            <a href="/" onclick="navigateTo('categories'); return false;" 
+                               class="text-gray-400 hover:text-red-500 transition-colors">Danh mục</a>
+                        </li>
+                        <li>
+                            <a href="/" onclick="navigateTo('news'); return false;" 
+                               class="text-gray-400 hover:text-red-500 transition-colors">Tin công nghệ</a>
+                        </li>
+                        <li>
+                            <a href="/" onclick="navigateTo('cart'); return false;" 
+                               class="text-gray-400 hover:text-red-500 transition-colors">Giỏ hàng</a>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Support -->
+                <div>
+                    <h3 class="text-white font-bold text-lg mb-4">Hỗ trợ</h3>
+                    <ul class="space-y-2">
+                        <li>
+                            <a href="#" class="text-gray-400 hover:text-red-500 transition-colors">Về chúng tôi</a>
+                        </li>
+                        <li>
+                            <a href="#" class="text-gray-400 hover:text-red-500 transition-colors">Chính sách bảo hành</a>
+                        </li>
+                        <li>
+                            <a href="#" class="text-gray-400 hover:text-red-500 transition-colors">Chính sách đổi trả</a>
+                        </li>
+                        <li>
+                            <a href="#" class="text-gray-400 hover:text-red-500 transition-colors">Vận chuyển & Giao hàng</a>
+                        </li>
+                        <li>
+                            <a href="#" class="text-gray-400 hover:text-red-500 transition-colors">Câu hỏi thường gặp</a>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Contact Info -->
+                <div>
+                    <h3 class="text-white font-bold text-lg mb-4">Liên hệ</h3>
+                    <ul class="space-y-3">
+                        <li class="flex items-start gap-3">
+                            <i class="fas fa-map-marker-alt text-red-500 mt-1"></i>
+                            <span class="text-gray-400 text-sm">123 Đường ABC, Quận XYZ, TP.HCM, Việt Nam</span>
+                        </li>
+                        <li class="flex items-center gap-3">
+                            <i class="fas fa-phone text-red-500"></i>
+                            <a href="tel:1900123456" class="text-gray-400 hover:text-red-500 transition-colors text-sm">1900 123 456</a>
+                        </li>
+                        <li class="flex items-center gap-3">
+                            <i class="fas fa-envelope text-red-500"></i>
+                            <a href="mailto:support@techstore.vn" class="text-gray-400 hover:text-red-500 transition-colors text-sm">support@techstore.vn</a>
+                        </li>
+                        <li class="flex items-center gap-3">
+                            <i class="fas fa-clock text-red-500"></i>
+                            <span class="text-gray-400 text-sm">8:00 - 22:00 (Tất cả các ngày)</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Bottom Bar -->
+            <div class="border-t border-gray-800 mt-8 pt-8">
+                <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+                    <p class="text-gray-400 text-sm">
+                        © 2025 TechStore. Tất cả quyền được bảo lưu.
+                    </p>
+                    <div class="flex gap-6 text-sm">
+                        <a href="#" class="text-gray-400 hover:text-red-500 transition-colors">Chính sách bảo mật</a>
+                        <a href="#" class="text-gray-400 hover:text-red-500 transition-colors">Điều khoản sử dụng</a>
+                        <a href="#" class="text-gray-400 hover:text-red-500 transition-colors">Sơ đồ trang web</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
 
     <script src="/app.js"></script>
     <script>
