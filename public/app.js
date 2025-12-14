@@ -1123,30 +1123,71 @@ async function loadCategoryFilterOptions() {
 }
 
 function applyFilters() {
-    currentFilters.q = document.getElementById('searchInput').value.trim();
-    currentFilters.category = document.getElementById('categoryFilter').value;
-    currentFilters.minPrice = document.getElementById('minPrice').value || null;
-    currentFilters.maxPrice = document.getElementById('maxPrice').value || null;
-    currentFilters.sort = document.getElementById('sortSelect').value || null;
-    currentPagination.page = 1; // Reset về trang đầu
+    // Lấy giá trị từ các input
+    const searchValue = document.getElementById('searchInput').value.trim();
+    const categoryValue = document.getElementById('categoryFilter').value;
+    const minPriceValue = document.getElementById('minPrice').value;
+    const maxPriceValue = document.getElementById('maxPrice').value;
+    const sortValue = document.getElementById('sortSelect').value;
+    
+    // Validate giá
+    const minPrice = minPriceValue ? parseFloat(minPriceValue) : null;
+    const maxPrice = maxPriceValue ? parseFloat(maxPriceValue) : null;
+    
+    // Kiểm tra nếu minPrice > maxPrice
+    if (minPrice !== null && maxPrice !== null && minPrice > maxPrice) {
+        showToast('Giá tối thiểu không thể lớn hơn giá tối đa', 'error');
+        return;
+    }
+    
+    // Kiểm tra giá trị âm
+    if ((minPrice !== null && minPrice < 0) || (maxPrice !== null && maxPrice < 0)) {
+        showToast('Giá không thể là số âm', 'error');
+        return;
+    }
+    
+    // Áp dụng filter
+    currentFilters.q = searchValue || null;
+    currentFilters.category = categoryValue || null;
+    currentFilters.minPrice = minPrice;
+    currentFilters.maxPrice = maxPrice;
+    currentFilters.sort = sortValue && sortValue !== 'id' ? sortValue : null;
+    
+    // Reset về trang đầu khi filter
+    currentPagination.page = 1;
+    
+    // Render và load
     renderActiveFilters();
     refreshProductsHeader();
     loadProducts();
 }
 
 function resetFilters() {
-    document.getElementById('searchInput').value = '';
-    document.getElementById('categoryFilter').value = '';
-    document.getElementById('minPrice').value = '';
-    document.getElementById('maxPrice').value = '';
-    document.getElementById('sortSelect').value = 'id';
+    // Reset tất cả input
+    const searchInput = document.getElementById('searchInput');
+    const categoryFilter = document.getElementById('categoryFilter');
+    const minPrice = document.getElementById('minPrice');
+    const maxPrice = document.getElementById('maxPrice');
+    const sortSelect = document.getElementById('sortSelect');
+    
+    if (searchInput) searchInput.value = '';
+    if (categoryFilter) categoryFilter.value = '';
+    if (minPrice) minPrice.value = '';
+    if (maxPrice) maxPrice.value = '';
+    if (sortSelect) sortSelect.value = 'id';
+    
+    // Reset filter state
     currentFilters = {};
     currentPagination.page = 1;
     currentCategoryTitle = 'Sản phẩm';
     currentCategorySubtitle = 'Tất cả sản phẩm đang có';
+    
+    // Render và reload
     renderActiveFilters();
     refreshProductsHeader();
     loadProducts();
+    
+    showToast('Đã xóa tất cả bộ lọc', 'success');
 }
 
 function renderPagination() {
@@ -2437,11 +2478,38 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('resetFiltersBtn').addEventListener('click', resetFilters);
 
     // Enter key in search
-    document.getElementById('searchInput').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-            applyFilters();
-        }
-    });
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) {
+        searchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                applyFilters();
+            }
+        });
+    }
+    
+    // Validate giá khi nhập
+    const minPriceInput = document.getElementById('minPrice');
+    const maxPriceInput = document.getElementById('maxPrice');
+    
+    if (minPriceInput) {
+        minPriceInput.addEventListener('blur', () => {
+            const value = parseFloat(minPriceInput.value);
+            if (minPriceInput.value && (isNaN(value) || value < 0)) {
+                minPriceInput.value = '';
+                showToast('Vui lòng nhập giá hợp lệ (số dương)', 'error');
+            }
+        });
+    }
+    
+    if (maxPriceInput) {
+        maxPriceInput.addEventListener('blur', () => {
+            const value = parseFloat(maxPriceInput.value);
+            if (maxPriceInput.value && (isNaN(value) || value < 0)) {
+                maxPriceInput.value = '';
+                showToast('Vui lòng nhập giá hợp lệ (số dương)', 'error');
+            }
+        });
+    }
 
     // Slider functionality
     let currentSlide = 0;
