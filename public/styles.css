@@ -1076,3 +1076,41 @@ body {
         padding: 1.5rem;
     }
 }
+
+/* Search Suggestions Dropdown */
+#searchSuggestions {
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+.search-suggestion-item {
+    transition: background-color 0.2s ease;
+}
+
+.search-suggestion-item:hover {
+    background-color: #f9fafb !important;
+}
+
+.search-suggestion-item mark {
+    background-color: #fef08a;
+    color: #1f2937;
+    padding: 0 2px;
+    border-radius: 2px;
+}
+
+#searchSuggestions::-webkit-scrollbar {
+    width: 8px;
+}
+
+#searchSuggestions::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+#searchSuggestions::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+#searchSuggestions::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}

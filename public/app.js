@@ -2178,14 +2178,168 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Main search bar
+    // Main search bar with autocomplete
     const mainSearchInput = document.getElementById('mainSearchInput');
+    const searchSuggestions = document.getElementById('searchSuggestions');
+    const searchSuggestionsContent = document.getElementById('searchSuggestionsContent');
+    const mainSearchButton = document.getElementById('mainSearchButton');
+    
+    let searchTimeout = null;
+    let currentSearchResults = [];
+    
+    // Function to perform search
+    async function performSearch(query) {
+        if (!query || query.trim().length < 1) {
+            searchSuggestions.classList.add('hidden');
+            return;
+        }
+        
+        try {
+            const response = await fetch(`${API_BASE_URL}/products?q=${encodeURIComponent(query.trim())}&limit=8`);
+            if (response.ok) {
+                const data = await response.json();
+                const products = data.products || data || [];
+                currentSearchResults = products;
+                displaySearchSuggestions(products, query);
+            } else {
+                searchSuggestions.classList.add('hidden');
+            }
+        } catch (error) {
+            console.error('Search error:', error);
+            searchSuggestions.classList.add('hidden');
+        }
+    }
+    
+    // Function to display search suggestions
+    function displaySearchSuggestions(products, query) {
+        if (!products || products.length === 0) {
+            searchSuggestionsContent.innerHTML = `
+                <div class="px-4 py-3 text-gray-500 text-sm">
+                    Không tìm thấy sản phẩm nào cho "${query}"
+                </div>
+            `;
+            searchSuggestions.classList.remove('hidden');
+            return;
+        }
+        
+        const suggestionsHTML = products.map(product => {
+            // Use same image logic as renderProducts
+            const imageData = getProductImage(product);
+            const productImage = imageData.primary;
+            const productName = highlightMatch(product.name, query);
+            const productPrice = formatPrice(product.price);
+            
+            return `
+                <div class="search-suggestion-item px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0 flex items-center gap-3"
+                     data-product-id="${product.id}" 
+                     data-product-slug="${product.slug || ''}">
+                    <img src="${productImage}" 
+                         alt="${product.name}" 
+                         class="w-12 h-12 object-cover rounded"
+                         onerror="this.src='${imageData.fallback}'; this.onerror=null;">
+                    <div class="flex-1 min-w-0">
+                        <div class="font-medium text-gray-900 text-sm">${productName}</div>
+                        <div class="text-red-600 font-semibold text-sm">${productPrice}</div>
+                    </div>
+                    <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                    </svg>
+                </div>
+            `;
+        }).join('');
+        
+        searchSuggestionsContent.innerHTML = suggestionsHTML;
+        searchSuggestions.classList.remove('hidden');
+        
+        // Attach click handlers to suggestions
+        document.querySelectorAll('.search-suggestion-item').forEach(item => {
+            item.addEventListener('click', function() {
+                const productId = this.getAttribute('data-product-id');
+                const productSlug = this.getAttribute('data-product-slug');
+                
+                if (productSlug) {
+                    window.location.href = `/product-details.html?slug=${productSlug}`;
+                } else {
+                    window.location.href = `/product-details.html?id=${productId}`;
+                }
+            });
+        });
+    }
+    
+    // Function to highlight matching text
+    function highlightMatch(text, query) {
+        if (!query) return text;
+        const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+        return text.replace(regex, '<mark class="bg-yellow-200">$1</mark>');
+    }
+    
+    // Handle input with debounce
     if (mainSearchInput) {
+        mainSearchInput.addEventListener('input', (e) => {
+            const query = e.target.value.trim();
+            
+            // Clear previous timeout
+            if (searchTimeout) {
+                clearTimeout(searchTimeout);
+            }
+            
+            // Set new timeout for debounce (300ms)
+            searchTimeout = setTimeout(() => {
+                performSearch(query);
+            }, 300);
+        });
+        
+        // Handle Enter key
         mainSearchInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
+                e.preventDefault();
+                const query = mainSearchInput.value.trim();
+                if (query) {
+                    navigateTo('products');
+                    // Set search value in products page
+                    setTimeout(() => {
+                        const searchInput = document.getElementById('searchInput');
+                        if (searchInput) {
+                            searchInput.value = query;
+                            applyFilters();
+                        }
+                    }, 100);
+                    searchSuggestions.classList.add('hidden');
+                }
+            }
+        });
+        
+        // Handle Escape key to close suggestions
+        mainSearchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                searchSuggestions.classList.add('hidden');
+            }
+        });
+        
+        // Close suggestions when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('#mainSearchInput') && 
+                !e.target.closest('#searchSuggestions') &&
+                !e.target.closest('#mainSearchButton')) {
+                searchSuggestions.classList.add('hidden');
+            }
+        });
+    }
+    
+    // Handle search button click
+    if (mainSearchButton) {
+        mainSearchButton.addEventListener('click', () => {
+            const query = mainSearchInput.value.trim();
+            if (query) {
                 navigateTo('products');
-                document.getElementById('searchInput').value = mainSearchInput.value;
-                applyFilters();
+                setTimeout(() => {
+                    const searchInput = document.getElementById('searchInput');
+                    if (searchInput) {
+                        searchInput.value = query;
+                        applyFilters();
+                    }
+                }, 100);
+                searchSuggestions.classList.add('hidden');
             }
         });
     }
