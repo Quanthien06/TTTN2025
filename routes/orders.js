@@ -2,6 +2,24 @@ const express = require('express');
 const router = express.Router();
 const authenticateToken = require('../middleware/auth');
 
+// Helper: Lấy hoặc tạo cart active
+async function getOrCreateCart(pool, userId) {
+    const [carts] = await pool.query(
+        'SELECT * FROM carts WHERE user_id = ? AND status = ?',
+        [userId, 'active']
+    );
+
+    if (carts.length > 0) {
+        return carts[0].id;
+    }
+
+    const [result] = await pool.query(
+        'INSERT INTO carts (user_id, status) VALUES (?, ?)',
+        [userId, 'active']
+    );
+    return result.insertId;
+}
+
 // POST /api/orders - Tạo đơn hàng từ cart
 router.post('/', authenticateToken, async (req, res) => {
     const pool = req.app.locals.pool;
@@ -9,17 +27,13 @@ router.post('/', authenticateToken, async (req, res) => {
     const { shipping_address, phone, payment_method, payment_details } = req.body;
 
     try {
-        // 1. Lấy cart active của user
-        const [carts] = await pool.query(
-            'SELECT * FROM carts WHERE user_id = ? AND status = ?',
-            [userId, 'active']
-        );
-
-        if (carts.length === 0) {
-            return res.status(404).json({ message: 'Giỏ hàng trống' });
+        // Validate input
+        if (!shipping_address || shipping_address.trim() === '') {
+            return res.status(400).json({ message: 'Địa chỉ giao hàng là bắt buộc' });
         }
 
-        const cartId = carts[0].id;
+        // 1. Lấy hoặc tạo cart active của user
+        const cartId = await getOrCreateCart(pool, userId);
 
         // 2. Lấy items trong cart
         const [cartItems] = await pool.query(
@@ -27,8 +41,18 @@ router.post('/', authenticateToken, async (req, res) => {
             [cartId]
         );
 
-        if (cartItems.length === 0) {
+        if (!cartItems || cartItems.length === 0) {
             return res.status(400).json({ message: 'Giỏ hàng không có sản phẩm' });
+        }
+
+        // Validate cart items có price
+        for (const item of cartItems) {
+            if (!item.price || item.price <= 0) {
+                console.error('Cart item missing price:', item);
+                return res.status(400).json({ 
+                    message: `Sản phẩm "${item.product_id}" không có giá. Vui lòng thử lại.` 
+                });
+            }
         }
 
         // 3. Tính tổng tiền
@@ -36,7 +60,11 @@ router.post('/', authenticateToken, async (req, res) => {
             'SELECT SUM(price * quantity) as total FROM cart_items WHERE cart_id = ?',
             [cartId]
         );
-        const total = totalRows[0].total || 0;
+        const total = parseFloat(totalRows[0]?.total || 0);
+
+        if (total <= 0) {
+            return res.status(400).json({ message: 'Tổng tiền đơn hàng không hợp lệ' });
+        }
 
         // 4. Tạo đơn hàng
         // Lưu payment_method vào shipping_address (có thể mở rộng thêm cột payment_method sau)
@@ -60,10 +88,16 @@ router.post('/', authenticateToken, async (req, res) => {
 
         // 5. Tạo order_items từ cart_items
         for (const item of cartItems) {
-            await pool.query(
-                'INSERT INTO order_items (order_id, product_id, quantity, price) VALUES (?, ?, ?, ?)',
-                [orderId, item.product_id, item.quantity, item.price]
-            );
+            try {
+                await pool.query(
+                    'INSERT INTO order_items (order_id, product_id, quantity, price) VALUES (?, ?, ?, ?)',
+                    [orderId, item.product_id, item.quantity, item.price]
+                );
+            } catch (itemError) {
+                console.error('Lỗi khi thêm order_item:', itemError);
+                console.error('Item data:', item);
+                throw new Error(`Lỗi khi thêm sản phẩm vào đơn hàng: ${itemError.message}`);
+            }
         }
 
         // 6. Xóa cart_items và đánh dấu cart là completed
@@ -102,16 +136,33 @@ router.post('/', authenticateToken, async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Lỗi khi tạo đơn hàng:', error);
-        console.error('Error details:', {
-            message: error.message,
-            code: error.code,
-            sqlMessage: error.sqlMessage,
-            stack: error.stack
+        console.error('=== LỖI KHI TẠO ĐƠN HÀNG ===');
+        console.error('Error message:', error.message);
+        console.error('Error code:', error.code);
+        console.error('SQL Message:', error.sqlMessage);
+        console.error('SQL State:', error.sqlState);
+        console.error('Stack:', error.stack);
+        console.error('Request body:', {
+            shipping_address: req.body.shipping_address?.substring(0, 50),
+            phone: req.body.phone,
+            payment_method: req.body.payment_method,
+            userId: userId
         });
+        console.error('============================');
+        
+        // Trả về thông báo lỗi chi tiết hơn trong development
+        const errorMessage = process.env.NODE_ENV === 'development' 
+            ? `Lỗi máy chủ nội bộ: ${error.message}${error.sqlMessage ? ` (SQL: ${error.sqlMessage})` : ''}`
+            : 'Lỗi máy chủ nội bộ';
+            
         res.status(500).json({ 
-            message: 'Lỗi máy chủ nội bộ',
-            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+            message: errorMessage,
+            error: process.env.NODE_ENV === 'development' ? {
+                message: error.message,
+                code: error.code,
+                sqlMessage: error.sqlMessage,
+                sqlState: error.sqlState
+            } : undefined
         });
     }
 });

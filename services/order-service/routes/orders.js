@@ -14,10 +14,15 @@ router.use((req, res, next) => {
 router.post('/', async (req, res) => {
     const pool = req.app.locals.pool;
     const userId = req.user.id;
-    const { shipping_address, phone } = req.body;
+    const { shipping_address, phone, payment_method, payment_details } = req.body;
     const CART_SERVICE_URL = req.app.locals.CART_SERVICE_URL;
 
     try {
+        // Validate input
+        if (!shipping_address || shipping_address.trim() === '') {
+            return res.status(400).json({ message: 'Địa chỉ giao hàng là bắt buộc' });
+        }
+
         // 1. Gọi Cart Service để lấy cart items
         let cartData;
         try {
@@ -29,6 +34,7 @@ router.post('/', async (req, res) => {
             if (error.response?.status === 404) {
                 return res.status(404).json({ message: 'Giỏ hàng trống' });
             }
+            console.error('Lỗi khi gọi Cart Service:', error.message);
             throw error;
         }
 
@@ -36,21 +42,53 @@ router.post('/', async (req, res) => {
             return res.status(400).json({ message: 'Giỏ hàng không có sản phẩm' });
         }
 
-        const total = cartData.total || 0;
+        // Validate cart items có price
+        for (const item of cartData.items) {
+            if (!item.price || item.price <= 0) {
+                console.error('Cart item missing price:', item);
+                return res.status(400).json({ 
+                    message: `Sản phẩm "${item.product_id}" không có giá. Vui lòng thử lại.` 
+                });
+            }
+        }
+
+        const total = parseFloat(cartData.total || 0);
+
+        if (total <= 0) {
+            return res.status(400).json({ message: 'Tổng tiền đơn hàng không hợp lệ' });
+        }
 
         // 2. Tạo đơn hàng
+        // Lưu payment_method vào shipping_address (có thể mở rộng thêm cột payment_method sau)
+        const paymentInfo = payment_method ? `\n[Payment Method: ${payment_method}]` : '';
+        const fullShippingAddress = shipping_address + paymentInfo;
+        
+        console.log('Creating order with data:', {
+            userId,
+            total,
+            shipping_address: fullShippingAddress.substring(0, 50),
+            phone: phone || null,
+            payment_method
+        });
+        
         const [orderResult] = await pool.query(
-            'INSERT INTO orders (user_id, total, shipping_address, phone, status) VALUES (?, ?, ?, ?, ?)',
-            [userId, total, shipping_address, phone, 'pending']
+            'INSERT INTO orders (user_id, total, shipping_address, shipping_phone, status) VALUES (?, ?, ?, ?, ?)',
+            [userId, total, fullShippingAddress, phone || null, 'pending']
         );
         const orderId = orderResult.insertId;
 
         // 3. Tạo order_items từ cart items
         for (const item of cartData.items) {
-            await pool.query(
-                'INSERT INTO order_items (order_id, product_id, quantity, price) VALUES (?, ?, ?, ?)',
-                [orderId, item.product_id, item.quantity, item.price]
-            );
+            try {
+                await pool.query(
+                    'INSERT INTO order_items (order_id, product_id, quantity, price) VALUES (?, ?, ?, ?)',
+                    [orderId, item.product_id, item.quantity, item.price]
+                );
+            } catch (itemError) {
+                console.error('Lỗi khi thêm order_item:', itemError);
+                console.error('Item data:', item);
+                throw new Error(`Lỗi khi thêm sản phẩm vào đơn hàng: ${itemError.message}`);
+            }
         }
 
         // 4. Xóa cart items và đánh dấu cart completed (gọi Cart Service)
@@ -104,8 +142,37 @@ router.post('/', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Lỗi khi tạo đơn hàng:', error);
-        res.status(500).json({ message: 'Lỗi máy chủ nội bộ' });
+        console.error('=== LỖI KHI TẠO ĐƠN HÀNG ===');
+        console.error('Error message:', error.message);
+        console.error('Error code:', error.code);
+        console.error('SQL Message:', error.sqlMessage);
+        console.error('SQL State:', error.sqlState);
+        console.error('Stack:', error.stack);
+        if (error.response) {
+            console.error('Axios error response:', error.response.data);
+        }
+        console.error('Request body:', {
+            shipping_address: req.body.shipping_address?.substring(0, 50),
+            phone: req.body.phone,
+            payment_method: req.body.payment_method,
+            userId: userId
+        });
+        console.error('============================');
+        
+        // Trả về thông báo lỗi chi tiết hơn trong development
+        const errorMessage = process.env.NODE_ENV === 'development' 
+            ? `Lỗi máy chủ nội bộ: ${error.message}${error.sqlMessage ? ` (SQL: ${error.sqlMessage})` : ''}`
+            : 'Lỗi máy chủ nội bộ';
+            
+        res.status(500).json({ 
+            message: errorMessage,
+            error: process.env.NODE_ENV === 'development' ? {
+                message: error.message,
+                code: error.code,
+                sqlMessage: error.sqlMessage,
+                sqlState: error.sqlState
+            } : undefined
+        });
     }
 });
 
