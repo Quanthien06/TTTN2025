@@ -61,8 +61,9 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Middleware giúp Express đọc dữ liệu JSON
-app.use(express.json());
+// Middleware giúp Express đọc dữ liệu JSON (tăng limit lên 20MB để hỗ trợ upload avatar base64)
+app.use(express.json({ limit: '20mb' }));
+app.use(express.urlencoded({ extended: true, limit: '20mb' }));
 
 // 2. Tạo một "Connection Pool" (Bể kết nối)
 const pool = mysql.createPool({

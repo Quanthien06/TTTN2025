@@ -366,6 +366,7 @@ function updateUIForAuth(isLoggedIn) {
     const navAuth = document.getElementById('navAuth');
     const navUser = document.getElementById('navUser');
     const userName = document.getElementById('userName');
+    const userAvatar = document.getElementById('userAvatar');
 
     console.log('updateUIForAuth called:', { 
         isLoggedIn, 
@@ -394,6 +395,29 @@ function updateUIForAuth(isLoggedIn) {
             console.log('Updated userName to:', `Xin chào, ${username}!`);
         }
         
+        // Cập nhật avatar - ưu tiên avatar_url từ database, nếu không có thì dùng ui-avatars
+        if (userAvatar) {
+            const displayName = currentUser.full_name || currentUser.username;
+            let avatarUrl;
+            if (currentUser.avatar_url && currentUser.avatar_url.trim() !== '') {
+                avatarUrl = currentUser.avatar_url;
+            } else {
+                // Sử dụng ui-avatars với màu đỏ (dc2626) để match theme
+                avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=dc2626&color=fff&size=32&bold=true`;
+            }
+            userAvatar.src = avatarUrl;
+            userAvatar.alt = displayName;
+            // Xử lý lỗi nếu ảnh không load được
+            userAvatar.onerror = function() {
+                // Fallback về ui-avatars nếu avatar_url không load được
+                const fallbackUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=dc2626&color=fff&size=32&bold=true`;
+                if (this.src !== fallbackUrl) {
+                    this.src = fallbackUrl;
+                }
+            };
+            console.log('Updated userAvatar to:', avatarUrl);
+        }
+        
         // Kiểm tra và hiển thị nút admin
         checkAdminAccess();
     } else {
@@ -413,6 +437,12 @@ function updateUIForAuth(isLoggedIn) {
         if (userName) {
             userName.textContent = '';
             console.log('Cleared userName');
+        }
+        
+        // Xóa avatar
+        if (userAvatar) {
+            userAvatar.src = '';
+            userAvatar.alt = '';
         }
     }
 }
@@ -1519,10 +1549,15 @@ async function loadProfile() {
                                         <span class="px-3 py-1 rounded-full text-white text-sm ${roleBadgeColor}">${roleDisplay}</span>
                                     </p>
                                     <p class="text-muted mb-4">${loginMethod}</p>
-                                    <div class="d-flex justify-content-center mb-2">
+                                    <div class="d-flex justify-content-center mb-2 gap-2 flex-wrap">
                                         <button type="button" onclick="editProfile()" class="btn btn-primary">
                                             <i class="fas fa-edit mr-2"></i>Chỉnh sửa
                                         </button>
+                                        ${user.role === 'admin' ? `
+                                        <a href="/admin.html" class="btn btn-danger">
+                                            <i class="fas fa-cog mr-2"></i>Quản trị
+                                        </a>
+                                        ` : ''}
                                     </div>
                                 </div>
                             </div>
@@ -2090,6 +2125,25 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentSlide = 0;
     const slides = document.querySelectorAll('.slide');
     const totalSlides = slides.length;
+    
+    // Preload all slider images
+    function preloadSliderImages() {
+        const imagePaths = [
+            '/img/slider/slider1.jpg',
+            '/img/slider/slider2.png',
+            '/img/slider/slider3.png'
+        ];
+        
+        imagePaths.forEach(path => {
+            const img = new Image();
+            img.src = path;
+        });
+    }
+    
+    // Preload images immediately
+    if (slides.length > 0) {
+        preloadSliderImages();
+    }
     
     function showSlide(index) {
         slides.forEach((slide, i) => {
