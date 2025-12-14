@@ -49,14 +49,16 @@ router.get('/', authenticateToken, requireAdmin, async (req, res) => {
         
         // Lấy users với pagination
         const [users] = await pool.query(
-            `SELECT id, username, email, role, created_at, updated_at 
+            `SELECT id, username, email, role, createdAt
              FROM users ${whereClause}
-             ORDER BY created_at DESC
+             ORDER BY createdAt DESC
              LIMIT ? OFFSET ?`,
             [...queryParams, limitNum, offset]
         );
         
-        res.json({
+        console.log(`Fetched ${users.length} users successfully`);
+        
+        const response = {
             users: users,
             pagination: {
                 currentPage: pageNum,
@@ -64,10 +66,22 @@ router.get('/', authenticateToken, requireAdmin, async (req, res) => {
                 totalItems: total,
                 itemsPerPage: limitNum
             }
-        });
+        };
+        
+        res.json(response);
     } catch (error) {
         console.error('Lỗi khi lấy danh sách users:', error);
-        res.status(500).json({ message: 'Lỗi máy chủ nội bộ' });
+        console.error('Error details:', {
+            message: error.message,
+            code: error.code,
+            sqlMessage: error.sqlMessage,
+            sqlState: error.sqlState,
+            stack: error.stack
+        });
+        res.status(500).json({ 
+            message: 'Lỗi máy chủ nội bộ',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
     }
 });
 
@@ -78,7 +92,7 @@ router.get('/:id', authenticateToken, requireAdmin, async (req, res) => {
     
     try {
         const [users] = await pool.query(
-            'SELECT id, username, email, role, created_at, updated_at FROM users WHERE id = ?',
+            'SELECT id, username, email, role, createdAt FROM users WHERE id = ?',
             [userId]
         );
         
@@ -124,7 +138,7 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
         
         // Lấy user vừa tạo
         const [newUsers] = await pool.query(
-            'SELECT id, username, email, role, created_at FROM users WHERE id = ?',
+            'SELECT id, username, email, role, createdAt FROM users WHERE id = ?',
             [result.insertId]
         );
         
@@ -194,7 +208,7 @@ router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
         
         // Lấy user đã cập nhật
         const [updatedUsers] = await pool.query(
-            'SELECT id, username, email, role, created_at, updated_at FROM users WHERE id = ?',
+            'SELECT id, username, email, role, createdAt FROM users WHERE id = ?',
             [userId]
         );
         

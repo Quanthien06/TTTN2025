@@ -341,19 +341,37 @@ body {
     gap: 0.5rem;
     margin: 0.5rem 0 0.75rem;
     flex-shrink: 0;
+    flex-wrap: wrap;
+    min-width: 0; /* Cho phép shrink */
 }
 
+/* Giảm font size khi giá quá dài (sử dụng clamp) */
 .product-card .price {
-    font-size: 1.35rem;
+    font-size: clamp(0.875rem, 2vw, 1.35rem);
     font-weight: 700;
     color: var(--accent);
     margin: 0;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    line-height: 1.2;
+    max-width: 100%;
+    min-width: 0; /* Cho phép shrink */
+}
+
+@media (max-width: 640px) {
+    .product-card .price {
+        font-size: clamp(0.75rem, 3vw, 1.125rem);
+    }
 }
 
 .product-card .price-old {
-    font-size: 0.95rem;
+    font-size: clamp(0.75rem, 1.5vw, 0.95rem);
     color: var(--text-muted);
     text-decoration: line-through;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    flex-shrink: 1;
+    min-width: 0;
 }
 
 .product-card .description {
@@ -929,6 +947,10 @@ body {
 .cart-price {
     font-weight: 700;
     color: #111827;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    min-width: 0;
+    font-size: clamp(0.875rem, 1.5vw, 1rem);
 }
 
 .cart-remove {
@@ -962,6 +984,18 @@ body {
     margin-top: 1rem;
     font-weight: 800;
     color: #111827;
+}
+
+.cart-summary .line {
+    word-break: break-word;
+    overflow-wrap: break-word;
+}
+
+.cart-summary .line span:last-child {
+    min-width: 0;
+    text-align: right;
+    margin-left: 1rem;
+    font-size: clamp(0.875rem, 1.5vw, 1rem);
 }
 
 .cart-code {

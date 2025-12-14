@@ -182,13 +182,17 @@
                     <!-- Revenue Chart -->
                     <div class="bg-white rounded-lg shadow-md p-6">
                         <h3 class="text-lg font-semibold text-gray-900 mb-4">Doanh Thu Theo Tháng</h3>
-                        <canvas id="revenueChart" height="300"></canvas>
+                        <div style="position: relative; height: 250px;">
+                            <canvas id="revenueChart"></canvas>
+                        </div>
                     </div>
                     
                     <!-- Orders Chart -->
                     <div class="bg-white rounded-lg shadow-md p-6">
                         <h3 class="text-lg font-semibold text-gray-900 mb-4">Đơn Hàng Theo Trạng Thái</h3>
-                        <canvas id="ordersChart" height="300"></canvas>
+                        <div style="position: relative; height: 250px;">
+                            <canvas id="ordersChart"></canvas>
+                        </div>
                     </div>
                 </div>
                 
@@ -644,16 +648,35 @@
                 revenueChart.destroy();
             }
             
+            // Tính toán max value để set scale
+            const revenueData = data.revenue || [];
+            const maxRevenue = Math.max(...revenueData, 0);
+            // Làm tròn lên để có mốc đẹp (làm tròn lên đến hàng triệu)
+            const maxScale = maxRevenue > 0 ? Math.ceil(maxRevenue / 1000000) * 1000000 : 1000000;
+            
+            // Format số tiền cho y-axis (rút gọn: 70M thay vì 70,000,000)
+            function formatCurrency(value) {
+                if (value >= 1000000000) {
+                    return (value / 1000000000).toFixed(1) + 'B';
+                } else if (value >= 1000000) {
+                    return (value / 1000000).toFixed(0) + 'M';
+                } else if (value >= 1000) {
+                    return (value / 1000).toFixed(0) + 'K';
+                }
+                return value.toString();
+            }
+            
             revenueChart = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: data.months || ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10', 'T11', 'T12'],
                     datasets: [{
                         label: 'Doanh Thu (₫)',
-                        data: data.revenue || [],
+                        data: revenueData,
                         borderColor: 'rgb(34, 197, 94)',
                         backgroundColor: 'rgba(34, 197, 94, 0.1)',
-                        tension: 0.4
+                        tension: 0.4,
+                        fill: true
                     }]
                 },
                 options: {
@@ -661,7 +684,36 @@
                     maintainAspectRatio: false,
                     plugins: {
                         legend: {
-                            display: true
+                            display: true,
+                            position: 'top'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return 'Doanh Thu: ' + new Intl.NumberFormat('vi-VN').format(context.parsed.y) + ' ₫';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: maxScale > 0 ? maxScale : undefined,
+                            ticks: {
+                                stepSize: maxScale > 0 ? maxScale / 5 : undefined,
+                                callback: function(value) {
+                                    return formatCurrency(value) + ' ₫';
+                                },
+                                maxTicksLimit: 6 // Giới hạn số mốc hiển thị
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
                         }
                     }
                 }
@@ -796,54 +848,93 @@
         
         // Load Users
         async function loadUsers(page = 1) {
+            const tbody = document.getElementById('usersTableBody');
+            if (!tbody) {
+                console.error('usersTableBody not found');
+                return;
+            }
+            
             try {
+                // Hiển thị loading
+                tbody.innerHTML = '<tr><td colspan="6" class="px-4 py-8 text-center text-gray-500">Đang tải...</td></tr>';
+                
                 const token = getToken();
+                if (!token) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="px-4 py-8 text-center text-red-500">Vui lòng đăng nhập lại</td></tr>';
+                    return;
+                }
+                
                 const search = document.getElementById('userSearch')?.value || '';
                 
                 let url = `${API_BASE_URL}/users?page=${page}&limit=20`;
                 if (search) url += `&search=${encodeURIComponent(search)}`;
                 
+                console.log('Loading users from:', url);
+                
                 const response = await fetch(url, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 
-                if (response.ok) {
-                    const data = await response.json();
-                    renderUsers(data.users || []);
-                    renderUserPagination(data.pagination || {});
+                console.log('Users response status:', response.status);
+                
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({ message: 'Lỗi không xác định' }));
+                    console.error('Error response:', errorData);
+                    tbody.innerHTML = `<tr><td colspan="6" class="px-4 py-8 text-center text-red-500">Lỗi: ${errorData.message || 'Không thể tải danh sách người dùng'}</td></tr>`;
+                    return;
                 }
+                
+                const data = await response.json();
+                console.log('Users data received:', data);
+                
+                if (!data || !data.users) {
+                    console.error('Invalid data format:', data);
+                    tbody.innerHTML = '<tr><td colspan="6" class="px-4 py-8 text-center text-red-500">Dữ liệu không hợp lệ</td></tr>';
+                    return;
+                }
+                
+                renderUsers(data.users || []);
+                renderUserPagination(data.pagination || {});
             } catch (error) {
                 console.error('Error loading users:', error);
+                tbody.innerHTML = `<tr><td colspan="6" class="px-4 py-8 text-center text-red-500">Lỗi: ${error.message || 'Không thể tải danh sách người dùng'}</td></tr>`;
             }
         }
         
         // Render Users
         function renderUsers(users) {
             const tbody = document.getElementById('usersTableBody');
-            if (users.length === 0) {
+            if (!tbody) {
+                console.error('usersTableBody element not found');
+                return;
+            }
+            
+            if (!users || users.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="6" class="px-4 py-8 text-center text-gray-500">Không có người dùng nào</td></tr>';
                 return;
             }
             
+            console.log('Rendering users:', users);
+            
             tbody.innerHTML = users.map(user => `
                 <tr class="hover:bg-gray-50">
-                    <td class="px-4 py-3">${user.id}</td>
-                    <td class="px-4 py-3 font-medium">${user.username}</td>
+                    <td class="px-4 py-3">${user.id || 'N/A'}</td>
+                    <td class="px-4 py-3 font-medium">${user.username || 'N/A'}</td>
                     <td class="px-4 py-3">${user.email || 'N/A'}</td>
                     <td class="px-4 py-3">
                         <span class="px-2 py-1 rounded text-xs ${user.role === 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-700'}">
                             ${user.role === 'admin' ? 'Admin' : 'User'}
                         </span>
                     </td>
-                    <td class="px-4 py-3">${formatDate(user.created_at)}</td>
+                    <td class="px-4 py-3">${formatDate(user.createdAt)}</td>
                     <td class="px-4 py-3">
                         <div class="flex gap-2">
                             <button onclick="editUser(${user.id})" 
-                                    class="text-blue-600 hover:text-blue-700">
+                                    class="text-blue-600 hover:text-blue-700" type="button">
                                 <i class="fas fa-edit"></i>
                             </button>
                             <button onclick="deleteUser(${user.id})" 
-                                    class="text-red-600 hover:text-red-700">
+                                    class="text-red-600 hover:text-red-700" type="button">
                                 <i class="fas fa-trash"></i>
                             </button>
                         </div>

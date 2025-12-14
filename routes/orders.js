@@ -86,6 +86,17 @@ router.post('/', authenticateToken, async (req, res) => {
         );
         const orderId = orderResult.insertId;
 
+        // Tạo tracking entry đầu tiên: Đơn hàng đã đặt
+        try {
+            await pool.query(
+                'INSERT INTO order_tracking_history (order_id, status, status_label) VALUES (?, ?, ?)',
+                [orderId, 'order_placed', 'Đơn hàng đã đặt']
+            );
+        } catch (error) {
+            console.error('Lỗi khi tạo tracking history:', error);
+            // Không throw error, chỉ log vì tracking là optional
+        }
+
         // 5. Tạo order_items từ cart_items
         for (const item of cartItems) {
             try {
@@ -273,6 +284,45 @@ router.get('/', authenticateToken, async (req, res) => {
     }
 });
 
+// GET /api/orders/:id/tracking - Lấy lịch sử tracking của đơn hàng
+router.get('/:id/tracking', authenticateToken, async (req, res) => {
+    const pool = req.app.locals.pool;
+    const userId = req.user.id;
+    const orderId = parseInt(req.params.id);
+
+    try {
+        // Kiểm tra đơn hàng thuộc về user (hoặc admin)
+        const [orders] = await pool.query(
+            'SELECT * FROM orders WHERE id = ?',
+            [orderId]
+        );
+
+        if (orders.length === 0) {
+            return res.status(404).json({ message: 'Đơn hàng không tồn tại' });
+        }
+
+        // Nếu không phải admin, chỉ cho phép xem đơn hàng của chính mình
+        if (req.user.role !== 'admin' && orders[0].user_id !== userId) {
+            return res.status(403).json({ message: 'Bạn không có quyền xem đơn hàng này' });
+        }
+
+        // Lấy tracking history
+        const [trackingHistory] = await pool.query(
+            'SELECT * FROM order_tracking_history WHERE order_id = ? ORDER BY created_at ASC',
+            [orderId]
+        );
+
+        res.json({
+            order_id: orderId,
+            tracking: trackingHistory
+        });
+
+    } catch (error) {
+        console.error('Lỗi khi lấy tracking history:', error);
+        res.status(500).json({ message: 'Lỗi máy chủ nội bộ' });
+    }
+});
+
 // GET /api/orders/:id - Lấy chi tiết đơn hàng
 router.get('/:id', authenticateToken, async (req, res) => {
     const pool = req.app.locals.pool;
@@ -369,6 +419,31 @@ router.put('/:id/status', authenticateToken, async (req, res) => {
             'UPDATE orders SET status = ? WHERE id = ?',
             [status, orderId]
         );
+
+        // Ghi lại tracking history
+        const statusLabels = {
+            'pending': 'Đơn hàng đã đặt',
+            'processing': 'Đơn hàng đã thanh toán',
+            'shipped': 'Đã giao cho đơn vị vận chuyển',
+            'delivered': 'Đã nhận được hàng',
+            'cancelled': 'Đơn hàng đã hủy'
+        };
+        
+        const statusKey = status === 'pending' ? 'order_placed' : 
+                          status === 'processing' ? 'order_paid' : status;
+        
+        // Kiểm tra xem tracking đã tồn tại chưa
+        const [existingTracking] = await pool.query(
+            'SELECT id FROM order_tracking_history WHERE order_id = ? AND status = ?',
+            [orderId, statusKey]
+        );
+        
+        if (existingTracking.length === 0) {
+            await pool.query(
+                'INSERT INTO order_tracking_history (order_id, status, status_label) VALUES (?, ?, ?)',
+                [orderId, statusKey, statusLabels[status] || status]
+            );
+        }
 
         // Lấy đơn hàng đã cập nhật
         const [updatedOrders] = await pool.query(

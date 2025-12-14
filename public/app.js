@@ -1444,6 +1444,11 @@ async function loadOrders() {
                         Tổng số lượng: ${order.total_quantity || order.item_count}
                     </div>
                 </div>
+                <div style="margin-top: 1rem;">
+                    <button onclick="viewOrderTracking(${order.id})" class="btn btn-outline-primary btn-sm" type="button">
+                        <i class="fas fa-truck mr-2"></i> Theo dõi đơn hàng
+                    </button>
+                </div>
             </div>
         `).join('');
     } catch (error) {
@@ -1463,6 +1468,142 @@ function getStatusText(status) {
         'cancelled': 'Đã hủy'
     };
     return statusMap[status] || status;
+}
+
+// Load và hiển thị tracking timeline
+// Expose ra global scope để onclick hoạt động
+window.viewOrderTracking = async function(orderId) {
+    try {
+        console.log('Loading tracking for order:', orderId);
+        const data = await apiCall(`/orders/${orderId}/tracking`);
+        console.log('Tracking data received:', data);
+        
+        if (!data || !data.tracking) {
+            console.error('Invalid tracking data:', data);
+            showToast('Dữ liệu tracking không hợp lệ', 'error');
+            return;
+        }
+        
+        showTrackingModal(orderId, data.tracking);
+    } catch (error) {
+        console.error('Error loading tracking:', error);
+        showToast('Không thể tải thông tin tracking: ' + error.message, 'error');
+    }
+};
+
+// Giữ function cũ để code khác có thể dùng
+function viewOrderTracking(orderId) {
+    window.viewOrderTracking(orderId);
+}
+
+function showTrackingModal(orderId, tracking) {
+    console.log('Showing tracking modal for order:', orderId, 'with tracking:', tracking);
+    
+    // Tạo modal để hiển thị tracking timeline
+    const timelineHTML = renderTrackingTimeline(tracking);
+    
+    const modalHTML = `
+        <div id="trackingModal" class="modal" style="display: flex; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); align-items: center; justify-content: center;">
+            <div class="modal-content" style="background-color: white; padding: 2rem; border-radius: 8px; max-width: 800px; width: 90%; max-height: 90vh; overflow-y: auto; position: relative;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                    <h2 style="font-size: 1.5rem; font-weight: bold;">Theo dõi đơn hàng #${orderId}</h2>
+                    <button onclick="window.closeTrackingModal()" type="button" style="background: none; border: none; font-size: 2rem; cursor: pointer; color: #666; padding: 0; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;">&times;</button>
+                </div>
+                <div id="trackingTimeline">
+                    ${timelineHTML}
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Xóa modal cũ nếu có
+    const existingModal = document.getElementById('trackingModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Thêm modal mới
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    console.log('Modal added to DOM');
+}
+
+// Expose function to global scope để onclick hoạt động
+window.closeTrackingModal = function() {
+    const modal = document.getElementById('trackingModal');
+    if (modal) {
+        modal.remove();
+    }
+};
+
+// Giữ function cũ để code khác có thể dùng
+function closeTrackingModal() {
+    window.closeTrackingModal();
+}
+
+function renderTrackingTimeline(tracking) {
+    if (!tracking || tracking.length === 0) {
+        return '<p style="color: #999; text-align: center; padding: 2rem;">Chưa có thông tin tracking</p>';
+    }
+
+    // Định nghĩa các icon và màu sắc cho từng trạng thái
+    const statusConfig = {
+        'order_placed': { icon: '📄', color: '#10b981', label: 'Đơn hàng đã đặt' },
+        'order_paid': { icon: '💰', color: '#3b82f6', label: 'Đơn hàng đã thanh toán' },
+        'shipped': { icon: '🚚', color: '#f59e0b', label: 'Đã giao cho đơn vị vận chuyển' },
+        'delivered': { icon: '✅', color: '#10b981', label: 'Đã nhận được hàng' },
+        'cancelled': { icon: '❌', color: '#ef4444', label: 'Đơn hàng đã hủy' }
+    };
+
+    let html = '<div style="position: relative; padding-left: 2rem;">';
+    
+    tracking.forEach((item, index) => {
+        const config = statusConfig[item.status] || { icon: '●', color: '#6b7280', label: item.status_label };
+        const isLast = index === tracking.length - 1;
+        const date = new Date(item.created_at).toLocaleString('vi-VN', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+        
+        html += `
+            <div style="position: relative; padding-bottom: ${isLast ? '0' : '2rem'};">
+                <!-- Line connector -->
+                ${!isLast ? `<div style="position: absolute; left: -1.75rem; top: 2rem; width: 2px; height: calc(100% - 0.5rem); background-color: ${config.color};"></div>` : ''}
+                
+                <!-- Status icon -->
+                <div style="position: absolute; left: -2rem; top: 0; width: 1.5rem; height: 1.5rem; border-radius: 50%; background-color: ${config.color}; display: flex; align-items: center; justify-content: center; color: white; font-size: 0.875rem; z-index: 1;">
+                    ${config.icon}
+                </div>
+                
+                <!-- Content -->
+                <div style="background-color: ${index === tracking.length - 1 ? '#f0fdf4' : '#fff'}; padding: 1rem; border-radius: 8px; border-left: 3px solid ${config.color};">
+                    <div style="font-weight: 600; color: ${config.color}; margin-bottom: 0.5rem;">
+                        ${item.status_label || config.label}
+                    </div>
+                    ${item.description ? `<div style="color: #6b7280; margin-bottom: 0.5rem;">${item.description}</div>` : ''}
+                    <div style="color: #9ca3af; font-size: 0.875rem;">
+                        ${date}
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    html += '</div>';
+    return html;
+}
+
+// Đóng modal khi click bên ngoài (chỉ thêm listener một lần)
+if (!window.trackingModalListenerAdded) {
+    document.addEventListener('click', (e) => {
+        const modal = document.getElementById('trackingModal');
+        if (modal && e.target === modal) {
+            window.closeTrackingModal();
+        }
+    });
+    window.trackingModalListenerAdded = true;
 }
 
 // ============================================

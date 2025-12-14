@@ -42,6 +42,29 @@
         .tab-content {
             min-height: 200px;
         }
+        /* Fix price overflow */
+        #productPrice {
+            word-break: break-word;
+            overflow-wrap: break-word;
+            line-height: 1.2;
+            max-width: 100%;
+        }
+        /* Responsive price font size */
+        #productPrice {
+            font-size: clamp(1.5rem, 4vw, 3rem) !important;
+        }
+        #productOriginalPrice {
+            font-size: clamp(1rem, 2.5vw, 1.5rem) !important;
+            word-break: break-word;
+            overflow-wrap: break-word;
+        }
+        .price-container {
+            flex-wrap: wrap;
+            min-width: 0;
+        }
+        .price-container > span {
+            min-width: 0;
+        }
     </style>
 </head>
 <body class="bg-gray-50">
@@ -53,7 +76,10 @@
                 <nav class="flex items-center gap-4">
                     <a href="/" class="text-gray-700 hover:text-red-600">Trang chủ</a>
                     <a href="/products.html" class="text-gray-700 hover:text-red-600">Sản phẩm</a>
-                    <a href="/cart.html" class="text-gray-700 hover:text-red-600">Giỏ hàng</a>
+                    <a href="/cart.html" class="relative text-gray-700 hover:text-red-600">
+                        Giỏ hàng
+                        <span id="cartBadgeHeader" class="absolute -top-2 -right-2 bg-red-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center hidden">0</span>
+                    </a>
                 </nav>
             </div>
         </div>
@@ -127,7 +153,7 @@
                         <h1 id="productName" class="text-3xl font-bold text-gray-900"></h1>
 
                         <!-- Price -->
-                        <div class="flex items-center gap-4">
+                        <div class="flex items-center gap-4 price-container">
                             <span id="productPrice" class="text-3xl font-bold text-red-600"></span>
                             <span id="productOriginalPrice" class="hidden text-xl text-gray-400 line-through"></span>
                         </div>
@@ -652,9 +678,57 @@
 
                 showToast(`Đã thêm ${currentQuantity} sản phẩm vào giỏ hàng!`, 'success');
                 
+                // Cập nhật số lượng trong giỏ hàng
+                loadCartCount();
+                
             } catch (error) {
                 console.error('Error adding to cart:', error);
                 showToast(error.message || 'Lỗi khi thêm vào giỏ hàng', 'error');
+            }
+        }
+
+        // Load số lượng sản phẩm trong giỏ hàng
+        async function loadCartCount() {
+            const token = getToken();
+            if (!token) {
+                // Nếu chưa đăng nhập, ẩn badge
+                const badgeHeader = document.getElementById('cartBadgeHeader');
+                if (badgeHeader) {
+                    badgeHeader.classList.add('hidden');
+                }
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/cart`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to load cart');
+                }
+
+                const data = await response.json();
+                const badgeHeader = document.getElementById('cartBadgeHeader');
+                const count = data.cart?.items?.length || 0;
+                
+                if (badgeHeader) {
+                    badgeHeader.textContent = count;
+                    if (count > 0) {
+                        badgeHeader.classList.remove('hidden');
+                    } else {
+                        badgeHeader.classList.add('hidden');
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading cart count:', error);
+                // Ẩn badge nếu có lỗi
+                const badgeHeader = document.getElementById('cartBadgeHeader');
+                if (badgeHeader) {
+                    badgeHeader.classList.add('hidden');
+                }
             }
         }
 
@@ -1375,6 +1449,13 @@
 
         // Load product on page load
         document.addEventListener('DOMContentLoaded', () => {
+            // Lấy thông tin user
+            currentUser = getCachedUser();
+            
+            // Load số lượng giỏ hàng
+            loadCartCount();
+            
+            // Load product detail
             loadProductDetail();
         });
     </script>
