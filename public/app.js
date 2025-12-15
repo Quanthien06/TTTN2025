@@ -1042,20 +1042,12 @@ function renderProducts(products, container) {
                     <p class="text-sm text-gray-600 mb-3 line-clamp-2 flex-1">${product.description}</p>
                 ` : '<div class="flex-1"></div>'}
                 ${currentUser ? `
-                    <div class="flex gap-2 mt-auto">
-                        <button 
-                            onclick="event.preventDefault(); event.stopPropagation(); addToCart(${product.id}, '${product.name.replace(/'/g, "\\'")}', ${product.price})"
-                            class="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 px-4 rounded-lg transition-colors"
-                        >
-                            Thêm vào giỏ
-                        </button>
-                        <button 
-                            onclick="event.preventDefault(); event.stopPropagation(); buyNow(${product.id}, '${product.name.replace(/'/g, "\\'")}', ${product.price})"
-                            class="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-bold py-2.5 px-4 rounded-lg transition-colors"
-                        >
-                            Mua ngay
-                        </button>
-                    </div>
+                    <button 
+                        onclick="event.preventDefault(); event.stopPropagation(); addToCart(${product.id}, '${product.name.replace(/'/g, "\\'")}', ${product.price})"
+                        class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 px-4 rounded-lg transition-colors mt-auto"
+                    >
+                        Thêm vào giỏ
+                    </button>
                 ` : `
                     <div 
                         onclick="event.preventDefault(); event.stopPropagation(); window.location.href='/login.html'"
@@ -1123,71 +1115,30 @@ async function loadCategoryFilterOptions() {
 }
 
 function applyFilters() {
-    // Lấy giá trị từ các input
-    const searchValue = document.getElementById('searchInput').value.trim();
-    const categoryValue = document.getElementById('categoryFilter').value;
-    const minPriceValue = document.getElementById('minPrice').value;
-    const maxPriceValue = document.getElementById('maxPrice').value;
-    const sortValue = document.getElementById('sortSelect').value;
-    
-    // Validate giá
-    const minPrice = minPriceValue ? parseFloat(minPriceValue) : null;
-    const maxPrice = maxPriceValue ? parseFloat(maxPriceValue) : null;
-    
-    // Kiểm tra nếu minPrice > maxPrice
-    if (minPrice !== null && maxPrice !== null && minPrice > maxPrice) {
-        showToast('Giá tối thiểu không thể lớn hơn giá tối đa', 'error');
-        return;
-    }
-    
-    // Kiểm tra giá trị âm
-    if ((minPrice !== null && minPrice < 0) || (maxPrice !== null && maxPrice < 0)) {
-        showToast('Giá không thể là số âm', 'error');
-        return;
-    }
-    
-    // Áp dụng filter
-    currentFilters.q = searchValue || null;
-    currentFilters.category = categoryValue || null;
-    currentFilters.minPrice = minPrice;
-    currentFilters.maxPrice = maxPrice;
-    currentFilters.sort = sortValue && sortValue !== 'id' ? sortValue : null;
-    
-    // Reset về trang đầu khi filter
-    currentPagination.page = 1;
-    
-    // Render và load
+    currentFilters.q = document.getElementById('searchInput').value.trim();
+    currentFilters.category = document.getElementById('categoryFilter').value;
+    currentFilters.minPrice = document.getElementById('minPrice').value || null;
+    currentFilters.maxPrice = document.getElementById('maxPrice').value || null;
+    currentFilters.sort = document.getElementById('sortSelect').value || null;
+    currentPagination.page = 1; // Reset về trang đầu
     renderActiveFilters();
     refreshProductsHeader();
     loadProducts();
 }
 
 function resetFilters() {
-    // Reset tất cả input
-    const searchInput = document.getElementById('searchInput');
-    const categoryFilter = document.getElementById('categoryFilter');
-    const minPrice = document.getElementById('minPrice');
-    const maxPrice = document.getElementById('maxPrice');
-    const sortSelect = document.getElementById('sortSelect');
-    
-    if (searchInput) searchInput.value = '';
-    if (categoryFilter) categoryFilter.value = '';
-    if (minPrice) minPrice.value = '';
-    if (maxPrice) maxPrice.value = '';
-    if (sortSelect) sortSelect.value = 'id';
-    
-    // Reset filter state
+    document.getElementById('searchInput').value = '';
+    document.getElementById('categoryFilter').value = '';
+    document.getElementById('minPrice').value = '';
+    document.getElementById('maxPrice').value = '';
+    document.getElementById('sortSelect').value = 'id';
     currentFilters = {};
     currentPagination.page = 1;
     currentCategoryTitle = 'Sản phẩm';
     currentCategorySubtitle = 'Tất cả sản phẩm đang có';
-    
-    // Render và reload
     renderActiveFilters();
     refreshProductsHeader();
     loadProducts();
-    
-    showToast('Đã xóa tất cả bộ lọc', 'success');
 }
 
 function renderPagination() {
@@ -1380,25 +1331,6 @@ async function addToCart(productId, productName, price) {
     } catch (error) {
         showToast(error.message, 'error');
     } finally {
-        hideLoading();
-    }
-}
-
-async function buyNow(productId, productName, price) {
-    try {
-        showLoading();
-        // Thêm sản phẩm vào giỏ hàng
-        await apiCall('/cart/items', {
-            method: 'POST',
-            body: JSON.stringify({ product_id: productId, quantity: 1 })
-        });
-        
-        loadCartCount();
-        
-        // Chuyển thẳng đến trang checkout
-        window.location.href = '/checkout.html';
-    } catch (error) {
-        showToast(error.message, 'error');
         hideLoading();
     }
 }
@@ -2478,38 +2410,11 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('resetFiltersBtn').addEventListener('click', resetFilters);
 
     // Enter key in search
-    const searchInput = document.getElementById('searchInput');
-    if (searchInput) {
-        searchInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                applyFilters();
-            }
-        });
-    }
-    
-    // Validate giá khi nhập
-    const minPriceInput = document.getElementById('minPrice');
-    const maxPriceInput = document.getElementById('maxPrice');
-    
-    if (minPriceInput) {
-        minPriceInput.addEventListener('blur', () => {
-            const value = parseFloat(minPriceInput.value);
-            if (minPriceInput.value && (isNaN(value) || value < 0)) {
-                minPriceInput.value = '';
-                showToast('Vui lòng nhập giá hợp lệ (số dương)', 'error');
-            }
-        });
-    }
-    
-    if (maxPriceInput) {
-        maxPriceInput.addEventListener('blur', () => {
-            const value = parseFloat(maxPriceInput.value);
-            if (maxPriceInput.value && (isNaN(value) || value < 0)) {
-                maxPriceInput.value = '';
-                showToast('Vui lòng nhập giá hợp lệ (số dương)', 'error');
-            }
-        });
-    }
+    document.getElementById('searchInput').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            applyFilters();
+        }
+    });
 
     // Slider functionality
     let currentSlide = 0;
@@ -2608,7 +2513,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Make functions available globally for onclick handlers
 window.addToCart = addToCart;
-window.buyNow = buyNow;
 window.navigateTo = navigateTo;
 window.viewCategory = viewCategory;
 window.viewCategoryProducts = viewCategoryProducts;

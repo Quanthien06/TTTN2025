@@ -6,7 +6,7 @@ const router = express.Router();
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const jwt = require('jsonwebtoken');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcrypt');   
 
 // Khởi tạo Google Strategy
 function initializeOAuth(appInstance) {
