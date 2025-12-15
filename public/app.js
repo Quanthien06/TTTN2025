@@ -1042,12 +1042,20 @@ function renderProducts(products, container) {
                     <p class="text-sm text-gray-600 mb-3 line-clamp-2 flex-1">${product.description}</p>
                 ` : '<div class="flex-1"></div>'}
                 ${currentUser ? `
-                    <button 
-                        onclick="event.preventDefault(); event.stopPropagation(); addToCart(${product.id}, '${product.name.replace(/'/g, "\\'")}', ${product.price})"
-                        class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 px-4 rounded-lg transition-colors mt-auto"
-                    >
-                        Thêm vào giỏ
-                    </button>
+                    <div class="flex gap-2 mt-auto">
+                        <button 
+                            onclick="event.preventDefault(); event.stopPropagation(); addToCart(${product.id}, '${product.name.replace(/'/g, "\\'")}', ${product.price})"
+                            class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2.5 px-4 rounded-lg transition-colors"
+                        >
+                            <i class="fas fa-shopping-cart mr-1"></i> Thêm vào giỏ
+                        </button>
+                        <button 
+                            onclick="event.preventDefault(); event.stopPropagation(); buyNow(${product.id}, '${product.name.replace(/'/g, "\\'")}', ${product.price})"
+                            class="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 px-4 rounded-lg transition-colors"
+                        >
+                            <i class="fas fa-bolt mr-1"></i> Mua ngay
+                        </button>
+                    </div>
                 ` : `
                     <div 
                         onclick="event.preventDefault(); event.stopPropagation(); window.location.href='/login.html'"
@@ -1328,6 +1336,39 @@ async function addToCart(productId, productName, price) {
         });
         showToast(`Đã thêm "${productName}" vào giỏ hàng`, 'success');
         loadCartCount();
+    } catch (error) {
+        showToast(error.message, 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+async function buyNow(productId, productName, price) {
+    try {
+        showLoading();
+        // Thêm sản phẩm vào giỏ hàng
+        await apiCall('/cart/items', {
+            method: 'POST',
+            body: JSON.stringify({ product_id: productId, quantity: 1 })
+        });
+        
+        // Lấy giỏ hàng hiện tại
+        const cartData = await apiCall('/cart');
+        
+        // Tạo checkoutData
+        const checkoutData = {
+            cart: cartData,
+            shippingMethod: 'standard',
+            discount: 0,
+            promoCode: null,
+            total: cartData.total || 0
+        };
+        
+        // Lưu vào sessionStorage
+        sessionStorage.setItem('checkoutData', JSON.stringify(checkoutData));
+        
+        // Chuyển đến trang checkout
+        window.location.href = '/checkout.html';
     } catch (error) {
         showToast(error.message, 'error');
     } finally {
@@ -2513,6 +2554,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Make functions available globally for onclick handlers
 window.addToCart = addToCart;
+window.buyNow = buyNow;
 window.navigateTo = navigateTo;
 window.viewCategory = viewCategory;
 window.viewCategoryProducts = viewCategoryProducts;
