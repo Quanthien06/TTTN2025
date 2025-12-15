@@ -6,8 +6,17 @@ const router = express.Router();
 const authenticateToken = require('../middleware/auth');
 const bcrypt = require('bcrypt');
 
+// Test route để kiểm tra router có hoạt động không
+router.get('/test', (req, res) => {
+    console.log('[USERS API] Test route called');
+    res.json({ message: 'Users router is working!', path: '/api/users/test' });
+});
+
 // Middleware kiểm tra admin
 function requireAdmin(req, res, next) {
+    if (!req.user) {
+        return res.status(401).json({ message: 'Chưa đăng nhập' });
+    }
     if (req.user.role !== 'admin') {
         return res.status(403).json({ message: 'Chỉ admin mới có quyền thực hiện thao tác này' });
     }
@@ -16,6 +25,7 @@ function requireAdmin(req, res, next) {
 
 // GET /api/users - Lấy danh sách users (admin)
 router.get('/', authenticateToken, requireAdmin, async (req, res) => {
+    console.log('[USERS API] GET /api/users - Request received');
     const pool = req.app.locals.pool;
     const { page = 1, limit = 20, search = '', role = '' } = req.query;
     
@@ -49,9 +59,9 @@ router.get('/', authenticateToken, requireAdmin, async (req, res) => {
         
         // Lấy users với pagination
         const [users] = await pool.query(
-            `SELECT id, username, email, role, createdAt
+            `SELECT id, username, email, role, created_at as createdAt
              FROM users ${whereClause}
-             ORDER BY createdAt DESC
+             ORDER BY created_at DESC
              LIMIT ? OFFSET ?`,
             [...queryParams, limitNum, offset]
         );
@@ -92,7 +102,7 @@ router.get('/:id', authenticateToken, requireAdmin, async (req, res) => {
     
     try {
         const [users] = await pool.query(
-            'SELECT id, username, email, role, createdAt FROM users WHERE id = ?',
+            'SELECT id, username, email, role, created_at as createdAt FROM users WHERE id = ?',
             [userId]
         );
         
@@ -138,7 +148,7 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
         
         // Lấy user vừa tạo
         const [newUsers] = await pool.query(
-            'SELECT id, username, email, role, createdAt FROM users WHERE id = ?',
+            'SELECT id, username, email, role, created_at as createdAt FROM users WHERE id = ?',
             [result.insertId]
         );
         
@@ -208,7 +218,7 @@ router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
         
         // Lấy user đã cập nhật
         const [updatedUsers] = await pool.query(
-            'SELECT id, username, email, role, createdAt FROM users WHERE id = ?',
+            'SELECT id, username, email, role, created_at as createdAt FROM users WHERE id = ?',
             [userId]
         );
         

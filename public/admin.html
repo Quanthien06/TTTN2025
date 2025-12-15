@@ -878,9 +878,17 @@
                 console.log('Users response status:', response.status);
                 
                 if (!response.ok) {
-                    const errorData = await response.json().catch(() => ({ message: 'Lỗi không xác định' }));
-                    console.error('Error response:', errorData);
-                    tbody.innerHTML = `<tr><td colspan="6" class="px-4 py-8 text-center text-red-500">Lỗi: ${errorData.message || 'Không thể tải danh sách người dùng'}</td></tr>`;
+                    let errorMessage = 'Không thể tải danh sách người dùng';
+                    try {
+                        const errorData = await response.json();
+                        errorMessage = errorData.message || errorData.error || errorMessage;
+                        console.error('Error response:', errorData);
+                    } catch (e) {
+                        // Nếu không parse được JSON, dùng status text
+                        errorMessage = response.statusText || errorMessage;
+                        console.error('Error parsing response:', e);
+                    }
+                    tbody.innerHTML = `<tr><td colspan="6" class="px-4 py-8 text-center text-red-500">Lỗi: ${errorMessage}</td></tr>`;
                     return;
                 }
                 
@@ -897,7 +905,8 @@
                 renderUserPagination(data.pagination || {});
             } catch (error) {
                 console.error('Error loading users:', error);
-                tbody.innerHTML = `<tr><td colspan="6" class="px-4 py-8 text-center text-red-500">Lỗi: ${error.message || 'Không thể tải danh sách người dùng'}</td></tr>`;
+                const errorMessage = error.message || 'Không thể tải danh sách người dùng. Vui lòng kiểm tra kết nối mạng.';
+                tbody.innerHTML = `<tr><td colspan="6" class="px-4 py-8 text-center text-red-500">Lỗi: ${errorMessage}</td></tr>`;
             }
         }
         

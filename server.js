@@ -130,29 +130,38 @@ console.log('✓ Comments router đã được đăng ký tại /api/comments');
 
 // Gắn router xác thực vào đường dẫn /api (chứa /register và /login)
 app.use('/api', authRouter);
+console.log('✓ Auth router đã được đăng ký tại /api');
 // Gắn router OAuth2 vào đường dẫn /api/auth
 app.use('/api/auth', oauthRouter);
+console.log('✓ OAuth router đã được đăng ký tại /api/auth');
 
 // Gắn router sản phẩm vào đường dẫn /api/products (chứa CRUD)
 app.use('/api/products', productRouter);
+console.log('✓ Products router đã được đăng ký tại /api/products');
 
 // Gắn router giỏ hàng vào đường dẫn /api/cart
 // Lưu ý: authenticateToken đã được thêm vào từng route trong cart.js
 app.use('/api/cart', cartRouter);
+console.log('✓ Cart router đã được đăng ký tại /api/cart');
 
 // Gắn router đơn hàng vào đường dẫn /api/orders
 // Lưu ý: authenticateToken đã được thêm vào từng route trong orders.js
 app.use('/api/orders', orderRouter);
+console.log('✓ Orders router đã được đăng ký tại /api/orders');
 
 // Gắn router categories vào đường dẫn /api/categories
 // Lưu ý: Một số route công khai (GET), một số cần admin (POST, PUT, DELETE)
 app.use('/api/categories', categoriesRouter);
+console.log('✓ Categories router đã được đăng ký tại /api/categories');
 // Tin công nghệ
 app.use('/api/news', newsRouter);
+console.log('✓ News router đã được đăng ký tại /api/news');
 // Users Management (Admin only)
 app.use('/api/users', usersRouter);
+console.log('✓ Users router đã được đăng ký tại /api/users');
 // Statistics/Dashboard (Admin only)
 app.use('/api/stats', statsRouter);
+console.log('✓ Stats router đã được đăng ký tại /api/stats');
 
 
 // 7. Lắng nghe

@@ -21,7 +21,8 @@ const JWT_SECRET = process.env.JWT_SECRET || 'HhGg78@!kYpQzXcVbNmL1o2P3oI4U5yT6r
 
 // Middleware
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
+// Serve static files từ thư mục public ở root project (không phải gateway/public)
+app.use(express.static(path.join(__dirname, '..', 'public')));
 
 // Middleware: Verify token với Auth Service
 async function verifyToken(req, res, next) {
@@ -501,9 +502,9 @@ app.delete('/api/comments/:id', async (req, res) => {
     }
 });
 
-// Serve homepage
+// Serve homepage (SPA)
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public/index.html'));
+    res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
 });
 
 // Start server
