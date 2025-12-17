@@ -36,6 +36,7 @@ const newsRouter = require('./routes/news'); // Router cho Tech News
 const commentsRouter = require('./routes/comments'); // Router cho Comments API
 const usersRouter = require('./routes/users'); // Router cho Users Management API (Admin)
 const statsRouter = require('./routes/stats'); // Router cho Statistics API (Admin)
+const chatbotRouter = require('./routes/chatbot'); // Router cho Chatbot API
 // Import middleware xác thực
 const authenticateToken = require('./middleware/auth'); 
 
@@ -162,6 +163,9 @@ console.log('✓ Users router đã được đăng ký tại /api/users');
 // Statistics/Dashboard (Admin only)
 app.use('/api/stats', statsRouter);
 console.log('✓ Stats router đã được đăng ký tại /api/stats');
+// Chatbot (Public)
+app.use('/api/chatbot', chatbotRouter);
+console.log('✓ Chatbot router đã được đăng ký tại /api/chatbot');
 
 
 // 7. Lắng nghe

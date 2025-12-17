@@ -368,6 +368,37 @@ app.use('/api/news', async (req, res) => {
 });
 
 // ============================================
+// USERS ENDPOINTS → Auth Service (Admin)
+// ============================================
+
+app.use('/api/users', async (req, res) => {
+    try {
+        const url = `${SERVICES.auth}/users${req.url}`;
+        const method = req.method.toLowerCase();
+        
+        const config = {
+            method,
+            url,
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': req.headers['authorization']
+            }
+        };
+
+        if (method !== 'get' && method !== 'delete') {
+            config.data = req.body;
+        }
+
+        const response = await axios(config);
+        res.json(response.data);
+    } catch (error) {
+        res.status(error.response?.status || 500).json(
+            error.response?.data || { message: 'Lỗi server' }
+        );
+    }
+});
+
+// ============================================
 // COMMENTS ENDPOINTS → Xử lý trực tiếp trong Gateway
 // ============================================
 

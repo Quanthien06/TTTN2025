@@ -557,9 +557,9 @@
                 // Show success message
                 showToast('Đặt hàng thành công!', 'success');
 
-                // Redirect to orders page
+                // Redirect to orders page (SPA route)
                 setTimeout(() => {
-                    window.location.href = '/orders.html';
+                    window.location.href = '/?page=orders';
                 }, 2000);
 
             } catch (error) {

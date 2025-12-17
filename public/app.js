@@ -1354,14 +1354,16 @@ async function buyNow(productId, productName, price) {
         
         // Lấy giỏ hàng hiện tại
         const cartData = await apiCall('/cart');
-        
+        // API /api/cart trả về { cart: { ... } } nên unwrap nếu cần
+        const cart = (cartData && cartData.cart) ? cartData.cart : cartData;
+
         // Tạo checkoutData
         const checkoutData = {
-            cart: cartData,
+            cart: cart,
             shippingMethod: 'standard',
             discount: 0,
             promoCode: null,
-            total: cartData.total || 0
+            total: cart.total || 0
         };
         
         // Lưu vào sessionStorage

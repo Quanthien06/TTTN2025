@@ -1,0 +1,108 @@
+{
+  "categories": [
+    {
+      "id": "shipping",
+      "name": "Vận chuyển",
+      "icon": "truck"
+    },
+    {
+      "id": "payment",
+      "name": "Thanh toán",
+      "icon": "credit-card"
+    },
+    {
+      "id": "return",
+      "name": "Đổi trả",
+      "icon": "undo"
+    },
+    {
+      "id": "account",
+      "name": "Tài khoản",
+      "icon": "user"
+    },
+    {
+      "id": "product",
+      "name": "Sản phẩm",
+      "icon": "box"
+    }
+  ],
+  "faqs": [
+    {
+      "id": 1,
+      "category": "shipping",
+      "question": "Thời gian giao hàng bao lâu?",
+      "answer": "Thời gian giao hàng từ 2-5 ngày làm việc tùy vào khu vực địa lý và loại sản phẩm. TP. HCM và Hà Nội giao nhanh hơn (1-2 ngày). Bạn có thể kiểm tra tình trạng đơn hàng trong tài khoản của mình.",
+      "keywords": ["giao hàng", "vận chuyển", "bao lâu", "thời gian"]
+    },
+    {
+      "id": 2,
+      "category": "shipping",
+      "question": "Bạn giao hàng đến những tỉnh nào?",
+      "answer": "Chúng tôi giao hàng đến toàn quốc bao gồm các tỉnh thành và hải đảo. Tuy nhiên, một số khu vực hẻo lánh có thể mất thêm thời gian. Hãy nhập mã bưu điện của bạn tại trang thanh toán để kiểm tra chi phí vận chuyển cụ thể.",
+      "keywords": ["giao hàng", "tỉnh", "khu vực", "nơi giao"]
+    },
+    {
+      "id": 3,
+      "category": "shipping",
+      "question": "Phí vận chuyển được tính như thế nào?",
+      "answer": "Phí vận chuyển dựa trên trọng lượng sản phẩm, khoảng cách giao hàng và phương thức vận chuyển được chọn. Phí vận chuyển sẽ được hiển thị rõ ràng trước khi bạn xác nhận đơn hàng.",
+      "keywords": ["phí", "vận chuyển", "chi phí", "giá"]
+    },
+    {
+      "id": 4,
+      "category": "payment",
+      "question": "Những phương thức thanh toán nào được chấp nhận?",
+      "answer": "Chúng tôi chấp nhận: Chuyển khoản ngân hàng, Ví điện tử (Momo, ZaloPay), Thanh toán khi nhận hàng (COD), Thẻ tín dụng (Visa, Mastercard). Bạn có thể chọn phương thức thanh toán phù hợp nhất tại trang thanh toán.",
+      "keywords": ["thanh toán", "phương thức", "cách trả", "ví", "ngân hàng"]
+    },
+    {
+      "id": 5,
+      "category": "payment",
+      "question": "Tài khoản của tôi có được bảo mật không?",
+      "answer": "Vâng, chúng tôi sử dụng mã hóa SSL/TLS để bảo vệ các giao dịch của bạn. Mật khẩu của bạn được lưu trữ an toàn bằng công nghệ băm hiện đại. Vui lòng không chia sẻ mật khẩu với bất kỳ ai.",
+      "keywords": ["bảo mật", "mật khẩu", "an toàn", "tài khoản"]
+    },
+    {
+      "id": 6,
+      "category": "return",
+      "question": "Chính sách đổi trả như thế nào?",
+      "answer": "Bạn có thể đổi hoặc trả lại sản phẩm trong vòng 30 ngày kể từ ngày nhận hàng nếu sản phẩm còn nguyên vẹn, chưa sử dụng, và có kèm hóa đơn. Chi phí vận chuyển cho đơn đổi trả sẽ do bạn chịu.",
+      "keywords": ["đổi", "trả", "hoàn lại", "chính sách"]
+    },
+    {
+      "id": 7,
+      "category": "return",
+      "question": "Làm sao để yêu cầu hoàn tiền?",
+      "answer": "Để yêu cầu hoàn tiền, vui lòng: 1. Vào 'Đơn hàng của tôi' trong tài khoản 2. Chọn đơn hàng cần hoàn tiền 3. Nhấp 'Yêu cầu hoàn tiền' 4. Điền lý do và chụp ảnh (nếu cần). Chúng tôi sẽ xem xét trong 5-7 ngày làm việc.",
+      "keywords": ["hoàn tiền", "hoàn lại", "yêu cầu", "tiền"]
+    },
+    {
+      "id": 8,
+      "category": "account",
+      "question": "Làm sao để đặt lại mật khẩu?",
+      "answer": "Nhấp vào 'Quên mật khẩu?' trên trang đăng nhập. Nhập email tài khoản của bạn, bạn sẽ nhận được email xác nhận với liên kết để đặt lại mật khẩu. Liên kết có hiệu lực trong 24 giờ.",
+      "keywords": ["mật khẩu", "quên", "đặt lại", "reset"]
+    },
+    {
+      "id": 9,
+      "category": "account",
+      "question": "Cách đăng ký tài khoản?",
+      "answer": "Nhấp 'Đăng ký' trên trang chủ, điền email hoặc số điện thoại, mật khẩu và xác nhận email hoặc OTP. Sau đó bạn có thể đăng nhập và mua sắm ngay lập tức.",
+      "keywords": ["đăng ký", "tài khoản", "tạo", "đăng ký thành viên"]
+    },
+    {
+      "id": 10,
+      "category": "product",
+      "question": "Làm sao để tìm kiếm sản phẩm?",
+      "answer": "Sử dụng thanh tìm kiếm ở đầu trang, nhập tên sản phẩm, thương hiệu hoặc từ khóa. Bạn cũng có thể lọc theo danh mục, giá, đánh giá để tìm sản phẩm phù hợp.",
+      "keywords": ["tìm kiếm", "sản phẩm", "tìm", "lọc"]
+    },
+    {
+      "id": 11,
+      "category": "product",
+      "question": "Sản phẩm bị lỗi khi nhận hàng thì sao?",
+      "answer": "Nếu sản phẩm bị lỗi hoặc hư hỏng, vui lòng liên hệ ngay với chúng tôi trong vòng 48 giờ nhận hàng với hình ảnh chứng minh. Chúng tôi sẽ gửi sản phẩm mới hoặc hoàn tiền ngay lập tức.",
+      "keywords": ["lỗi", "hư hỏng", "sản phẩm", "hư"]
+    }
+  ]
+}
