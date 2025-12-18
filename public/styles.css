@@ -77,6 +77,43 @@ body {
     position: relative;
 }
 
+/* Dropdown menu (used by shared header component) */
+.nav-dropdown {
+    position: relative;
+}
+.nav-dropdown:hover .nav-dropdown-menu {
+    display: block;
+    opacity: 1;
+    visibility: visible;
+}
+.nav-dropdown-menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: 0.5rem;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    min-width: 200px;
+    z-index: 60;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease-in-out, visibility 0.2s ease-in-out;
+}
+.nav-dropdown-menu a {
+    display: block;
+    padding: 0.75rem 1rem;
+    color: #374151;
+    text-decoration: none;
+    transition: background-color 0.2s;
+}
+.nav-dropdown-menu a:hover {
+    background-color: #f3f4f6;
+    color: #dc2626;
+}
+
 .nav-link:hover,
 .nav-link.active {
     color: var(--accent);
@@ -770,6 +807,15 @@ body {
 .pagination button:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+}
+
+/* Products header centered mode (used for "Sản phẩm mới") */
+#productsHeaderBox.products-header-centered {
+    text-align: center;
+    align-items: center;
+}
+#productsHeaderBox.products-header-centered #activeFilters {
+    justify-content: center;
 }
 
 /* Loading */

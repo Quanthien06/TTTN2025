@@ -17,16 +17,8 @@
   </style>
 </head>
 <body class="bg-gray-50 font-sans">
-  <header class="bg-white shadow-sm">
-    <div class="container mx-auto px-4 py-4 flex items-center justify-between">
-      <a href="/" class="text-2xl font-bold text-red-600">TechStore</a>
-      <nav class="flex gap-4 items-center">
-        <a href="/" class="text-gray-600 hover:text-red-600">Trang chủ</a>
-        <a href="/?page=products" class="text-gray-600 hover:text-red-600">Sản phẩm</a>
-        <a href="/location.html" class="text-gray-600 hover:text-red-600 font-semibold">Cửa hàng gần bạn</a>
-      </nav>
-    </div>
-  </header>
+  <div id="site-header"></div>
+  <script src="/include-partials.js" defer></script>
 
   <main class="container mx-auto px-4 py-8 max-w-6xl">
     <h1 class="text-3xl font-bold mb-4">Tìm cửa hàng gần bạn</h1>
@@ -67,6 +59,7 @@
           <div id="storesList">
             <p class="text-sm text-gray-500">Đang tải cửa hàng...</p>
           </div>
+          <div class="mt-4 flex justify-center gap-2" id="storesPagination"></div>
         </div>
       </div>
 
@@ -98,6 +91,8 @@
     // Google Maps + dynamic stores via /api/stores
     let stores = [];
     let map, mapLarge, markers = [], infoWindow;
+    let storesListPage = 1;
+    const storesPerPage = 8;
 
     async function getConfig() {
       try {
@@ -137,6 +132,41 @@
       }
     }
 
+    function sliceStoresForList(storesList) {
+      const start = (storesListPage - 1) * storesPerPage;
+      return (storesList || []).slice(start, start + storesPerPage);
+    }
+
+    function renderStoresPagination(totalItems) {
+      const el = document.getElementById('storesPagination');
+      if (!el) return;
+      const totalPages = Math.max(1, Math.ceil((totalItems || 0) / storesPerPage));
+      if (totalPages <= 1) { el.innerHTML = ''; return; }
+
+      const page = storesListPage;
+      let html = '';
+      html += `<button ${page === 1 ? 'disabled' : ''} class="px-3 py-2 border rounded-lg ${page === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50'}" onclick="changeStoresPage(${page - 1})">‹</button>`;
+      for (let i = 1; i <= totalPages; i++) {
+        if (i === 1 || i === totalPages || (i >= page - 2 && i <= page + 2)) {
+          html += `<button class="px-3 py-2 border rounded-lg ${i === page ? 'bg-red-600 text-white border-red-600' : 'hover:bg-gray-50'}" onclick="changeStoresPage(${i})">${i}</button>`;
+        } else if (i === page - 3 || i === page + 3) {
+          html += `<button disabled class="px-3 py-2 opacity-50">...</button>`;
+        }
+      }
+      html += `<button ${page === totalPages ? 'disabled' : ''} class="px-3 py-2 border rounded-lg ${page === totalPages ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50'}" onclick="changeStoresPage(${page + 1})">›</button>`;
+      el.innerHTML = html;
+    }
+
+    window.changeStoresPage = function(p) {
+      storesListPage = Math.max(1, p);
+      if (typeof google !== 'undefined' && map) {
+        renderStoresOnMap(stores);
+      } else {
+        renderStoresAsimg(stores);
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
     function clearMarkers() {
       markers.forEach(m => m.setMap(null));
       markers = [];
@@ -149,6 +179,7 @@
 
       if (!storesList || storesList.length === 0) {
         list.innerHTML = '<p class="text-sm text-gray-500">Không tìm thấy cửa hàng</p>';
+        renderStoresPagination(0);
         return;
       }
 
@@ -207,6 +238,33 @@
         map.fitBounds(bounds);
         mapLarge.fitBounds(bounds);
       }
+
+      // Render paginated list (markers already added for all stores)
+      list.innerHTML = '';
+      sliceStoresForList(storesList).forEach(s => {
+        const el = document.createElement('div');
+        el.className = 'store-item';
+        let chipClass = '';
+        if (s.system === 'cellphone') chipClass = 'chip-cellphone';
+        if (s.system === 'dienthoaivui') chipClass = 'chip-dtv';
+        if (s.system === 'care') chipClass = 'chip-care';
+        el.innerHTML = `
+          <div class="flex justify-between items-start">
+            <div>
+              <div class="text-sm text-gray-500 mb-1"><span class="system-chip ${chipClass}">${s.system}</span></div>
+              <div class="font-semibold">${s.name}</div>
+              <div class="text-xs text-gray-600">${s.address}</div>
+              <div class="text-xs text-gray-600 mt-1">SĐT: ${s.phone}</div>
+            </div>
+            <div class="text-right">
+              <button class="text-sm text-blue-600" onclick="zoomToStore(${s.id})">Xem trên bản đồ</button>
+            </div>
+          </div>
+        `;
+        el.addEventListener('click', () => { zoomToStore(s.id); });
+        list.appendChild(el);
+      });
+      renderStoresPagination(storesList.length);
     }
 
     function openImageModal(imgUrl, title) {
@@ -257,10 +315,11 @@
       list.innerHTML = '';
       if (!storesList || storesList.length === 0) {
         list.innerHTML = '<p class="text-sm text-gray-500">Không tìm thấy cửa hàng</p>';
+        renderStoresPagination(0);
         return;
       }
 
-      storesList.forEach(s => {
+      sliceStoresForList(storesList).forEach(s => {
         const el = document.createElement('div');
         el.className = 'store-item flex items-center gap-4 p-3 border-b';
         const imgUrl = s.image || '/img/store-placeholder.png';
@@ -277,6 +336,7 @@
         `;
         list.appendChild(el);
       });
+      renderStoresPagination(storesList.length);
     }
 
     async function initLocationPage() {
@@ -302,6 +362,7 @@
           stores = [];
         }
       }
+      storesListPage = 1;
 
       if (mapsLoaded) {
         map = new google.maps.Map(document.getElementById('map'), { center: { lat: 10.776889, lng: 106.694444 }, zoom: 12 });
@@ -321,6 +382,7 @@
         const sys = document.querySelector('input[name="system"]:checked') ? document.querySelector('input[name="system"]:checked').value : 'all';
         const newStores = await fetchStoresApi(sys, q, city);
         stores = (newStores && newStores.length) ? newStores : stores;
+        storesListPage = 1;
         if (mapsLoaded) renderStoresOnMap(stores); else renderStoresAsimg(stores);
       });
 
@@ -330,6 +392,7 @@
         const sys = document.querySelector('input[name="system"]:checked').value || 'all';
         const newStores = await fetchStoresApi(sys, q, city);
         stores = (newStores && newStores.length) ? newStores : stores;
+        storesListPage = 1;
         if (mapsLoaded) renderStoresOnMap(stores); else renderStoresAsimg(stores);
       }));
 
@@ -339,6 +402,7 @@
         const sys = document.querySelector('input[name="system"]:checked').value || 'all';
         const newStores = await fetchStoresApi(sys, q, city);
         stores = (newStores && newStores.length) ? newStores : stores;
+        storesListPage = 1;
         if (mapsLoaded) renderStoresOnMap(stores); else renderStoresAsimg(stores);
       });
     }

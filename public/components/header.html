@@ -1,0 +1,138 @@
+<!-- public/components/header.html -->
+<!-- Shared site header + navigation (copied from main index header, adapted to work on standalone pages) -->
+
+<!-- Top Bar (Red Banner) - Fixed -->
+<div class="bg-red-600 text-white py-2 text-xs fixed top-0 left-0 right-0 z-[60] hidden md:block">
+  <div class="container mx-auto px-4">
+    <div class="flex items-center justify-between flex-wrap gap-2">
+      <div class="flex items-center gap-4 flex-wrap">
+        <span>✓ Đã bao gồm VAT đầy đủ</span>
+        <span>🚚 Giao nhanh - Miễn phí cho đơn 300k</span>
+        <span>🔄 Thu cũ giá ngon – Lên đời tiết kiệm</span>
+        <span>✓ Sản phẩm Chính hãng</span>
+      </div>
+      <div class="flex items-center gap-4">
+        <a href="/location.html" class="hover:underline">Cửa hàng gần bạn</a>
+        <a href="/?page=orders" class="hover:underline">Tra cứu đơn hàng</a>
+        <span>📞 Hotline: <strong>0905 884 303</strong></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Main Header - Fixed below top bar -->
+<header class="bg-white shadow-md fixed left-0 right-0 z-50 md:top-[40px] top-0">
+  <div class="container mx-auto px-4">
+    <div class="flex items-center justify-between py-4 gap-4" style="margin-top: 30px;">
+      <!-- Logo -->
+      <div class="flex items-center">
+        <a href="/" class="flex items-center gap-2">
+          <img src="/img/logo/logo.png" alt="TechStore" class="w-10 h-10 object-contain" />
+          <span class="text-2xl font-bold text-red-600 leading-none">TechStore</span>
+        </a>
+      </div>
+
+      <!-- Search Bar (simple redirect) -->
+      <div class="flex-1 max-w-2xl mx-4 hidden md:block">
+        <div class="relative">
+          <input type="text" id="mainSearchInput" placeholder="Bạn muốn mua gì hôm nay?"
+                 class="w-full px-4 py-2 pr-10 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-red-500 transition-all"
+                 autocomplete="off" />
+          <button id="mainSearchButton"
+                  class="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-red-600 cursor-pointer"
+                  onclick="(function(){var q=document.getElementById('mainSearchInput')?.value||''; window.location.href='/?page=products&q='+encodeURIComponent(q.trim());})();">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Right Actions -->
+      <div class="flex items-center gap-4">
+        <a href="/cart.html" class="relative flex items-center gap-2 text-gray-700 hover:text-red-600 transition-colors">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z">
+            </path>
+          </svg>
+          <span class="hidden md:block font-medium">Giỏ hàng</span>
+          <span id="cartBadgeHeader"
+                class="absolute -top-2 -right-2 bg-red-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center hidden">0</span>
+        </a>
+
+        <!-- Auth links (hidden when logged in) -->
+        <a id="headerLoginLink" href="/login.html" class="px-4 py-2 text-gray-700 hover:text-red-600 font-medium transition-colors">Đăng nhập</a>
+        <a id="headerRegisterLink" href="/register.html"
+           class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium transition-colors">Đăng ký</a>
+
+        <!-- User menu (shown when logged in) -->
+        <div id="headerUserMenu" class="user-menu hidden">
+          <button type="button" class="user-menu-btn">
+            <span>Xin chào, <strong id="headerUsername">User</strong></span>
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
+          </button>
+          <div class="user-menu-dropdown">
+            <a href="/profile.html">Tài khoản</a>
+            <a href="/?page=orders">Đơn hàng</a>
+            <a href="#" id="headerLogoutBtn">Đăng xuất</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navigation Bar -->
+    <div class="border-t border-gray-200 py-3">
+      <nav class="flex items-center gap-6 flex-wrap">
+        <a href="/" class="nav-link text-gray-700 hover:text-red-600 font-medium transition-colors">Trang Chủ</a>
+
+        <div class="relative nav-dropdown group">
+          <a href="/phone-tablet.html"
+             class="nav-link text-gray-700 hover:text-red-600 font-medium transition-colors flex items-center gap-1">
+            Điện thoại, Tablet
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
+          </a>
+          <div class="nav-dropdown-menu">
+            <a href="/phone.html" class="nav-link">Điện thoại</a>
+            <a href="/tablet.html" class="nav-link">Tablet</a>
+            <a href="/phone-accessories.html" class="nav-link">Phụ kiện điện thoại</a>
+          </div>
+        </div>
+
+        <a href="/laptop.html" class="nav-link text-gray-700 hover:text-red-600 font-medium transition-colors">Laptop</a>
+        <a href="/audio.html" class="nav-link text-gray-700 hover:text-red-600 font-medium transition-colors">Âm thanh, Mic thu âm</a>
+        <a href="/watch-camera.html" class="nav-link text-gray-700 hover:text-red-600 font-medium transition-colors">Đồng hồ, Camera</a>
+        <a href="/accessories.html" class="nav-link text-gray-700 hover:text-red-600 font-medium transition-colors">Phụ kiện</a>
+
+        <div class="relative nav-dropdown group">
+          <a href="/pc-monitor-printer.html"
+             class="nav-link text-gray-700 hover:text-red-600 font-medium transition-colors flex items-center gap-1">
+            PC, Màn hình, Máy in
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
+          </a>
+          <div class="nav-dropdown-menu">
+            <a href="/pc.html" class="nav-link">PC (Máy tính để bàn)</a>
+            <a href="/monitor.html" class="nav-link">Màn hình</a>
+            <a href="/printer.html" class="nav-link">Máy in</a>
+            <a href="/pc-parts.html" class="nav-link">Linh kiện PC</a>
+          </div>
+        </div>
+
+        <a href="/promotions.html" class="nav-link text-gray-700 hover:text-red-600 font-medium transition-colors">Khuyến mãi</a>
+        <a href="/about.html" class="nav-link text-gray-700 hover:text-red-600 font-medium transition-colors">Về chúng tôi</a>
+      </nav>
+    </div>
+  </div>
+</header>
+
+<!-- Spacer for pages that don't add their own padding (include-partials.js also sets padding dynamically) -->
+<div class="h-24 md:h-40"></div>
+
+

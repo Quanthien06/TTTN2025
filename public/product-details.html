@@ -68,22 +68,8 @@
     </style>
 </head>
 <body class="bg-gray-50">
-    <!-- Header Navigation -->
-    <header class="bg-white shadow-md sticky top-0 z-50">
-        <div class="container mx-auto px-4 py-4">
-            <div class="flex items-center justify-between">
-                <a href="/" class="text-2xl font-bold text-red-600">🛍️ TechStore</a>
-                <nav class="flex items-center gap-4">
-                    <a href="/" class="text-gray-700 hover:text-red-600">Trang chủ</a>
-                    <a href="/products.html" class="text-gray-700 hover:text-red-600">Sản phẩm</a>
-                    <a href="/cart.html" class="relative text-gray-700 hover:text-red-600">
-                        Giỏ hàng
-                        <span id="cartBadgeHeader" class="absolute -top-2 -right-2 bg-red-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center hidden">0</span>
-                    </a>
-                </nav>
-            </div>
-        </div>
-    </header>
+    <div id="site-header"></div>
+    <script src="/include-partials.js" defer></script>
 
     <!-- Main Content -->
     <main class="container mx-auto px-4 py-8">
@@ -1553,7 +1539,7 @@
                 <!-- About Section -->
                 <div>
                     <div class="flex items-center gap-2 mb-4">
-                        <span class="text-3xl">🛍️</span>
+                        <img src="/img/logo/logo.png" alt="TechStore" class="w-10 h-10 object-contain" />
                         <span class="text-2xl font-bold text-white">TechStore</span>
                     </div>
                     <p class="text-sm mb-4 text-gray-400">

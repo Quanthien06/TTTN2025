@@ -31,6 +31,11 @@ const publicDirCandidates = [
 const PUBLIC_DIR = publicDirCandidates.find(p => fs.existsSync(p)) || publicDirCandidates[0];
 app.use(express.static(PUBLIC_DIR));
 
+// Legacy static routes (old links/bookmarks) -> SPA routes
+app.get('/tech-news.html', (req, res) => {
+    return res.redirect('/?page=tech-news');
+});
+
 // Middleware: Verify token với Auth Service
 async function verifyToken(req, res, next) {
     // Bỏ qua các file static (img, css, js, fonts, etc.)

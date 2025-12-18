@@ -460,7 +460,7 @@ const CATEGORY_ROUTES = [
 ];
 
 const SUPPORTED_PAGES = [
-    'home', 'products', 'categories', 'cart', 'orders', 'profile',
+    'home', 'products', 'categories', 'cart', 'orders', 'profile', 'about',
     ...CATEGORY_ROUTES
 ];
 
@@ -493,6 +493,16 @@ function getInitialPage() {
     return 'home';
 }
 
+function applyProductsModeFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    const mode = (params.get('mode') || '').toLowerCase();
+    const page = (params.get('page') || '').toLowerCase();
+
+    if (page === 'products' && mode === 'new') {
+        activateNewProductsMode();
+    }
+}
+
 function updateURLForPage(page, replace = false) {
     if (!isValidPage(page)) return;
     const target = buildPageHref(page);
@@ -513,6 +523,7 @@ function refreshProductsHeader(totalItems = null) {
     const heading = document.getElementById('productsHeading');
     const subtitle = document.getElementById('productsSubtitle');
     const counter = document.getElementById('productsCounter');
+    const headerBox = document.getElementById('productsHeaderBox');
 
     if (heading) heading.textContent = currentCategoryTitle || 'Sản phẩm';
     if (subtitle) subtitle.textContent = currentCategorySubtitle || 'Danh sách sản phẩm';
@@ -520,6 +531,11 @@ function refreshProductsHeader(totalItems = null) {
     if (counter) {
         const countText = totalItems !== null ? `${totalItems} sản phẩm` : 'Đang tải...';
         counter.textContent = countText;
+    }
+
+    // Center align when viewing "Sản phẩm mới"
+    if (headerBox) {
+        headerBox.classList.toggle('products-header-centered', (currentCategoryTitle || '').toLowerCase() === 'sản phẩm mới');
     }
 }
 
@@ -624,6 +640,10 @@ function navigateTo(page) {
         case 'categories':
             loadCategoriesPage();
             break;
+        case 'about':
+            // About is a standalone page (not a SPA section)
+            window.location.href = '/about.html';
+            break;
         // Routes cho các danh mục sản phẩm
         case 'phone-tablet':
             navigateToCategory('Điện thoại, Tablet', ['Điện thoại', 'Tablet']);
@@ -707,6 +727,41 @@ function navigateTo(page) {
             break;
     }
 }
+
+function activateNewProductsMode() {
+    currentCategoryTitle = 'Sản phẩm mới';
+    currentCategorySubtitle = '4 sản phẩm mới nhất và danh sách theo mới nhất';
+    currentView = 'products';
+    toggleFilters(true);
+
+    // reset filters but keep newest sort
+    currentFilters = {};
+    currentPagination.page = 1;
+
+    // Sort newest (id desc) – supported by backend as sort=id&order=desc
+    currentFilters.sort = 'id-desc';
+    const sortSelect = document.getElementById('sortSelect');
+    if (sortSelect) sortSelect.value = 'id-desc';
+
+    refreshProductsHeader();
+    renderActiveFilters();
+    loadProducts();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// Expose for buttons/links
+window.navigateToNewProducts = function () {
+    // If we are in SPA index already, just navigate and activate mode
+    if (document.getElementById('pageProducts')) {
+        // Ensure products page visible
+        navigateTo('products');
+        // navigateTo('products') will call loadProducts(), so override state then reload
+        activateNewProductsMode();
+        return;
+    }
+    // Fallback for any standalone page
+    window.location.href = '/?page=products&mode=new';
+};
 
 // Hàm điều hướng đến trang sản phẩm với category filter
 async function navigateToCategory(categoryName, searchTerms) {
@@ -834,6 +889,7 @@ function navigateToTechNews() {
 async function loadHomePage() {
     loadCategories();
     loadFeaturedProducts();
+    loadNewProducts();
 }
 
 async function loadCategories() {
@@ -883,6 +939,24 @@ async function loadFeaturedProducts() {
     } catch (error) {
         document.getElementById('featuredProducts').innerHTML = 
             `<div class="empty-state">Lỗi khi tải sản phẩm: ${error.message}</div>`;
+    }
+}
+
+async function loadNewProducts() {
+    const grid = document.getElementById('newProductsGrid');
+    if (!grid) return;
+
+    try {
+        const data = await apiCall('/products?limit=4&sort=id&order=desc');
+
+        if (!data.products || data.products.length === 0) {
+            grid.innerHTML = '<div class="empty-state">Chưa có sản phẩm nào</div>';
+            return;
+        }
+
+        renderProducts(data.products, grid);
+    } catch (error) {
+        grid.innerHTML = `<div class="empty-state">Lỗi khi tải sản phẩm mới: ${error.message}</div>`;
     }
 }
 
@@ -1444,10 +1518,60 @@ async function checkout(shippingAddress, phone) {
 // ORDERS
 // ============================================
 
+let currentOrdersPagination = { page: 1, limit: 10, totalPages: 1, totalItems: 0 };
+
+function renderOrdersPagination() {
+    const el = document.getElementById('ordersPagination');
+    if (!el) return;
+
+    if (!currentOrdersPagination.totalPages || currentOrdersPagination.totalPages <= 1) {
+        el.innerHTML = '';
+        return;
+    }
+
+    const page = currentOrdersPagination.page;
+    const totalPages = currentOrdersPagination.totalPages;
+
+    let html = '';
+    html += `<button 
+        ${page === 1 ? 'disabled' : ''}
+        onclick="changeOrdersPage(${page - 1})"
+        class="px-4 py-2 border border-gray-300 rounded-lg ${page === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-100'} transition-colors"
+    >‹</button>`;
+
+    for (let i = 1; i <= totalPages; i++) {
+        if (i === 1 || i === totalPages || (i >= page - 2 && i <= page + 2)) {
+            html += `<button 
+                class="px-4 py-2 border border-gray-300 rounded-lg ${i === page ? 'bg-red-600 text-white border-red-600' : 'hover:bg-gray-100'} transition-colors"
+                onclick="changeOrdersPage(${i})"
+            >${i}</button>`;
+        } else if (i === page - 3 || i === page + 3) {
+            html += `<button disabled class="px-4 py-2 opacity-50">...</button>`;
+        }
+    }
+
+    html += `<button 
+        ${page === totalPages ? 'disabled' : ''}
+        onclick="changeOrdersPage(${page + 1})"
+        class="px-4 py-2 border border-gray-300 rounded-lg ${page === totalPages ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-100'} transition-colors"
+    >›</button>`;
+
+    el.innerHTML = html;
+}
+
+window.changeOrdersPage = function(page) {
+    currentOrdersPagination.page = Math.max(1, page);
+    loadOrders();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+
 async function loadOrders() {
     try {
         showLoading();
-        const data = await apiCall('/orders');
+        const params = new URLSearchParams();
+        params.set('page', String(currentOrdersPagination.page || 1));
+        params.set('limit', String(currentOrdersPagination.limit || 10));
+        const data = await apiCall(`/orders?${params.toString()}`);
         const content = document.getElementById('ordersContent');
         
         if (!data.orders || data.orders.length === 0) {
@@ -1458,7 +1582,19 @@ async function loadOrders() {
                     <button class="btn btn-primary" onclick="navigateTo('products')">Xem sản phẩm</button>
                 </div>
             `;
+            currentOrdersPagination = { ...currentOrdersPagination, totalPages: 1, totalItems: 0 };
+            renderOrdersPagination();
             return;
+        }
+
+        if (data.pagination) {
+            currentOrdersPagination = {
+                ...currentOrdersPagination,
+                page: Number(data.pagination.currentPage || currentOrdersPagination.page || 1),
+                limit: Number(data.pagination.limit || currentOrdersPagination.limit || 10),
+                totalPages: Number(data.pagination.totalPages || 1),
+                totalItems: Number(data.pagination.totalItems || 0)
+            };
         }
 
         content.innerHTML = data.orders.map(order => `
@@ -1494,6 +1630,8 @@ async function loadOrders() {
                 </div>
             </div>
         `).join('');
+
+        renderOrdersPagination();
     } catch (error) {
         document.getElementById('ordersContent').innerHTML = 
             `<div class="empty-state">Lỗi khi tải đơn hàng: ${error.message}</div>`;
@@ -2570,10 +2708,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const initialPage = getInitialPage();
     updateURLForPage(initialPage, true);
     navigateTo(initialPage);
+    // Apply mode overrides after initial navigation renders target page
+    applyProductsModeFromUrl();
 
     window.addEventListener('popstate', () => {
         const pageFromHistory = getInitialPage();
         navigateTo(pageFromHistory);
+        applyProductsModeFromUrl();
     });
 });
 

@@ -182,16 +182,29 @@ router.get('/', async (req, res) => {
     const userId = req.user.id;
 
     try {
-        const [orders] = await pool.query(
-            `SELECT o.*, 
-                COUNT(oi.id) as item_count,
-                SUM(oi.quantity) as total_quantity
-            FROM orders o
-            LEFT JOIN order_items oi ON o.id = oi.order_id
-            WHERE o.user_id = ?
-            GROUP BY o.id
-            ORDER BY o.created_at DESC`,
+        const { page = 1, limit = 10 } = req.query;
+        const pageNum = Math.max(1, parseInt(page, 10) || 1);
+        const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 10));
+        const offset = (pageNum - 1) * limitNum;
+
+        const [countRows] = await pool.query(
+            'SELECT COUNT(*) as total FROM orders WHERE user_id = ?',
             [userId]
+        );
+        const totalItems = Number(countRows?.[0]?.total || 0);
+        const totalPages = Math.max(1, Math.ceil(totalItems / limitNum));
+
+        const [orders] = await pool.query(
+            `SELECT o.*,
+                    COUNT(oi.id) as item_count,
+                    COALESCE(SUM(oi.quantity), 0) as total_quantity
+             FROM orders o
+             LEFT JOIN order_items oi ON o.id = oi.order_id
+             WHERE o.user_id = ?
+             GROUP BY o.id
+             ORDER BY o.created_at DESC
+             LIMIT ? OFFSET ?`,
+            [userId, limitNum, offset]
         );
 
         const formattedOrders = orders.map(order => ({
@@ -203,7 +216,13 @@ router.get('/', async (req, res) => {
 
         res.json({
             orders: formattedOrders,
-            count: orders.length
+            count: orders.length,
+            pagination: {
+                currentPage: pageNum,
+                totalPages,
+                totalItems,
+                limit: limitNum
+            }
         });
 
     } catch (error) {
