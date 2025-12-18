@@ -4,6 +4,8 @@
 
 const express = require('express');
 const axios = require('axios');
+const mysql = require('mysql2/promise');
+const fs = require('fs');
 const path = require('path');
 const app = express();
 
@@ -21,8 +23,13 @@ const JWT_SECRET = process.env.JWT_SECRET || 'HhGg78@!kYpQzXcVbNmL1o2P3oI4U5yT6r
 
 // Middleware
 app.use(express.json());
-// Serve static files từ thư mục public ở root project (không phải gateway/public)
-app.use(express.static(path.join(__dirname, '..', 'public')));
+// Serve static files: in Docker image `public` is copied to /app/public; in repo it is ../public
+const publicDirCandidates = [
+    path.join(__dirname, 'public'),
+    path.join(__dirname, '..', 'public')
+];
+const PUBLIC_DIR = publicDirCandidates.find(p => fs.existsSync(p)) || publicDirCandidates[0];
+app.use(express.static(PUBLIC_DIR));
 
 // Middleware: Verify token với Auth Service
 async function verifyToken(req, res, next) {
@@ -75,7 +82,8 @@ async function verifyToken(req, res, next) {
 
     // Verify token với Auth Service
     try {
-        const response = await axios.post(`${SERVICES.auth}/verify-token`, { token });
+        const verifyUrl = `${SERVICES.auth}/verify-token`;
+        const response = await axios.post(verifyUrl, { token }, { timeout: 8000 });
         // Auth service trả về { user: { id, username, role } }
         req.user = response.data.user || response.data;
         if (!req.user || !req.user.id) {
@@ -84,9 +92,25 @@ async function verifyToken(req, res, next) {
         }
         next();
     } catch (error) {
-        console.error('Lỗi verify token:', error.message);
+        // Log chi tiết để debug triệt để (tránh chỉ hiện "Error")
+        const status = error.response?.status;
+        const data = error.response?.data;
+        console.error('[VERIFY TOKEN FAILED]', {
+            method: req.method,
+            path: req.path,
+            target: `${SERVICES.auth}/verify-token`,
+            status: status || null,
+            data: data || null,
+            code: error.code || null,
+            message: error.message || null
+        });
+
+        if (error.code === 'ECONNREFUSED' || error.code === 'ETIMEDOUT') {
+            return res.status(502).json({ message: 'Auth service không phản hồi. Vui lòng thử lại.' });
+        }
+
         if (error.response) {
-            return res.status(error.response.status).json(error.response.data);
+            return res.status(status).json(data);
         }
         return res.status(401).json({ message: 'Token không hợp lệ' });
     }
@@ -94,6 +118,143 @@ async function verifyToken(req, res, next) {
 
 // Apply verifyToken middleware cho tất cả routes
 app.use(verifyToken);
+
+// ============================================
+// ADMIN STATS ENDPOINTS → handled in Gateway (direct DB)
+// ============================================
+function createDbPool(host) {
+    return mysql.createPool({
+        host,
+        user: process.env.DB_USER || 'root',
+        password: process.env.DB_PASSWORD || '',
+        database: process.env.DB_NAME || 'tttn2025',
+        waitForConnections: true,
+        connectionLimit: 10,
+        queueLimit: 0
+    });
+}
+
+// DB host selection:
+// - In Docker: default to host.docker.internal (MySQL on Windows host)
+// - On host: default to localhost
+const runningInDocker = (() => {
+    try { return fs.existsSync('/.dockerenv'); } catch { return false; }
+})();
+const defaultDbHost = runningInDocker ? 'host.docker.internal' : 'localhost';
+const dbHosts = (process.env.DB_HOST ? [process.env.DB_HOST] : []).concat(
+    runningInDocker ? ['host.docker.internal', 'localhost'] : ['localhost', 'host.docker.internal']
+).filter((v, i, a) => v && a.indexOf(v) === i);
+
+let dbHostIndex = 0;
+let dbPool = createDbPool(dbHosts[dbHostIndex] || defaultDbHost);
+
+async function safeDbQuery(sql, params = []) {
+    try {
+        return await dbPool.query(sql, params);
+    } catch (err) {
+        // Auto-fallback on connection errors: rotate to next host candidate once.
+        if ((err.code === 'ECONNREFUSED' || err.code === 'ETIMEDOUT') && dbHostIndex < dbHosts.length - 1) {
+            const from = dbHosts[dbHostIndex];
+            dbHostIndex += 1;
+            const to = dbHosts[dbHostIndex];
+            console.warn('[DB] Connection failed to', from, '-> retry with', to);
+            dbPool = createDbPool(to);
+            return await dbPool.query(sql, params);
+        }
+        throw err;
+    }
+}
+
+// GET /api/stats/overview - Admin dashboard numbers
+app.get('/api/stats/overview', async (req, res) => {
+    try {
+        if (!req.user) return res.status(401).json({ message: 'Unauthorized' });
+        if (req.user.role !== 'admin') return res.status(403).json({ message: 'Forbidden' });
+
+        const [[{ totalUsers }]] = await safeDbQuery('SELECT COUNT(*) as totalUsers FROM users');
+        const [[{ totalProducts }]] = await safeDbQuery('SELECT COUNT(*) as totalProducts FROM products');
+        const [[orderAgg]] = await safeDbQuery('SELECT COUNT(*) as totalOrders, COALESCE(SUM(total), 0) as totalRevenue FROM orders');
+
+        res.json({
+            totalUsers: Number(totalUsers || 0),
+            totalProducts: Number(totalProducts || 0),
+            totalOrders: Number(orderAgg?.totalOrders || 0),
+            totalRevenue: Number(orderAgg?.totalRevenue || 0)
+        });
+    } catch (error) {
+        console.error('Error loading stats overview:', error);
+        res.status(500).json({ message: 'Lỗi server' });
+    }
+});
+
+let detectedOrdersCreatedColumn = null; // 'created_at' | 'createdAt'
+async function getOrdersCreatedColumn() {
+    if (detectedOrdersCreatedColumn) return detectedOrdersCreatedColumn;
+    const dbName = process.env.DB_NAME || 'tttn2025';
+    const [rows] = await safeDbQuery(
+        `SELECT COLUMN_NAME
+         FROM INFORMATION_SCHEMA.COLUMNS
+         WHERE TABLE_SCHEMA = ?
+           AND TABLE_NAME = 'orders'
+           AND COLUMN_NAME IN ('created_at','createdAt')
+         LIMIT 1`,
+        [dbName]
+    );
+    detectedOrdersCreatedColumn = rows?.[0]?.COLUMN_NAME || 'created_at';
+    return detectedOrdersCreatedColumn;
+}
+
+// GET /api/stats/revenue - Data for 2 charts in admin.html:
+// - Revenue by month (line chart)
+// - Orders by status (doughnut)
+app.get('/api/stats/revenue', async (req, res) => {
+    try {
+        if (!req.user) return res.status(401).json({ message: 'Unauthorized' });
+        if (req.user.role !== 'admin') return res.status(403).json({ message: 'Forbidden' });
+
+        const createdCol = await getOrdersCreatedColumn();
+
+        // Revenue by month for current year (T1..T12)
+        const [revRows] = await safeDbQuery(
+            `SELECT MONTH(\`${createdCol}\`) as month,
+                    COALESCE(SUM(total), 0) as revenue
+             FROM orders
+             WHERE YEAR(\`${createdCol}\`) = YEAR(CURDATE())
+             GROUP BY MONTH(\`${createdCol}\`)
+             ORDER BY month ASC`
+        );
+
+        const months = Array.from({ length: 12 }, (_, i) => `T${i + 1}`);
+        const revenue = Array.from({ length: 12 }, () => 0);
+        for (const r of revRows) {
+            const m = Number(r.month);
+            if (m >= 1 && m <= 12) revenue[m - 1] = Number(r.revenue || 0);
+        }
+
+        // Orders by status (all-time counts; can be adjusted later)
+        const [statusRows] = await safeDbQuery(
+            `SELECT status, COUNT(*) as count
+             FROM orders
+             GROUP BY status`
+        );
+        const ordersByStatus = {
+            pending: 0,
+            processing: 0,
+            shipped: 0,
+            delivered: 0,
+            cancelled: 0
+        };
+        for (const s of statusRows) {
+            const key = String(s.status || '').toLowerCase();
+            if (ordersByStatus[key] !== undefined) ordersByStatus[key] = Number(s.count || 0);
+        }
+
+        res.json({ months, revenue, ordersByStatus });
+    } catch (error) {
+        console.error('Error loading stats revenue:', error);
+        res.status(500).json({ message: 'Lỗi server' });
+    }
+});
 
 // ============================================
 // AUTH ENDPOINTS → Auth Service
@@ -402,19 +563,6 @@ app.use('/api/users', async (req, res) => {
 // COMMENTS ENDPOINTS → Xử lý trực tiếp trong Gateway
 // ============================================
 
-const mysql = require('mysql2/promise');
-
-// Tạo connection pool cho comments
-const commentsPool = mysql.createPool({
-    host: process.env.DB_HOST || 'host.docker.internal',
-    user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || '',
-    database: process.env.DB_NAME || 'tttn2025',
-    waitForConnections: true,
-    connectionLimit: 10,
-    queueLimit: 0
-});
-
 // GET /api/comments/product/:productId - Public endpoint
 app.get('/api/comments/product/:productId', async (req, res) => {
     try {
@@ -423,7 +571,7 @@ app.get('/api/comments/product/:productId', async (req, res) => {
             return res.status(400).json({ message: 'ID sản phẩm không hợp lệ' });
         }
 
-        const [comments] = await commentsPool.query(
+        const [comments] = await safeDbQuery(
             `SELECT id, product_id, user_id, username, comment, rating, created_at, updated_at
              FROM product_comments 
              WHERE product_id = ? 
@@ -467,20 +615,20 @@ app.post('/api/comments', async (req, res) => {
         }
 
         // Kiểm tra sản phẩm có tồn tại không
-        const [products] = await commentsPool.query('SELECT id FROM products WHERE id = ?', [product_id]);
+        const [products] = await safeDbQuery('SELECT id FROM products WHERE id = ?', [product_id]);
         if (products.length === 0) {
             return res.status(404).json({ message: 'Sản phẩm không tồn tại' });
         }
 
         // Thêm comment
-        const [result] = await commentsPool.query(
+        const [result] = await safeDbQuery(
             `INSERT INTO product_comments (product_id, user_id, username, comment, rating) 
              VALUES (?, ?, ?, ?, ?)`,
             [product_id, userId, username, comment.trim(), ratingNum]
         );
 
         // Lấy comment vừa tạo
-        const [newComments] = await commentsPool.query(
+        const [newComments] = await safeDbQuery(
             'SELECT * FROM product_comments WHERE id = ?',
             [result.insertId]
         );
@@ -507,7 +655,7 @@ app.delete('/api/comments/:id', async (req, res) => {
         }
 
         // Kiểm tra comment có tồn tại không
-        const [comments] = await commentsPool.query(
+        const [comments] = await safeDbQuery(
             'SELECT * FROM product_comments WHERE id = ?',
             [commentId]
         );
@@ -524,7 +672,7 @@ app.delete('/api/comments/:id', async (req, res) => {
         }
 
         // Xóa comment
-        await commentsPool.query('DELETE FROM product_comments WHERE id = ?', [commentId]);
+        await safeDbQuery('DELETE FROM product_comments WHERE id = ?', [commentId]);
 
         res.json({ message: 'Xóa comment thành công' });
     } catch (error) {
@@ -535,7 +683,7 @@ app.delete('/api/comments/:id', async (req, res) => {
 
 // Serve homepage (SPA)
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
+    res.sendFile(path.join(PUBLIC_DIR, 'index.html'));
 });
 
 // Start server

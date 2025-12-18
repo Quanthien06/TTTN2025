@@ -1517,17 +1517,40 @@ function getStatusText(status) {
 // Expose ra global scope để onclick hoạt động
 window.viewOrderTracking = async function(orderId) {
     try {
-        console.log('Loading tracking for order:', orderId);
-        const data = await apiCall(`/orders/${orderId}/tracking`);
-        console.log('Tracking data received:', data);
-        
-        if (!data || !data.tracking) {
-            console.error('Invalid tracking data:', data);
-            showToast('Dữ liệu tracking không hợp lệ', 'error');
+        // If the current page includes the orders UI, load and show modal directly
+        const ordersContainer = document.getElementById('ordersContainer');
+        const trackingModalElem = document.getElementById('trackingModal');
+
+        if (ordersContainer || trackingModalElem) {
+            console.log('Loading tracking for order (inline):', orderId);
+            const data = await apiCall(`/orders/${orderId}/tracking`);
+            console.log('Tracking data received:', data);
+            if (!data || !data.tracking) {
+                console.error('Invalid tracking data:', data);
+                showToast('Dữ liệu tracking không hợp lệ', 'error');
+                return;
+            }
+            showTrackingModal(orderId, data.tracking);
             return;
         }
-        
-        showTrackingModal(orderId, data.tracking);
+
+        // Otherwise navigate to the orders page and include a focus param so it opens there
+        // Try SPA-friendly param first (page=orders), then fallback to /orders.html
+        const search = new URLSearchParams(window.location.search);
+        // preserve other params if any
+        search.set('focus', String(orderId));
+        // If site supports ?page=orders as entry, use that; otherwise navigate to /orders.html?focus=...
+        if (search.get('page') === 'orders' || window.location.pathname.endsWith('/')) {
+            // Build URL with page param (if present) or use path
+            const target = new URL(window.location.href);
+            target.searchParams.set('page', 'orders');
+            target.searchParams.set('focus', String(orderId));
+            window.location.href = target.pathname + '?' + target.searchParams.toString();
+        } else {
+            // Fallback to /orders.html?focus=ID
+            window.location.href = `/orders.html?focus=${orderId}`;
+        }
+
     } catch (error) {
         console.error('Error loading tracking:', error);
         showToast('Không thể tải thông tin tracking: ' + error.message, 'error');

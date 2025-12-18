@@ -37,6 +37,8 @@ const commentsRouter = require('./routes/comments'); // Router cho Comments API
 const usersRouter = require('./routes/users'); // Router cho Users Management API (Admin)
 const statsRouter = require('./routes/stats'); // Router cho Statistics API (Admin)
 const chatbotRouter = require('./routes/chatbot'); // Router cho Chatbot API
+const shipmentsRouter = require('./routes/shipments'); // Router cho Shipments API
+const storesRouter = require('./routes/stores'); // Router cho Stores API
 // Import middleware xác thực
 const authenticateToken = require('./middleware/auth'); 
 
@@ -166,6 +168,18 @@ console.log('✓ Stats router đã được đăng ký tại /api/stats');
 // Chatbot (Public)
 app.use('/api/chatbot', chatbotRouter);
 console.log('✓ Chatbot router đã được đăng ký tại /api/chatbot');
+// Shipments (Authenticated)
+app.use('/api/shipments', shipmentsRouter);
+console.log('✓ Shipments router đã được đăng ký tại /api/shipments');
+// Stores (Public) - Nearby stores data
+app.use('/api/stores', storesRouter);
+console.log('✓ Stores router đã được đăng ký tại /api/stores');
+
+// Config endpoint (public) - return small runtime config like Google Maps key
+app.get('/api/config', (req, res) => {
+    res.json({ googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY || '' });
+});
+console.log('✓ Config endpoint available at /api/config');
 
 
 // 7. Lắng nghe

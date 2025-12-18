@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản Lý Vận Chuyển - Admin</title>
+    <link rel="apple-touch-icon" sizes="180x180" href="./img/logo/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="./img/logo/favicon-32x32.png">
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/styles.css">
+
+    <style>
+        .fade-in {
+            animation: fadeIn 0.3s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+        }
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .badge-pending { background: #fef3c7; color: #92400e; }
+        .badge-picked_up { background: #dbeafe; color: #1e40af; }
+        .badge-in_transit { background: #ccf0ff; color: #0369a1; }
+        .badge-out_for_delivery { background: #fce7f3; color: #831843; }
+        .badge-delivered { background: #dcfce7; color: #166534; }
+        .badge-failed { background: #fee2e2; color: #991b1b; }
+        .badge-returned { background: #e0e7ff; color: #3730a3; }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans">
+    <!-- Header -->
+    <header class="bg-white shadow-md sticky top-0 z-40">
+        <div class="container mx-auto px-4">
+            <div class="flex items-center justify-between py-4">
+                <a href="/" class="flex items-center gap-2">
+                    <span class="text-3xl">🛍️</span>
+                    <span class="text-2xl font-bold text-red-600">TechStore Admin</span>
+                </a>
+                <nav class="flex items-center gap-6">
+                    <a href="/" class="text-gray-700 hover:text-red-600">
+                        <i class="fas fa-home mr-1"></i>Trang chủ
+                    </a>
+                    <a href="/admin.html" class="text-gray-700 hover:text-red-600">
+                        <i class="fas fa-tachometer-alt mr-1"></i>Dashboard
+                    </a>
+                    <a href="#" onclick="logout()" class="text-gray-700 hover:text-red-600">
+                        <i class="fas fa-sign-out-alt mr-1"></i>Đăng xuất
+                    </a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="container mx-auto px-4 py-8 max-w-6xl">
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-800 mb-2">
+                <i class="fas fa-truck mr-2 text-red-600"></i>Quản Lý Vận Chuyển
+            </h1>
+            <p class="text-gray-600">Tạo, cập nhật và theo dõi thông tin vận chuyển của đơn hàng</p>
+        </div>
+
+        <!-- Tab Navigation -->
+        <div class="mb-6 border-b border-gray-200">
+            <div class="flex gap-6">
+                <button onclick="switchTab('list')" id="tab-list" class="pb-4 px-4 border-b-2 border-red-600 text-red-600 font-semibold">
+                    <i class="fas fa-list mr-2"></i>Danh Sách Vận Chuyển
+                </button>
+                <button onclick="switchTab('create')" id="tab-create" class="pb-4 px-4 border-b-2 border-transparent text-gray-600 font-semibold hover:text-gray-800">
+                    <i class="fas fa-plus-circle mr-2"></i>Tạo Vận Chuyển
+                </button>
+            </div>
+        </div>
+
+        <!-- Tab: List Shipments -->
+        <div id="tab-list-content" class="fade-in">
+            <div class="mb-6 flex flex-col sm:flex-row gap-3">
+                <input 
+                    type="text" 
+                    id="filterSearch" 
+                    placeholder="Tìm kiếm theo tracking number hoặc order ID..."
+                    class="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
+                >
+                <select id="filterStatus" class="border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-red-500">
+                    <option value="">Tất cả trạng thái</option>
+                    <option value="pending">Chờ xử lý</option>
+                    <option value="picked_up">Đã nhặt</option>
+                    <option value="in_transit">Đang vận chuyển</option>
+                    <option value="out_for_delivery">Đang giao</option>
+                    <option value="delivered">Đã giao</option>
+                    <option value="failed">Giao thất bại</option>
+                    <option value="returned">Hoàn trả</option>
+                </select>
+                <button onclick="loadShipments()" class="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 transition-colors">
+                    <i class="fas fa-sync mr-2"></i>Làm mới
+                </button>
+            </div>
+
+            <div id="shipmentsContainer" class="bg-white rounded-lg shadow overflow-hidden">
+                <div class="text-center py-12">
+                    <i class="fas fa-spinner fa-spin text-4xl text-gray-400 mb-4"></i>
+                    <p class="text-gray-600">Đang tải...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: Create Shipment -->
+        <div id="tab-create-content" class="hidden fade-in">
+            <div class="bg-white rounded-lg shadow p-6 max-w-2xl">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6">
+                    <i class="fas fa-plus mr-2 text-red-600"></i>Tạo Vận Chuyển Mới
+                </h2>
+
+                <form id="createShipmentForm" class="space-y-6">
+                    <!-- Order ID -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Mã Đơn Hàng <span class="text-red-500">*</span></label>
+                        <input 
+                            type="number" 
+                            id="orderId" 
+                            required 
+                            placeholder="Nhập mã đơn hàng"
+                            class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
+                        >
+                    </div>
+
+                    <!-- Carrier Name -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Đơn Vị Vận Chuyển <span class="text-red-500">*</span></label>
+                        <select id="carrierName" required class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-red-500">
+                            <option value="">-- Chọn đơn vị --</option>
+                            <option value="GHN">GHN (Giao Hàng Nhanh)</option>
+                            <option value="GHTK">GHTK (Giao Hàng Tiết Kiệm)</option>
+                            <option value="Viettel">Viettel Post</option>
+                            <option value="Vietnam Post">Vietnam Post</option>
+                            <option value="J&T">J&T Express</option>
+                            <option value="Ahamove">AhaMove</option>
+                            <option value="Manual">Tự vận chuyển</option>
+                        </select>
+                        <p class="text-xs text-gray-500 mt-1">Chọn đơn vị vận chuyển thực tế hoặc "Tự vận chuyển" nếu quản lý thủ công</p>
+                    </div>
+
+                    <!-- Tracking Number -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Mã Tracking <span class="text-red-500">*</span></label>
+                        <input 
+                            type="text" 
+                            id="trackingNumber" 
+                            required 
+                            placeholder="Ví dụ: GHN12345678"
+                            class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
+                        >
+                    </div>
+
+                    <!-- Estimated Delivery -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Ngày Giao Dự Kiến</label>
+                        <input 
+                            type="date" 
+                            id="estimatedDelivery"
+                            class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
+                        >
+                    </div>
+
+                    <!-- Shipping Cost -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Chi Phí Vận Chuyển</label>
+                        <input 
+                            type="number" 
+                            id="shippingCost" 
+                            placeholder="0"
+                            step="0.01"
+                            class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
+                        >
+                    </div>
+
+                    <!-- Buttons -->
+                    <div class="flex gap-3 pt-4">
+                        <button 
+                            type="button"
+                            onclick="resetForm()"
+                            class="flex-1 bg-gray-200 text-gray-800 py-2 rounded-lg hover:bg-gray-300 transition-colors font-semibold"
+                        >
+                            <i class="fas fa-redo mr-2"></i>Reset
+                        </button>
+                        <button 
+                            type="submit"
+                            class="flex-1 bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 transition-colors font-semibold"
+                        >
+                            <i class="fas fa-check mr-2"></i>Tạo Vận Chuyển
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Update Status Modal -->
+    <div id="updateStatusModal" class="modal">
+        <div class="modal-content">
+            <div class="p-6">
+                <h2 class="text-2xl font-bold mb-6">
+                    <i class="fas fa-edit mr-2 text-red-600"></i>Cập Nhật Trạng Thái Vận Chuyển
+                </h2>
+
+                <form id="updateStatusForm" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Trạng Thái <span class="text-red-500">*</span></label>
+                        <select id="newStatus" required class="w-full border border-gray-300 rounded-lg px-4 py-2">
+                            <option value="">-- Chọn trạng thái --</option>
+                            <option value="pending">Chờ xử lý</option>
+                            <option value="picked_up">Đã nhặt hàng</option>
+                            <option value="in_transit">Đang vận chuyển</option>
+                            <option value="out_for_delivery">Đang giao hàng</option>
+                            <option value="delivered">Đã giao hàng</option>
+                            <option value="failed">Giao thất bại</option>
+                            <option value="returned">Hoàn trả</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Mô Tả Sự Kiện</label>
+                        <input 
+                            type="text" 
+                            id="eventLabel"
+                            placeholder="VD: Đơn hàng đã được giao cho ĐVVC"
+                            class="w-full border border-gray-300 rounded-lg px-4 py-2"
+                        >
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Vị Trí</label>
+                        <input 
+                            type="text" 
+                            id="eventLocation"
+                            placeholder="VD: Kho GHN - Hà Nội"
+                            class="w-full border border-gray-300 rounded-lg px-4 py-2"
+                        >
+                    </div>
+
+                    <div class="flex gap-3 pt-4 border-t">
+                        <button 
+                            type="button"
+                            onclick="closeUpdateModal()"
+                            class="flex-1 bg-gray-200 text-gray-800 py-2 rounded-lg hover:bg-gray-300 transition-colors"
+                        >
+                            Hủy
+                        </button>
+                        <button 
+                            type="submit"
+                            class="flex-1 bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 transition-colors"
+                        >
+                            <i class="fas fa-check mr-2"></i>Cập Nhật
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="fixed bottom-4 right-4 bg-white rounded-lg shadow-lg p-4 hidden z-50 max-w-sm"></div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:5000/api';
+        let currentEditingShipmentId = null;
+        let allShipments = [];
+
+        // Check auth
+        function checkAuth() {
+            const token = localStorage.getItem('token');
+            const user = JSON.parse(localStorage.getItem('user_info') || '{}');
+            
+            if (!token || user.role !== 'admin') {
+                window.location.href = '/login.html?redirect=admin-shipments';
+                return false;
+            }
+            return true;
+        }
+
+        // API call
+        async function apiCall(endpoint, options = {}) {
+            const token = localStorage.getItem('token');
+            if (!token) throw new Error('Vui lòng đăng nhập');
+
+            const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+                ...options,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                    ...(options.headers || {})
+                }
+            });
+
+            const data = await response.json();
+            if (!response.ok) {
+                if (response.status === 401) {
+                    localStorage.removeItem('token');
+                    window.location.href = '/login.html?redirect=admin-shipments';
+                    return;
+                }
+                throw new Error(data.message || 'Có lỗi xảy ra');
+            }
+            return data;
+        }
+
+        // Format price
+        function formatPrice(price) {
+            return new Intl.NumberFormat('vi-VN').format(price) + ' ₫';
+        }
+
+        // Format date
+        function formatDate(date) {
+            return new Date(date).toLocaleDateString('vi-VN', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        // Get status badge
+        function getStatusBadge(status) {
+            const labels = {
+                'pending': 'Chờ xử lý',
+                'picked_up': 'Đã nhặt',
+                'in_transit': 'Đang vận chuyển',
+                'out_for_delivery': 'Đang giao',
+                'delivered': 'Đã giao',
+                'failed': 'Giao thất bại',
+                'returned': 'Hoàn trả'
+            };
+            const label = labels[status] || status;
+            const badgeClass = `badge-${status}`;
+            return `<span class="status-badge ${badgeClass}">${label}</span>`;
+        }
+
+        // Show toast
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const bgColor = type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500';
+            toast.className = `fixed bottom-4 right-4 ${bgColor} text-white rounded-lg shadow-lg p-4 z-50 max-w-sm`;
+            toast.textContent = message;
+            toast.classList.remove('hidden');
+            setTimeout(() => {
+                toast.classList.add('hidden');
+            }, 3000);
+        }
+
+        // Switch tab
+        function switchTab(tab) {
+            document.getElementById('tab-list-content').classList.toggle('hidden', tab !== 'list');
+            document.getElementById('tab-create-content').classList.toggle('hidden', tab !== 'create');
+            
+            document.getElementById('tab-list').classList.toggle('border-red-600', tab === 'list');
+            document.getElementById('tab-list').classList.toggle('text-red-600', tab === 'list');
+            document.getElementById('tab-list').classList.toggle('border-transparent', tab !== 'list');
+            document.getElementById('tab-list').classList.toggle('text-gray-600', tab !== 'list');
+            
+            document.getElementById('tab-create').classList.toggle('border-red-600', tab === 'create');
+            document.getElementById('tab-create').classList.toggle('text-red-600', tab === 'create');
+            document.getElementById('tab-create').classList.toggle('border-transparent', tab !== 'create');
+            document.getElementById('tab-create').classList.toggle('text-gray-600', tab !== 'create');
+            
+            // Load shipments when switching to list tab
+            if (tab === 'list') {
+                loadShipments();
+            }
+        }
+
+        // Load shipments
+        async function loadShipments(page = 1) {
+            try {
+                const status = document.getElementById('filterStatus')?.value || '';
+                const search = document.getElementById('filterSearch')?.value || '';
+                const params = new URLSearchParams({ page, limit: 20, status, search });
+                
+                const response = await fetch(`/api/shipments/admin/list?${params}`, {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.message || `HTTP ${response.status}`);
+                }
+
+                const data = await response.json();
+                const { shipments, pagination } = data;
+
+                if (!shipments || shipments.length === 0) {
+                    document.getElementById('shipmentsContainer').innerHTML = `
+                        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
+                            <i class="fas fa-inbox text-yellow-500 text-3xl mb-3"></i>
+                            <p class="text-yellow-700 text-lg">Chưa có vận chuyển nào</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                let html = `
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead class="bg-gray-100 border-b">
+                                <tr>
+                                    <th class="text-left px-4 py-3">Đơn hàng</th>
+                                    <th class="text-left px-4 py-3">Mã Vận Chuyển</th>
+                                    <th class="text-left px-4 py-3">Đơn vị</th>
+                                    <th class="text-left px-4 py-3">Trạng thái</th>
+                                    <th class="text-left px-4 py-3">Phí Ship</th>
+                                    <th class="text-left px-4 py-3">Người Dùng</th>
+                                    <th class="text-left px-4 py-3">Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+
+                shipments.forEach(s => {
+                    const statusBadge = getStatusBadge(s.status);
+                    html += `
+                        <tr class="border-b hover:bg-gray-50">
+                            <td class="px-4 py-3 font-mono text-blue-600">#${s.order_id}</td>
+                            <td class="px-4 py-3">${s.tracking_number}</td>
+                            <td class="px-4 py-3">${s.carrier_name}</td>
+                            <td class="px-4 py-3">${statusBadge}</td>
+                            <td class="px-4 py-3">${s.shipping_cost.toLocaleString('vi-VN')} ₫</td>
+                            <td class="px-4 py-3">${s.username || 'N/A'}</td>
+                            <td class="px-4 py-3">
+                                <button onclick="openUpdateModal(${s.id})" class="text-blue-600 hover:text-blue-800">
+                                    <i class="fas fa-edit"></i> Cập nhật
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                });
+
+                html += `
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+
+                // Pagination
+                if (pagination.totalPages > 1) {
+                    html += `
+                        <div class="mt-6 flex justify-center gap-2">
+                    `;
+                    
+                    for (let i = 1; i <= pagination.totalPages; i++) {
+                        const active = i === pagination.currentPage ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-800';
+                        html += `<button onclick="loadShipments(${i})" class="px-3 py-1 rounded ${active}">
+                            ${i}
+                        </button>`;
+                    }
+                    
+                    html += `</div>`;
+                }
+
+                document.getElementById('shipmentsContainer').innerHTML = html;
+
+            } catch (error) {
+                console.error('Lỗi khi tải danh sách:', error);
+                showToast('Lỗi: ' + error.message, 'error');
+                document.getElementById('shipmentsContainer').innerHTML = `
+                    <div class="bg-red-50 border border-red-200 rounded-lg p-6">
+                        <p class="text-red-700"><i class="fas fa-exclamation-circle mr-2"></i>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Reset form
+        function resetForm() {
+            document.getElementById('createShipmentForm').reset();
+        }
+
+        // Create shipment
+        document.getElementById('createShipmentForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const orderId = document.getElementById('orderId').value;
+            const carrierName = document.getElementById('carrierName').value;
+            const trackingNumber = document.getElementById('trackingNumber').value;
+            const estimatedDelivery = document.getElementById('estimatedDelivery').value;
+            const shippingCost = parseFloat(document.getElementById('shippingCost').value) || 0;
+
+            try {
+                const button = e.target.querySelector('button[type="submit"]');
+                button.disabled = true;
+                button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Đang tạo...';
+
+                const response = await apiCall('/shipments', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        order_id: parseInt(orderId),
+                        carrier_name: carrierName,
+                        tracking_number: trackingNumber,
+                        estimated_delivery_date: estimatedDelivery,
+                        shipping_cost: shippingCost
+                    })
+                });
+
+                showToast('Tạo vận chuyển thành công!', 'success');
+                resetForm();
+                setTimeout(() => {
+                    switchTab('list');
+                    loadShipments();
+                }, 1000);
+
+            } catch (error) {
+                console.error('Error creating shipment:', error);
+                showToast(error.message, 'error');
+            } finally {
+                const button = e.target.querySelector('button[type="submit"]');
+                button.disabled = false;
+                button.innerHTML = '<i class="fas fa-check mr-2"></i>Tạo Vận Chuyển';
+            }
+        });
+
+        // Update status
+        document.getElementById('updateStatusForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            if (!currentEditingShipmentId) return;
+
+            const status = document.getElementById('newStatus').value;
+            const eventLabel = document.getElementById('eventLabel').value;
+            const location = document.getElementById('eventLocation').value;
+
+            try {
+                const button = e.target.querySelector('button[type="submit"]');
+                button.disabled = true;
+                button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Đang cập nhật...';
+
+                await apiCall(`/shipments/${currentEditingShipmentId}/update-status`, {
+                    method: 'PUT',
+                    body: JSON.stringify({
+                        status,
+                        event_label: eventLabel,
+                        location
+                    })
+                });
+
+                showToast('Cập nhật trạng thái thành công!', 'success');
+                closeUpdateModal();
+                loadShipments();
+
+            } catch (error) {
+                console.error('Error updating status:', error);
+                showToast(error.message, 'error');
+            } finally {
+                const button = e.target.querySelector('button[type="submit"]');
+                button.disabled = false;
+                button.innerHTML = '<i class="fas fa-check mr-2"></i>Cập Nhật';
+            }
+        });
+
+        // Open update modal
+        function openUpdateModal(shipmentId) {
+            currentEditingShipmentId = shipmentId;
+            document.getElementById('updateStatusModal').classList.add('active');
+        }
+
+        // Close update modal
+        function closeUpdateModal() {
+            document.getElementById('updateStatusModal').classList.remove('active');
+            document.getElementById('updateStatusForm').reset();
+            currentEditingShipmentId = null;
+        }
+
+        // Logout
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user_info');
+            window.location.href = '/login.html';
+        }
+
+        // Init
+        document.addEventListener('DOMContentLoaded', () => {
+            if (checkAuth()) {
+                loadShipments();
+            }
+        });
+
+        // Search & filter
+        document.getElementById('searchInput').addEventListener('input', () => {
+            // TODO: Implement search
+        });
+
+        document.getElementById('statusFilter').addEventListener('change', () => {
+            // TODO: Implement filter
+        });
+    </script>
+</body>
+</html>
