@@ -4,17 +4,10 @@
 const express = require('express');
 const router = express.Router();
 const authenticateToken = require('../middleware/auth');
-
-// Middleware kiểm tra admin
-function requireAdmin(req, res, next) {
-    if (req.user.role !== 'admin') {
-        return res.status(403).json({ message: 'Chỉ admin mới có quyền thực hiện thao tác này' });
-    }
-    next();
-}
+const authorize = require('../middleware/authorize');
 
 // GET /api/stats/overview - Tổng quan thống kê (admin)
-router.get('/overview', authenticateToken, requireAdmin, async (req, res) => {
+router.get('/overview', authenticateToken, authorize('stats:view'), async (req, res) => {
     const pool = req.app.locals.pool;
     
     try {
@@ -81,7 +74,7 @@ router.get('/overview', authenticateToken, requireAdmin, async (req, res) => {
 });
 
 // GET /api/stats/revenue - Doanh thu theo tháng và trạng thái đơn hàng (admin)
-router.get('/revenue', authenticateToken, requireAdmin, async (req, res) => {
+router.get('/revenue', authenticateToken, authorize('stats:view'), async (req, res) => {
     const pool = req.app.locals.pool;
     
     try {

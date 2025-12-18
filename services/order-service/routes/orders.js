@@ -212,6 +212,124 @@ router.get('/', async (req, res) => {
     }
 });
 
+// GET /orders/admin - Lấy danh sách đơn hàng (Admin)
+// NOTE: đặt trước /orders/:id để tránh bị match nhầm
+router.get('/admin', async (req, res) => {
+    const pool = req.app.locals.pool;
+    const { page = 1, limit = 20 } = req.query;
+
+    try {
+        if (req.user.role !== 'admin') {
+            return res.status(403).json({ message: 'Chỉ admin mới có quyền truy cập' });
+        }
+
+        const pageNum = Math.max(1, parseInt(page, 10) || 1);
+        const limitNum = Math.min(200, Math.max(1, parseInt(limit, 10) || 20));
+        const offset = (pageNum - 1) * limitNum;
+
+        const [countRows] = await pool.query('SELECT COUNT(*) as total FROM orders');
+        const total = Number(countRows?.[0]?.total || 0);
+
+        // Join users để hiển thị thông tin user trên admin
+        const [orders] = await pool.query(
+            `SELECT o.*,
+                    u.username as user_username,
+                    u.email as user_email,
+                    COUNT(oi.id) as item_count,
+                    COALESCE(SUM(oi.quantity), 0) as total_quantity
+             FROM orders o
+             LEFT JOIN users u ON o.user_id = u.id
+             LEFT JOIN order_items oi ON o.id = oi.order_id
+             GROUP BY o.id
+             ORDER BY o.created_at DESC
+             LIMIT ? OFFSET ?`,
+            [limitNum, offset]
+        );
+
+        const formattedOrders = orders.map(order => ({
+            ...order,
+            total: parseFloat(order.total),
+            item_count: parseInt(order.item_count || 0),
+            total_quantity: parseInt(order.total_quantity || 0),
+            user: {
+                id: order.user_id,
+                username: order.user_username || null,
+                email: order.user_email || null
+            }
+        }));
+
+        res.json({
+            orders: formattedOrders,
+            total,
+            pagination: {
+                currentPage: pageNum,
+                totalPages: Math.ceil(total / limitNum),
+                totalItems: total,
+                itemsPerPage: limitNum
+            }
+        });
+    } catch (error) {
+        console.error('Lỗi khi admin lấy danh sách đơn hàng:', error);
+        res.status(500).json({ message: 'Lỗi máy chủ nội bộ' });
+    }
+});
+
+// GET /orders/admin/:id - Lấy chi tiết đơn hàng (Admin)
+// NOTE: đặt trước /orders/:id để tránh bị match nhầm
+router.get('/admin/:id', async (req, res) => {
+    const pool = req.app.locals.pool;
+    const orderId = req.params.id;
+
+    try {
+        if (req.user.role !== 'admin') {
+            return res.status(403).json({ message: 'Chỉ admin mới có quyền truy cập' });
+        }
+
+        const [orders] = await pool.query(
+            `SELECT o.*, u.username as username, u.email as email
+             FROM orders o
+             LEFT JOIN users u ON o.user_id = u.id
+             WHERE o.id = ?`,
+            [orderId]
+        );
+
+        if (orders.length === 0) {
+            return res.status(404).json({ message: 'Đơn hàng không tồn tại' });
+        }
+
+        const order = orders[0];
+
+        const [orderItems] = await pool.query(
+            `SELECT oi.*, 
+                p.name as product_name, 
+                p.category,
+                (oi.price * oi.quantity) as subtotal
+            FROM order_items oi
+            JOIN products p ON oi.product_id = p.id
+            WHERE oi.order_id = ?`,
+            [orderId]
+        );
+
+        const formattedItems = orderItems.map(item => ({
+            ...item,
+            price: parseFloat(item.price),
+            subtotal: parseFloat(item.subtotal)
+        }));
+
+        res.json({
+            order: {
+                ...order,
+                total: parseFloat(order.total),
+                items: formattedItems,
+                item_count: formattedItems.length
+            }
+        });
+    } catch (error) {
+        console.error('Lỗi khi admin lấy chi tiết đơn hàng:', error);
+        res.status(500).json({ message: 'Lỗi máy chủ nội bộ' });
+    }
+});
+
 // GET /orders/:id - Lấy chi tiết đơn hàng
 router.get('/:id', async (req, res) => {
     const pool = req.app.locals.pool;

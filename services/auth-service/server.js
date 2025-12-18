@@ -5,6 +5,7 @@ const express = require('express');
 const mysql = require('mysql2/promise');
 const jwt = require('jsonwebtoken');
 const authRouter = require('./routes/auth');
+const usersRouter = require('./routes/users');
 
 const app = express();
 
@@ -28,8 +29,25 @@ app.locals.jwt = jwt;
 // Middleware
 app.use(express.json());
 
+// Middleware: verify token (used by /users router, and can be reused by other routes)
+function verifyToken(req, res, next) {
+    const authHeader = req.headers['authorization'];
+    if (!authHeader) return res.status(401).json({ message: 'Không có token' });
+
+    try {
+        const token = authHeader.replace('Bearer ', '').trim();
+        const decoded = jwt.verify(token, JWT_SECRET);
+        req.user = decoded;
+        return next();
+    } catch (error) {
+        return res.status(401).json({ message: 'Token không hợp lệ' });
+    }
+}
+app.locals.verifyToken = verifyToken;
+
 // Routes
 app.use('/', authRouter);
+app.use('/users', usersRouter);
 
 // Internal endpoint: Verify token (cho Gateway gọi)
 app.post('/verify-token', async (req, res) => {

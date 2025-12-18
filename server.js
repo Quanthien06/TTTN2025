@@ -39,6 +39,7 @@ const statsRouter = require('./routes/stats'); // Router cho Statistics API (Adm
 const chatbotRouter = require('./routes/chatbot'); // Router cho Chatbot API
 const shipmentsRouter = require('./routes/shipments'); // Router cho Shipments API
 const storesRouter = require('./routes/stores'); // Router cho Stores API
+const refundsRouter = require('./routes/refunds'); // Router cho Refunds API
 // Import middleware xác thực
 const authenticateToken = require('./middleware/auth'); 
 
@@ -174,6 +175,10 @@ console.log('✓ Shipments router đã được đăng ký tại /api/shipments'
 // Stores (Public) - Nearby stores data
 app.use('/api/stores', storesRouter);
 console.log('✓ Stores router đã được đăng ký tại /api/stores');
+
+// Refunds (Authenticated + Admin management)
+app.use('/api/refunds', refundsRouter);
+console.log('✓ Refunds router đã được đăng ký tại /api/refunds');
 
 // Config endpoint (public) - return small runtime config like Google Maps key
 app.get('/api/config', (req, res) => {

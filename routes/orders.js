@@ -179,13 +179,10 @@ router.post('/', authenticateToken, async (req, res) => {
 });
 
 // GET /api/orders/admin - Lấy tất cả đơn hàng (admin only)
-router.get('/admin', authenticateToken, async (req, res) => {
+const authorize = require('../middleware/authorize');
+
+router.get('/admin', authenticateToken, authorize('orders:manage'), async (req, res) => {
     const pool = req.app.locals.pool;
-    
-    // Kiểm tra quyền admin
-    if (req.user.role !== 'admin') {
-        return res.status(403).json({ message: 'Chỉ admin mới có quyền xem tất cả đơn hàng' });
-    }
     
     const { page = 1, limit = 20, status = '' } = req.query;
     

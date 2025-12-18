@@ -44,7 +44,7 @@
     <!-- Sidebar -->
     <div class="fixed left-0 top-0 h-full w-64 sidebar-gradient text-white z-50">
         <div class="p-6">
-            <h2 class="text-xl font-bold mb-8">MENU</h2>
+            <h2 class="text-xl font-bold mb-8">TechStore Admin</h2>
             
             <!-- Dashboard Section -->
             <div class="mb-6">
@@ -1243,7 +1243,8 @@
         async function viewOrderDetail(id) {
             try {
                 const token = getToken();
-                const response = await fetch(`${API_BASE_URL}/orders/${id}`, {
+                // Admin needs admin-specific endpoint; /orders/:id is owner-only
+                const response = await fetch(`${API_BASE_URL}/orders/admin/${id}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 

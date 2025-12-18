@@ -12,16 +12,9 @@ router.get('/test', (req, res) => {
     res.json({ message: 'Users router is working!', path: '/api/users/test' });
 });
 
-// Middleware kiểm tra admin
-function requireAdmin(req, res, next) {
-    if (!req.user) {
-        return res.status(401).json({ message: 'Chưa đăng nhập' });
-    }
-    if (req.user.role !== 'admin') {
-        return res.status(403).json({ message: 'Chỉ admin mới có quyền thực hiện thao tác này' });
-    }
-    next();
-}
+// Middleware phân quyền admin / quản lý người dùng
+const authorize = require('../middleware/authorize');
+const requireAdmin = authorize('users:manage');
 
 // GET /api/users - Lấy danh sách users (admin)
 router.get('/', authenticateToken, requireAdmin, async (req, res) => {

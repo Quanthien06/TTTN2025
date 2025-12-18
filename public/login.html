@@ -159,11 +159,23 @@
     <script>
         const API_BASE_URL = 'http://localhost:5000/api';
 
-        // Nếu đã có token, chuyển về trang chủ để ẩn nút đăng nhập/đăng ký
-        (function autoRedirectIfLoggedIn() {
+        // Nếu đã có token, chỉ redirect khi token còn hợp lệ (tránh loop khi token hỏng/hết hạn)
+        (async function autoRedirectIfLoggedIn() {
             const token = localStorage.getItem('token');
-            if (token) {
-                window.location.href = '/';
+            if (!token) return;
+            try {
+                const res = await fetch(`${API_BASE_URL}/me`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    window.location.replace('/');
+                    return;
+                }
+                // Token không hợp lệ -> xóa để user đăng nhập lại
+                localStorage.removeItem('token');
+            } catch (e) {
+                // Network/server lỗi -> không redirect, để user vẫn đăng nhập được
+                console.warn('Auto-redirect check failed:', e);
             }
         })();
 

@@ -148,6 +148,10 @@ services:
       CART_SERVICE_URL: http://cart-service:5003
       ORDER_SERVICE_URL: http://order-service:5004
       NEWS_SERVICE_URL: http://news-service:5005
+      DB_HOST: host.docker.internal
+      DB_USER: root
+      DB_PASSWORD: ""
+      DB_NAME: tttn2025
       JWT_SECRET: HhGg78@!kYpQzXcVbNmL1o2P3oI4U5yT6rE7wQ8aZ9sX0cVkGjH
     ports:
       - "5000:5000"

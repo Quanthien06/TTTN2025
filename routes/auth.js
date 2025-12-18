@@ -159,8 +159,31 @@ router.post('/login', async (req, res) => {
             return res.status(500).json({ message: 'Lỗi cấu hình server' });
         }
 
+        // 3. Xác định permissions theo role (đơn giản)
+        function getPermissionsForRole(role) {
+            if (role === 'admin') {
+                return [
+                    'products:manage',
+                    'categories:manage',
+                    'orders:manage',
+                    'shipments:manage',
+                    'refunds:manage',
+                    'users:manage',
+                    'stats:view'
+                ];
+            }
+            // role user - các quyền cơ bản
+            return [
+                'orders:view_own',
+                'refunds:create',
+                'refunds:view_own'
+            ];
+        }
+
+        const permissions = getPermissionsForRole(user.role);
+
         const token = jwt.sign(
-            { id: user.id, username: user.username, role: user.role }, 
+            { id: user.id, username: user.username, role: user.role, permissions }, 
             JWT_SECRET, 
             { expiresIn: '100d' }
         );
@@ -173,7 +196,8 @@ router.post('/login', async (req, res) => {
                 id: user.id, 
                 username: user.username, 
                 email: user.email,
-                role: user.role 
+                role: user.role,
+                permissions
             }
         });
     } catch (error) {
@@ -230,6 +254,26 @@ router.get('/me', authenticateToken, async (req, res) => {
         
         // Xử lý an toàn với các trường có thể không tồn tại
         // Lưu ý: Database có thể dùng camelCase (createdAt) hoặc snake_case (created_at)
+        // Xác định lại permissions từ role để client có thông tin nhất quán
+        function getPermissionsForRole(role) {
+            if (role === 'admin') {
+                return [
+                    'products:manage',
+                    'categories:manage',
+                    'orders:manage',
+                    'shipments:manage',
+                    'refunds:manage',
+                    'users:manage',
+                    'stats:view'
+                ];
+            }
+            return [
+                'orders:view_own',
+                'refunds:create',
+                'refunds:view_own'
+            ];
+        }
+
         const result = {
             id: user.id,
             username: user.username || '',
@@ -242,7 +286,8 @@ router.get('/me', authenticateToken, async (req, res) => {
             phone: user.phone || null,
             address: user.address || null,
             date_of_birth: user.date_of_birth || null,
-            avatar_url: user.avatar_url || null
+            avatar_url: user.avatar_url || null,
+            permissions: getPermissionsForRole(user.role || 'user')
         };
         
         console.log('Processed user result:', {
