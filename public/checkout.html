@@ -226,9 +226,29 @@
                                     <span class="px-3 py-1 bg-pink-600 text-white rounded text-sm font-semibold">MoMo</span>
                                 </div>
                                 <div id="momoDetails" class="mt-4 ml-8 hidden">
-                                    <div class="bg-pink-50 border border-pink-200 rounded-lg p-3 text-sm text-gray-700">
-                                        <i class="fas fa-info-circle text-pink-600 mr-2"></i>
-                                        Bạn sẽ được chuyển đến trang thanh toán MoMo để hoàn tất giao dịch
+                                    <div class="space-y-3">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">Số điện thoại MoMo <span class="text-red-500">*</span></label>
+                                            <input 
+                                                type="text" 
+                                                id="momoPhone" 
+                                                class="w-full border rounded-lg p-2 focus:ring-2 focus:ring-pink-500 focus:border-pink-500 outline-none" 
+                                                placeholder="Nhập số điện thoại đăng ký MoMo"
+                                                maxlength="10"
+                                            />
+                                            <div id="momoNameDisplay" class="mt-2 text-sm text-green-600 font-medium hidden">
+                                                <i class="fas fa-check-circle mr-1"></i>
+                                                <span id="momoNameText"></span>
+                                            </div>
+                                            <div id="momoErrorDisplay" class="mt-2 text-sm text-red-600 hidden">
+                                                <i class="fas fa-exclamation-circle mr-1"></i>
+                                                <span id="momoErrorText"></span>
+                                            </div>
+                                        </div>
+                                        <div class="bg-pink-50 border border-pink-200 rounded-lg p-3 text-sm text-gray-700">
+                                            <i class="fas fa-info-circle text-pink-600 mr-2"></i>
+                                            Số điện thoại phải đã đăng ký ví MoMo
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -691,6 +711,47 @@
             }
         }
 
+        // Check MoMo phone number and display account name
+        async function checkMomoPhone() {
+            const momoPhone = document.getElementById('momoPhone').value.trim();
+            const nameDisplay = document.getElementById('momoNameDisplay');
+            const nameText = document.getElementById('momoNameText');
+            const errorDisplay = document.getElementById('momoErrorDisplay');
+            const errorText = document.getElementById('momoErrorText');
+
+            // Hide both displays first
+            nameDisplay.classList.add('hidden');
+            errorDisplay.classList.add('hidden');
+
+            if (!momoPhone) {
+                return;
+            }
+
+            if (momoPhone.length < 10) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/payment/check-account?bank=momo&account_number=${encodeURIComponent(momoPhone)}`);
+                const data = await response.json();
+
+                if (data.success && data.account) {
+                    nameText.textContent = `Chủ tài khoản: ${data.account.account_name}`;
+                    nameDisplay.classList.remove('hidden');
+                    errorDisplay.classList.add('hidden');
+                } else {
+                    errorText.textContent = data.message || 'Không tìm thấy tài khoản MoMo với số điện thoại này';
+                    errorDisplay.classList.remove('hidden');
+                    nameDisplay.classList.add('hidden');
+                }
+            } catch (error) {
+                console.error('Error checking MoMo phone:', error);
+                errorText.textContent = 'Lỗi khi kiểm tra số điện thoại MoMo';
+                errorDisplay.classList.remove('hidden');
+                nameDisplay.classList.add('hidden');
+            }
+        }
+
         // Select payment method
         function selectPaymentMethod(method, element) {
             selectedPaymentMethod = method;
@@ -806,6 +867,17 @@
                     showToast('Vui lòng chọn ngân hàng', 'error');
                     return;
                 }
+                const accountNumber = document.getElementById('accountNumber').value.trim();
+                if (!accountNumber || accountNumber.length < 10) {
+                    showToast('Vui lòng nhập số tài khoản hợp lệ', 'error');
+                    return;
+                }
+            } else if (selectedPaymentMethod === 'momo') {
+                const momoPhone = document.getElementById('momoPhone').value.trim();
+                if (!momoPhone || momoPhone.length < 10) {
+                    showToast('Vui lòng nhập số điện thoại MoMo hợp lệ', 'error');
+                    return;
+                }
             } else if (selectedPaymentMethod === 'visa') {
                 const cardNumber = document.getElementById('cardNumber').value.trim();
                 const cardExpiry = document.getElementById('cardExpiry').value.trim();
@@ -846,6 +918,8 @@
                 if (selectedPaymentMethod === 'bank') {
                     orderData.payment_details.bank = document.getElementById('bankSelect').value;
                     orderData.payment_details.account_number = document.getElementById('accountNumber').value.trim();
+                } else if (selectedPaymentMethod === 'momo') {
+                    orderData.payment_details.phone = document.getElementById('momoPhone').value.trim();
                 } else if (selectedPaymentMethod === 'visa') {
                     orderData.payment_details.card_number = document.getElementById('cardNumber').value;
                     orderData.payment_details.card_expiry = document.getElementById('cardExpiry').value;
@@ -1067,6 +1141,24 @@
                         document.getElementById('accountNameDisplay').classList.add('hidden');
                         document.getElementById('accountErrorDisplay').classList.add('hidden');
                     }
+                });
+            }
+
+            // MoMo phone input handler
+            const momoPhoneInput = document.getElementById('momoPhone');
+            if (momoPhoneInput) {
+                let checkTimeout;
+                momoPhoneInput.addEventListener('input', (e) => {
+                    // Only allow numbers
+                    e.target.value = e.target.value.replace(/\D/g, '');
+                    
+                    // Clear previous timeout
+                    clearTimeout(checkTimeout);
+                    
+                    // Debounce: check after 500ms of no typing
+                    checkTimeout = setTimeout(() => {
+                        checkMomoPhone();
+                    }, 500);
                 });
             }
 
