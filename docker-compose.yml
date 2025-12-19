@@ -58,6 +58,7 @@ services:
     build:
       context: ./services/product-service
       dockerfile: Dockerfile
+      
     container_name: tttn2025-product
     environment:
       DB_HOST: host.docker.internal
@@ -155,6 +156,11 @@ services:
       JWT_SECRET: HhGg78@!kYpQzXcVbNmL1o2P3oI4U5yT6rE7wQ8aZ9sX0cVkGjH
     ports:
       - "5000:5000"
+    volumes:
+      # Mount public folder để file tự động cập nhật mà không cần rebuild
+      - ./public:/app/public:ro
+      # Mount server.js để có thể update code
+      - ./gateway/server.js:/app/server.js:ro
     depends_on:
       - auth-service
       - product-service

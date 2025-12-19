@@ -460,7 +460,7 @@ const CATEGORY_ROUTES = [
 ];
 
 const SUPPORTED_PAGES = [
-    'home', 'products', 'categories', 'cart', 'orders', 'profile', 'about',
+    'home', 'products', 'categories', 'cart', 'orders', 'profile',
     ...CATEGORY_ROUTES
 ];
 
@@ -639,10 +639,6 @@ function navigateTo(page) {
             break;
         case 'categories':
             loadCategoriesPage();
-            break;
-        case 'about':
-            // About is a standalone page (not a SPA section)
-            window.location.href = '/about.html';
             break;
         // Routes cho các danh mục sản phẩm
         case 'phone-tablet':

@@ -35,6 +35,45 @@
             border-radius: 4px;
             padding: 4px;
         }
+        /* Force bankDetails to always be visible */
+        #bankDetails,
+        #bankDetails.hidden {
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            height: auto !important;
+            overflow: visible !important;
+            max-height: none !important;
+        }
+        /* Override Tailwind hidden class specifically for bankDetails */
+        #bankDetails.hidden {
+            display: block !important;
+            visibility: visible !important;
+        }
+        /* Ensure form elements are visible */
+        #bankDetails input[type="text"],
+        #bankDetails input[type="number"],
+        #bankDetails select {
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            width: 100% !important;
+        }
+        #bankDetails label {
+            display: block !important;
+            visibility: visible !important;
+        }
+        /* Đảm bảo input accountNumber luôn hiển thị */
+        #accountNumber {
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            width: 100% !important;
+        }
+        #accountNumber[hidden] {
+            display: block !important;
+            visibility: visible !important;
+        }
         .spinner {
             border: 3px solid rgba(0, 0, 0, 0.1);
             border-top-color: #ef4444;
@@ -131,24 +170,43 @@
                                             </div>
                                         </label>
                                     </div>
-                                    <div class="flex items-center space-x-2">
-                                        <img src="https://via.placeholder.com/40x20/0066CC/FFFFFF?text=VCB" alt="Vietcombank" class="bank-logo">
-                                        <img src="https://via.placeholder.com/40x20/FF6600/FFFFFF?text=TCB" alt="Techcombank" class="bank-logo">
-                                        <img src="https://via.placeholder.com/40x20/00AA44/FFFFFF?text=ACB" alt="ACB" class="bank-logo">
-                                    </div>
+                                   
                                 </div>
-                                <div id="bankDetails" class="mt-4 ml-8 hidden">
-                                    <select id="bankSelect" class="w-full border rounded-lg p-2">
-                                        <option value="">Chọn ngân hàng</option>
-                                        <option value="vietcombank">Vietcombank (VCB)</option>
-                                        <option value="techcombank">Techcombank (TCB)</option>
-                                        <option value="acb">ACB</option>
-                                        <option value="bidv">BIDV</option>
-                                        <option value="vietinbank">VietinBank</option>
-                                        <option value="agribank">Agribank</option>
-                                        <option value="sacombank">Sacombank</option>
-                                        <option value="mbbank">MB Bank</option>
-                                    </select>
+                                <div id="bankDetails" class="mt-4 ml-8" style="display: block !important; visibility: visible !important; opacity: 1 !important; height: auto !important;">
+                                    <div class="space-y-3">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">Chọn ngân hàng <span class="text-red-500">*</span></label>
+                                            <select id="bankSelect" class="w-full border rounded-lg p-2 focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none">
+                                                <option value="">Chọn ngân hàng</option>
+                                                <option value="vietcombank">Vietcombank (VCB)</option>
+                                                <option value="techcombank">Techcombank (TCB)</option>
+                                                <option value="acb">ACB</option>
+                                                <option value="bidv">BIDV</option>
+                                                <option value="vietinbank">VietinBank</option>
+                                                <option value="agribank">Agribank</option>
+                                                <option value="sacombank">Sacombank</option>
+                                                <option value="mbbank">MB Bank</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">Số tài khoản <span class="text-red-500">*</span></label>
+                                            <input 
+                                                type="text" 
+                                                id="accountNumber" 
+                                                class="w-full border rounded-lg p-2 focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none" 
+                                                placeholder="Nhập số tài khoản"
+                                                maxlength="20"
+                                            />
+                                            <div id="accountNameDisplay" class="mt-2 text-sm text-green-600 font-medium hidden">
+                                                <i class="fas fa-check-circle mr-1"></i>
+                                                <span id="accountNameText"></span>
+                                            </div>
+                                            <div id="accountErrorDisplay" class="mt-2 text-sm text-red-600 hidden">
+                                                <i class="fas fa-exclamation-circle mr-1"></i>
+                                                <span id="accountErrorText"></span>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
@@ -165,7 +223,7 @@
                                             </div>
                                         </label>
                                     </div>
-                                    <img src="https://via.placeholder.com/60x30/A50064/FFFFFF?text=MoMo" alt="MoMo" class="bank-logo">
+                                    <span class="px-3 py-1 bg-pink-600 text-white rounded text-sm font-semibold">MoMo</span>
                                 </div>
                                 <div id="momoDetails" class="mt-4 ml-8 hidden">
                                     <div class="bg-pink-50 border border-pink-200 rounded-lg p-3 text-sm text-gray-700">
@@ -378,13 +436,154 @@
                 renderOrderSummary();
                 
                 // Hiển thị bank details mặc định (vì bank là phương thức mặc định)
-                document.getElementById('bankDetails').classList.remove('hidden');
+                const bankDetailsEl = document.getElementById('bankDetails');
+                if (bankDetailsEl) {
+                    bankDetailsEl.classList.remove('hidden');
+                    bankDetailsEl.style.cssText = 'display: block !important; visibility: visible !important; opacity: 1 !important; height: auto !important;';
+                    
+                    // Đảm bảo các phần tử con cũng hiển thị
+                    const accountInput = document.getElementById('accountNumber');
+                    const bankSelect = document.getElementById('bankSelect');
+                    if (accountInput) {
+                        accountInput.style.cssText = 'display: block !important; visibility: visible !important; width: 100% !important;';
+                    }
+                    if (bankSelect) {
+                        bankSelect.style.cssText = 'display: block !important; visibility: visible !important; width: 100% !important;';
+                    }
+                }
                 // Also show QR for default method
                 selectPaymentMethod(selectedPaymentMethod, document.querySelector('.payment-method.selected') || null);
                 
                 // Hiển thị content
                 document.getElementById('loadingState').classList.add('hidden');
-                document.getElementById('checkoutContent').classList.remove('hidden');
+                const checkoutContentEl = document.getElementById('checkoutContent');
+                if (checkoutContentEl) {
+                    checkoutContentEl.classList.remove('hidden');
+                    checkoutContentEl.style.display = 'block';
+                    checkoutContentEl.style.visibility = 'visible';
+                    
+                    // Đảm bảo bankDetails và accountNumber hiển thị ngay sau khi content được hiển thị
+                    // Sử dụng requestAnimationFrame để đảm bảo DOM đã được render
+                    requestAnimationFrame(() => {
+                        const bankDetailsEl = document.getElementById('bankDetails');
+                        const accountInput = document.getElementById('accountNumber');
+                        const bankSelect = document.getElementById('bankSelect');
+                        
+                        if (bankDetailsEl) {
+                            bankDetailsEl.classList.remove('hidden');
+                            bankDetailsEl.style.cssText = 'display: block !important; visibility: visible !important; opacity: 1 !important; height: auto !important;';
+                        } else {
+                            console.warn('bankDetails element not found');
+                        }
+                        
+                        if (accountInput) {
+                            accountInput.style.cssText = 'display: block !important; visibility: visible !important; width: 100% !important;';
+                            console.log('accountNumber element found and made visible');
+                        } else {
+                            console.error('accountNumber element NOT FOUND in DOM!');
+                            // Debug: Kiểm tra bankDetails có tồn tại không
+                            if (bankDetailsEl) {
+                                console.log('bankDetails exists, innerHTML length:', bankDetailsEl.innerHTML.length);
+                                const allInputs = bankDetailsEl.querySelectorAll('input');
+                                console.log('All inputs in bankDetails:', allInputs.length, Array.from(allInputs).map(i => ({id: i.id, placeholder: i.placeholder})));
+                                
+                                // Tìm element bằng placeholder và set id nếu thiếu
+                                const inputByPlaceholder = bankDetailsEl.querySelector('input[placeholder*="tài khoản"]');
+                                if (inputByPlaceholder) {
+                                    if (!inputByPlaceholder.id) {
+                                        console.log('Found input by placeholder but missing id, setting id to accountNumber');
+                                        inputByPlaceholder.id = 'accountNumber';
+                                    }
+                                    inputByPlaceholder.style.cssText = 'display: block !important; visibility: visible !important; width: 100% !important;';
+                                    console.log('Fixed input element:', inputByPlaceholder);
+                                } else {
+                                    // Nếu không tìm thấy, tạo mới input element
+                                    console.warn('Input element not found, creating new one...');
+                                    const spaceY3 = bankDetailsEl.querySelector('.space-y-3');
+                                    if (spaceY3) {
+                                        // Tìm div chứa select để thêm input sau đó
+                                        const selectElement = bankDetailsEl.querySelector('select#bankSelect');
+                                        if (selectElement) {
+                                            const selectDiv = selectElement.closest('div');
+                                            if (selectDiv && selectDiv.parentNode) {
+                                                const newDiv = document.createElement('div');
+                                                newDiv.innerHTML = `
+                                                    <label class="block text-sm font-medium text-gray-700 mb-1">Số tài khoản <span class="text-red-500">*</span></label>
+                                                    <input 
+                                                        type="text" 
+                                                        id="accountNumber" 
+                                                        class="w-full border rounded-lg p-2 focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none" 
+                                                        placeholder="Nhập số tài khoản"
+                                                        maxlength="20"
+                                                    />
+                                                    <div id="accountNameDisplay" class="mt-2 text-sm text-green-600 font-medium hidden">
+                                                        <i class="fas fa-check-circle mr-1"></i>
+                                                        <span id="accountNameText"></span>
+                                                    </div>
+                                                    <div id="accountErrorDisplay" class="mt-2 text-sm text-red-600 hidden">
+                                                        <i class="fas fa-exclamation-circle mr-1"></i>
+                                                        <span id="accountErrorText"></span>
+                                                    </div>
+                                                `;
+                                                selectDiv.parentNode.insertBefore(newDiv, selectDiv.nextSibling);
+                                                
+                                                // Đảm bảo newDiv và các phần tử con hiển thị ngay
+                                                newDiv.style.cssText = 'display: block !important; visibility: visible !important; opacity: 1 !important;';
+                                                
+                                                // Đợi một chút để DOM update
+                                                setTimeout(() => {
+                                                    const newInput = document.getElementById('accountNumber');
+                                                    if (newInput) {
+                                                        newInput.style.cssText = 'display: block !important; visibility: visible !important; width: 100% !important; opacity: 1 !important; height: auto !important;';
+                                                        newInput.removeAttribute('hidden');
+                                                        console.log('Created new accountNumber input element');
+                                                        console.log('Input computed style:', {
+                                                            display: window.getComputedStyle(newInput).display,
+                                                            visibility: window.getComputedStyle(newInput).visibility,
+                                                            opacity: window.getComputedStyle(newInput).opacity,
+                                                            width: window.getComputedStyle(newInput).width
+                                                        });
+                                                        
+                                                        // Scroll vào view để đảm bảo user thấy
+                                                        newInput.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                                                        
+                                                        // Attach event listener
+                                                        newInput.addEventListener('input', (e) => {
+                                                            e.target.value = e.target.value.replace(/\D/g, '');
+                                                            setTimeout(() => checkAccountNumber(), 500);
+                                                        });
+                                                        
+                                                        // Focus vào input để user biết nó đã được tạo
+                                                        setTimeout(() => newInput.focus(), 100);
+                                                    } else {
+                                                        console.error('Failed to find newly created accountNumber element');
+                                                    }
+                                                }, 50);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            // Thử tìm lại sau 200ms, 500ms, 1000ms
+                            [200, 500, 1000].forEach(delay => {
+                                setTimeout(() => {
+                                    const retryInput = document.getElementById('accountNumber');
+                                    if (retryInput) {
+                                        retryInput.style.cssText = 'display: block !important; visibility: visible !important; width: 100% !important;';
+                                        console.log(`accountNumber found on retry after ${delay}ms`);
+                                    } else {
+                                        console.warn(`accountNumber still not found after ${delay}ms`);
+                                    }
+                                }, delay);
+                            });
+                        }
+                        
+                        if (bankSelect) {
+                            bankSelect.style.cssText = 'display: block !important; visibility: visible !important; width: 100% !important;';
+                        }
+                    });
+                }
 
             } catch (error) {
                 console.error('Error loading checkout data:', error);
@@ -450,6 +649,48 @@
             }
         }
 
+        // Check account number and display account name
+        async function checkAccountNumber() {
+            const bank = document.getElementById('bankSelect').value;
+            const accountNumber = document.getElementById('accountNumber').value.trim();
+            const nameDisplay = document.getElementById('accountNameDisplay');
+            const nameText = document.getElementById('accountNameText');
+            const errorDisplay = document.getElementById('accountErrorDisplay');
+            const errorText = document.getElementById('accountErrorText');
+
+            // Hide both displays first
+            nameDisplay.classList.add('hidden');
+            errorDisplay.classList.add('hidden');
+
+            if (!bank || !accountNumber) {
+                return;
+            }
+
+            if (accountNumber.length < 10) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/payment/check-account?bank=${encodeURIComponent(bank)}&account_number=${encodeURIComponent(accountNumber)}`);
+                const data = await response.json();
+
+                if (data.success && data.account) {
+                    nameText.textContent = `Chủ tài khoản: ${data.account.account_name}`;
+                    nameDisplay.classList.remove('hidden');
+                    errorDisplay.classList.add('hidden');
+                } else {
+                    errorText.textContent = data.message || 'Không tìm thấy tài khoản';
+                    errorDisplay.classList.remove('hidden');
+                    nameDisplay.classList.add('hidden');
+                }
+            } catch (error) {
+                console.error('Error checking account:', error);
+                errorText.textContent = 'Lỗi khi kiểm tra tài khoản';
+                errorDisplay.classList.remove('hidden');
+                nameDisplay.classList.add('hidden');
+            }
+        }
+
         // Select payment method
         function selectPaymentMethod(method, element) {
             selectedPaymentMethod = method;
@@ -474,9 +715,48 @@
             }
 
             // Show/hide details
-            document.getElementById('bankDetails').classList.toggle('hidden', method !== 'bank');
-            document.getElementById('momoDetails').classList.toggle('hidden', method !== 'momo');
-            document.getElementById('visaDetails').classList.toggle('hidden', method !== 'visa');
+            const bankDetails = document.getElementById('bankDetails');
+            const momoDetails = document.getElementById('momoDetails');
+            const visaDetails = document.getElementById('visaDetails');
+            
+            if (bankDetails) {
+                if (method === 'bank') {
+                    bankDetails.classList.remove('hidden');
+                    bankDetails.style.cssText = 'display: block !important; visibility: visible !important; opacity: 1 !important;';
+                    // Đảm bảo các phần tử con cũng hiển thị
+                    const accountInput = document.getElementById('accountNumber');
+                    const bankSelect = document.getElementById('bankSelect');
+                    if (accountInput) {
+                        accountInput.style.cssText = 'display: block !important; visibility: visible !important;';
+                    }
+                    if (bankSelect) {
+                        bankSelect.style.cssText = 'display: block !important; visibility: visible !important;';
+                    }
+                } else {
+                    bankDetails.classList.add('hidden');
+                    bankDetails.style.display = 'none';
+                }
+            }
+            
+            if (momoDetails) {
+                if (method === 'momo') {
+                    momoDetails.classList.remove('hidden');
+                    momoDetails.style.display = 'block';
+                } else {
+                    momoDetails.classList.add('hidden');
+                    momoDetails.style.display = 'none';
+                }
+            }
+            
+            if (visaDetails) {
+                if (method === 'visa') {
+                    visaDetails.classList.remove('hidden');
+                    visaDetails.style.display = 'block';
+                } else {
+                    visaDetails.classList.add('hidden');
+                    visaDetails.style.display = 'none';
+                }
+            }
 
             // Update QR image
             const qrImg = document.getElementById('qrPaymentImage');
@@ -565,6 +845,7 @@
                 // Add payment details based on method
                 if (selectedPaymentMethod === 'bank') {
                     orderData.payment_details.bank = document.getElementById('bankSelect').value;
+                    orderData.payment_details.account_number = document.getElementById('accountNumber').value.trim();
                 } else if (selectedPaymentMethod === 'visa') {
                     orderData.payment_details.card_number = document.getElementById('cardNumber').value;
                     orderData.payment_details.card_expiry = document.getElementById('cardExpiry').value;
@@ -624,7 +905,170 @@
         document.addEventListener('DOMContentLoaded', () => {
             if (!checkAuth()) return;
 
+            // Đảm bảo bankDetails hiển thị ngay từ đầu (vì bank là mặc định)
+            const ensureBankDetailsVisible = () => {
+                // Đảm bảo checkoutContent đã được hiển thị trước
+                const checkoutContent = document.getElementById('checkoutContent');
+                if (checkoutContent && checkoutContent.classList.contains('hidden')) {
+                    checkoutContent.classList.remove('hidden');
+                    checkoutContent.style.display = 'block';
+                    checkoutContent.style.visibility = 'visible';
+                }
+                
+                const bankDetails = document.getElementById('bankDetails');
+                if (bankDetails) {
+                    bankDetails.classList.remove('hidden');
+                    bankDetails.style.cssText = 'display: block !important; visibility: visible !important; opacity: 1 !important; height: auto !important;';
+                    
+                    // Đảm bảo các phần tử con cũng hiển thị
+                    let accountInput = document.getElementById('accountNumber');
+                    const bankSelect = document.getElementById('bankSelect');
+                    
+                    // Nếu không tìm thấy accountInput, tự động tạo
+                    if (!accountInput) {
+                        const select = bankDetails.querySelector('select#bankSelect');
+                        if (select) {
+                            const selectDiv = select.closest('div');
+                            if (selectDiv && selectDiv.parentNode) {
+                                const newDiv = document.createElement('div');
+                                newDiv.innerHTML = `
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Số tài khoản <span class="text-red-500">*</span></label>
+                                    <input type="text" id="accountNumber" class="w-full border rounded-lg p-2 focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none" placeholder="Nhập số tài khoản" maxlength="20" style="display: block !important; visibility: visible !important; width: 100% !important; opacity: 1 !important;" />
+                                    <div id="accountNameDisplay" class="mt-2 text-sm text-green-600 font-medium hidden">
+                                        <i class="fas fa-check-circle mr-1"></i>
+                                        <span id="accountNameText"></span>
+                                    </div>
+                                    <div id="accountErrorDisplay" class="mt-2 text-sm text-red-600 hidden">
+                                        <i class="fas fa-exclamation-circle mr-1"></i>
+                                        <span id="accountErrorText"></span>
+                                    </div>
+                                `;
+                                newDiv.style.cssText = 'display: block !important; visibility: visible !important;';
+                                selectDiv.parentNode.insertBefore(newDiv, selectDiv.nextSibling);
+                                setTimeout(() => {
+                                    accountInput = document.getElementById('accountNumber');
+                                    if (accountInput) {
+                                        accountInput.style.cssText = 'display: block !important; visibility: visible !important; width: 100% !important; opacity: 1 !important;';
+                                        console.log('Auto-created accountNumber in ensureBankDetailsVisible');
+                                    }
+                                }, 50);
+                            }
+                        }
+                    }
+                    
+                    if (accountInput) {
+                        accountInput.style.cssText = 'display: block !important; visibility: visible !important; width: 100% !important; opacity: 1 !important;';
+                        console.log('accountNumber found and made visible in ensureBankDetailsVisible');
+                    } else {
+                        console.warn('accountNumber NOT FOUND in ensureBankDetailsVisible');
+                    }
+                    if (bankSelect) {
+                        bankSelect.style.cssText = 'display: block !important; visibility: visible !important; width: 100% !important;';
+                    }
+                } else {
+                    console.warn('bankDetails NOT FOUND in ensureBankDetailsVisible');
+                }
+            };
+            
+            // Chạy ngay và sau 100ms, 500ms, 1000ms để đảm bảo
+            ensureBankDetailsVisible();
+            setTimeout(ensureBankDetailsVisible, 100);
+            setTimeout(ensureBankDetailsVisible, 500);
+            setTimeout(ensureBankDetailsVisible, 1000);
+
             loadCheckoutData();
+
+            // Đảm bảo accountNumber input tồn tại, nếu không thì tạo mới
+            const ensureAccountNumberInput = () => {
+                const bankDetails = document.getElementById('bankDetails');
+                let accountNumberInput = document.getElementById('accountNumber');
+                
+                if (!accountNumberInput && bankDetails) {
+                    const select = bankDetails.querySelector('select#bankSelect');
+                    if (select) {
+                        const selectDiv = select.closest('div');
+                        if (selectDiv) {
+                            const newDiv = document.createElement('div');
+                            newDiv.innerHTML = `
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Số tài khoản <span class="text-red-500">*</span></label>
+                                <input type="text" id="accountNumber" class="w-full border rounded-lg p-2 focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none" placeholder="Nhập số tài khoản" maxlength="20" style="display: block !important; visibility: visible !important; width: 100% !important; opacity: 1 !important;" />
+                                <div id="accountNameDisplay" class="mt-2 text-sm text-green-600 font-medium hidden">
+                                    <i class="fas fa-check-circle mr-1"></i>
+                                    <span id="accountNameText"></span>
+                                </div>
+                                <div id="accountErrorDisplay" class="mt-2 text-sm text-red-600 hidden">
+                                    <i class="fas fa-exclamation-circle mr-1"></i>
+                                    <span id="accountErrorText"></span>
+                                </div>
+                            `;
+                            newDiv.style.cssText = 'display: block !important; visibility: visible !important;';
+                            selectDiv.parentNode.insertBefore(newDiv, selectDiv.nextSibling);
+                            
+                            setTimeout(() => {
+                                accountNumberInput = document.getElementById('accountNumber');
+                                if (accountNumberInput) {
+                                    accountNumberInput.style.cssText = 'display: block !important; visibility: visible !important; width: 100% !important; opacity: 1 !important;';
+                                    console.log('Auto-created accountNumber input element');
+                                }
+                            }, 50);
+                        }
+                    }
+                }
+                
+                return accountNumberInput || document.getElementById('accountNumber');
+            };
+            
+            // Chạy ngay và sau các khoảng thời gian để đảm bảo
+            let accountNumberInput = ensureAccountNumberInput();
+            setTimeout(() => { accountNumberInput = ensureAccountNumberInput(); }, 200);
+            setTimeout(() => { accountNumberInput = ensureAccountNumberInput(); }, 500);
+            setTimeout(() => { accountNumberInput = ensureAccountNumberInput(); }, 1000);
+            
+            // Account number input handler
+            accountNumberInput = document.getElementById('accountNumber');
+            if (accountNumberInput) {
+                let checkTimeout;
+                accountNumberInput.addEventListener('input', (e) => {
+                    // Only allow numbers
+                    e.target.value = e.target.value.replace(/\D/g, '');
+                    
+                    // Clear previous timeout
+                    clearTimeout(checkTimeout);
+                    
+                    // Debounce: check after 500ms of no typing
+                    checkTimeout = setTimeout(() => {
+                        checkAccountNumber();
+                    }, 500);
+                });
+            } else {
+                // Nếu vẫn không tìm thấy, thử lại sau 1.5s
+                setTimeout(() => {
+                    accountNumberInput = ensureAccountNumberInput();
+                    if (accountNumberInput) {
+                        let checkTimeout;
+                        accountNumberInput.addEventListener('input', (e) => {
+                            e.target.value = e.target.value.replace(/\D/g, '');
+                            clearTimeout(checkTimeout);
+                            checkTimeout = setTimeout(() => {
+                                checkAccountNumber();
+                            }, 500);
+                        });
+                    }
+                }, 1500);
+            }
+
+            // Bank select change handler
+            const bankSelect = document.getElementById('bankSelect');
+            if (bankSelect) {
+                bankSelect.addEventListener('change', () => {
+                    // Clear account number when bank changes
+                    if (accountNumberInput) {
+                        accountNumberInput.value = '';
+                        document.getElementById('accountNameDisplay').classList.add('hidden');
+                        document.getElementById('accountErrorDisplay').classList.add('hidden');
+                    }
+                });
+            }
 
             // Format card number input
             const cardNumberInput = document.getElementById('cardNumber');
@@ -657,6 +1101,84 @@
             }
         });
     </script>
+    
+    <!-- Script chạy ngay để đảm bảo accountNumber input hiển thị -->
+    <script>
+        // Chạy ngay khi script load, không đợi DOMContentLoaded
+        (function() {
+            function createAccountNumberInput() {
+                const bankDetails = document.getElementById('bankDetails');
+                if (!bankDetails) return false;
+                
+                let accountInput = document.getElementById('accountNumber');
+                if (accountInput) {
+                    // Đã tồn tại, đảm bảo hiển thị
+                    accountInput.style.cssText = 'display: block !important; visibility: visible !important; width: 100% !important; opacity: 1 !important;';
+                    accountInput.removeAttribute('hidden');
+                    return true;
+                }
+                
+                // Tạo mới nếu không tìm thấy
+                const select = bankDetails.querySelector('select#bankSelect');
+                if (select) {
+                    const selectDiv = select.closest('div');
+                    if (selectDiv && selectDiv.parentNode) {
+                        const newDiv = document.createElement('div');
+                        newDiv.innerHTML = `
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Số tài khoản <span class="text-red-500">*</span></label>
+                            <input type="text" id="accountNumber" class="w-full border rounded-lg p-2 focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none" placeholder="Nhập số tài khoản" maxlength="20" style="display: block !important; visibility: visible !important; width: 100% !important; opacity: 1 !important;" />
+                            <div id="accountNameDisplay" class="mt-2 text-sm text-green-600 font-medium hidden">
+                                <i class="fas fa-check-circle mr-1"></i>
+                                <span id="accountNameText"></span>
+                            </div>
+                            <div id="accountErrorDisplay" class="mt-2 text-sm text-red-600 hidden">
+                                <i class="fas fa-exclamation-circle mr-1"></i>
+                                <span id="accountErrorText"></span>
+                            </div>
+                        `;
+                        newDiv.style.cssText = 'display: block !important; visibility: visible !important; opacity: 1 !important;';
+                        selectDiv.parentNode.insertBefore(newDiv, selectDiv.nextSibling);
+                        console.log('✅ Created accountNumber input immediately');
+                        return true;
+                    }
+                }
+                return false;
+            }
+            
+            // Thử ngay
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', () => {
+                    setTimeout(createAccountNumberInput, 0);
+                    setTimeout(createAccountNumberInput, 100);
+                    setTimeout(createAccountNumberInput, 500);
+                    setTimeout(createAccountNumberInput, 1000);
+                });
+            } else {
+                // DOM đã sẵn sàng
+                setTimeout(createAccountNumberInput, 0);
+                setTimeout(createAccountNumberInput, 100);
+                setTimeout(createAccountNumberInput, 500);
+                setTimeout(createAccountNumberInput, 1000);
+            }
+            
+            // Chạy liên tục mỗi 2 giây để đảm bảo
+            setInterval(() => {
+                const input = document.getElementById('accountNumber');
+                if (!input) {
+                    console.log('⚠️ accountNumber missing, recreating...');
+                    createAccountNumberInput();
+                } else {
+                    // Đảm bảo luôn hiển thị
+                    const style = window.getComputedStyle(input);
+                    if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') {
+                        console.log('⚠️ accountNumber hidden, fixing...');
+                        input.style.cssText = 'display: block !important; visibility: visible !important; width: 100% !important; opacity: 1 !important;';
+                    }
+                }
+            }, 2000);
+        })();
+    </script>
+    
     <div id="site-footer"></div>
 </body>
 </html>

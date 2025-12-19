@@ -1,0 +1,333 @@
+{
+  "responses": [
+    {
+      "keywords": ["xin chào", "hello", "chào", "hi", "chào bạn"],
+      "response": "Xin chào! 👋 Mình là trợ lý ảo của TechStore. Mình có thể giúp bạn tìm hiểu về sản phẩm, đơn hàng, chính sách và nhiều thứ khác. Bạn cần hỗ trợ gì?"
+    },
+    {
+      "keywords": ["giá", "giá cả", "giá tiền", "bao nhiêu", "cost", "price"],
+      "response": "Giá sản phẩm tại TechStore rất cạnh tranh và đã bao gồm đầy đủ VAT. Bạn có thể xem giá chi tiết trên trang sản phẩm. Nếu cần tư vấn về giá, vui lòng cho mình biết sản phẩm cụ thể nhé!"
+    },
+    {
+      "keywords": ["giao hàng", "ship", "delivery", "vận chuyển", "giao nhanh"],
+      "response": "🚚 TechStore có dịch vụ giao hàng nhanh chóng. Đơn hàng từ 300.000đ sẽ được miễn phí vận chuyển. Thời gian giao hàng thường từ 1-3 ngày tùy khu vực. Bạn có thể theo dõi đơn hàng trong mục 'Đơn hàng' sau khi đăng nhập."
+    },
+    {
+      "keywords": ["điện thoại", "phone", "smartphone", "iphone", "samsung"],
+      "response": "📱 TechStore có đầy đủ các dòng điện thoại từ các thương hiệu nổi tiếng như iPhone, Samsung, Xiaomi, Oppo, Vivo... Bạn có thể xem tại mục 'Điện thoại, Tablet' trên menu. Bạn đang quan tâm dòng điện thoại nào?"
+    },
+    {
+      "keywords": ["laptop", "máy tính", "computer", "notebook"],
+      "response": "💻 Chúng tôi có nhiều dòng laptop từ các thương hiệu như Dell, HP, Lenovo, Asus, Acer... với đầy đủ cấu hình từ cơ bản đến cao cấp. Bạn có thể xem tại mục 'Laptop' trên menu."
+    },
+    {
+      "keywords": ["tablet", "máy tính bảng", "ipad"],
+      "response": "📱 TechStore có nhiều dòng tablet từ iPad, Samsung Galaxy Tab, Xiaomi Pad... Bạn có thể xem tại mục 'Điện thoại, Tablet' > 'Tablet' trên menu."
+    },
+    {
+      "keywords": ["đăng ký", "register", "tạo tài khoản", "sign up"],
+      "response": "Để đăng ký tài khoản, bạn click vào nút 'Đăng ký' ở góc trên bên phải, điền thông tin và xác thực email. Sau khi đăng ký, bạn sẽ nhận được mã OTP qua email để xác thực tài khoản."
+    },
+    {
+      "keywords": ["đăng nhập", "login", "sign in", "đăng nhập như thế nào"],
+      "response": "Bạn click vào nút 'Đăng nhập' ở góc trên bên phải, nhập username và password. Ngoài ra, bạn cũng có thể đăng nhập bằng tài khoản Google nếu đã liên kết."
+    },
+    {
+      "keywords": ["quên mật khẩu", "forgot password", "reset password", "đổi mật khẩu"],
+      "response": "Nếu quên mật khẩu, bạn click vào 'Quên mật khẩu' ở trang đăng nhập, nhập email đã đăng ký. Chúng tôi sẽ gửi link đặt lại mật khẩu qua email cho bạn."
+    },
+    {
+      "keywords": ["giỏ hàng", "cart", "thêm vào giỏ", "add to cart"],
+      "response": "🛒 Để thêm sản phẩm vào giỏ hàng, bạn click nút 'Thêm vào giỏ' trên trang sản phẩm. Bạn cần đăng nhập để sử dụng tính năng giỏ hàng. Xem giỏ hàng tại icon giỏ hàng góc trên bên phải."
+    },
+    {
+      "keywords": ["thanh toán", "payment", "checkout", "mua hàng", "mua ngay"],
+      "response": "💳 Sau khi thêm sản phẩm vào giỏ hàng, bạn click 'Thanh toán' hoặc 'Mua ngay'. Bạn cần điền thông tin giao hàng và chọn phương thức thanh toán. Chúng tôi hỗ trợ thanh toán khi nhận hàng (COD) và chuyển khoản."
+    },
+    {
+      "keywords": ["đơn hàng", "order", "orders", "tra cứu đơn hàng"],
+      "response": "📦 Bạn có thể xem đơn hàng của mình sau khi đăng nhập, vào mục 'Đơn hàng' hoặc 'Tra cứu đơn hàng'. Tại đây bạn sẽ thấy lịch sử đơn hàng, trạng thái và có thể theo dõi vận chuyển."
+    },
+    {
+      "keywords": ["theo dõi đơn hàng", "tracking", "vận chuyển", "shipment"],
+      "response": "📍 Bạn có thể theo dõi đơn hàng trong mục 'Đơn hàng' sau khi đăng nhập. Hệ thống sẽ hiển thị trạng thái: Đang xử lý, Đang giao hàng, Đã giao hàng. Bạn cũng có thể xem lịch sử cập nhật trạng thái."
+    },
+    {
+      "keywords": ["bảo hành", "warranty", "bảo hành như thế nào"],
+      "response": "✅ Tất cả sản phẩm tại TechStore đều là hàng chính hãng và có bảo hành đầy đủ. Thời gian bảo hành tùy theo từng sản phẩm (thường 12-24 tháng). Bạn giữ hóa đơn và phiếu bảo hành để được hỗ trợ."
+    },
+    {
+      "keywords": ["chính hãng", "authentic", "hàng chính hãng", "genuine"],
+      "response": "✅ TechStore cam kết 100% sản phẩm chính hãng, có đầy đủ tem, phiếu bảo hành và hóa đơn. Chúng tôi không bán hàng giả, hàng nhái. Nếu phát hiện hàng giả, chúng tôi sẽ đền gấp 10 lần giá trị sản phẩm."
+    },
+    {
+      "keywords": ["khuyến mãi", "promotion", "sale", "giảm giá", "discount"],
+      "response": "🎉 TechStore thường xuyên có các chương trình khuyến mãi hấp dẫn. Bạn có thể xem các chương trình đang diễn ra tại mục 'Khuyến mãi' trên menu. Ngoài ra, đơn hàng từ 300.000đ được miễn phí vận chuyển."
+    },
+    {
+      "keywords": ["thu cũ", "trade in", "đổi cũ lấy mới", "thu mua"],
+      "response": "🔄 TechStore có dịch vụ thu cũ giá ngon - lên đời tiết kiệm. Bạn có thể đem điện thoại, laptop cũ đến cửa hàng để được định giá và đổi lấy sản phẩm mới với giá ưu đãi. Liên hệ hotline 0905 884 303 để được tư vấn."
+    },
+    {
+      "keywords": ["cửa hàng", "store", "địa chỉ", "location", "chi nhánh"],
+      "response": "📍 TechStore có hệ thống cửa hàng rộng khắp cả nước. Bạn có thể xem danh sách cửa hàng gần bạn tại mục 'Cửa hàng gần bạn' trên menu hoặc truy cập /location.html. Chúng tôi có nhiều chi nhánh tại TP.HCM và Hà Nội."
+    },
+    {
+      "keywords": ["hotline", "số điện thoại", "phone number", "liên hệ"],
+      "response": "📞 Hotline hỗ trợ khách hàng của TechStore: 0905 884 303. Chúng tôi hỗ trợ 24/7, tất cả các ngày trong tuần. Bạn cũng có thể liên hệ qua email hoặc chat trực tuyến trên website."
+    },
+    {
+      "keywords": ["về chúng tôi", "about", "giới thiệu", "techstore"],
+      "response": "🏢 TechStore là địa chỉ tin cậy cho mọi nhu cầu công nghệ của bạn. Với hơn 10 năm kinh nghiệm, chúng tôi cam kết mang đến sản phẩm chính hãng, giá cả cạnh tranh và dịch vụ tốt nhất. Xem thêm tại mục 'Về chúng tôi'."
+    },
+    {
+      "keywords": ["phụ kiện", "accessories", "case", "ốp lưng", "sạc"],
+      "response": "🔌 TechStore có đầy đủ phụ kiện cho điện thoại, laptop, tablet như: ốp lưng, tai nghe, sạc, cáp, pin dự phòng, giá đỡ... Bạn có thể xem tại mục 'Phụ kiện' trên menu."
+    },
+    {
+      "keywords": ["âm thanh", "audio", "tai nghe", "headphone", "speaker", "loa"],
+      "response": "🎧 TechStore có nhiều sản phẩm âm thanh như tai nghe, loa, mic thu âm từ các thương hiệu nổi tiếng. Bạn có thể xem tại mục 'Âm thanh, Mic thu âm' trên menu."
+    },
+    {
+      "keywords": ["đồng hồ", "watch", "smartwatch", "apple watch"],
+      "response": "⌚ TechStore có nhiều dòng đồng hồ thông minh như Apple Watch, Samsung Galaxy Watch, Xiaomi Mi Band... Bạn có thể xem tại mục 'Đồng hồ, Camera' trên menu."
+    },
+    {
+      "keywords": ["camera", "máy ảnh", "webcam"],
+      "response": "📷 TechStore có nhiều sản phẩm camera như webcam, camera an ninh, máy ảnh kỹ thuật số... Bạn có thể xem tại mục 'Đồng hồ, Camera' trên menu."
+    },
+    {
+      "keywords": ["pc", "máy tính để bàn", "desktop", "computer"],
+      "response": "🖥️ TechStore có nhiều dòng PC (máy tính để bàn) với đầy đủ cấu hình từ cơ bản đến gaming. Bạn có thể xem tại mục 'PC, Màn hình, Máy in' > 'PC' trên menu."
+    },
+    {
+      "keywords": ["màn hình", "monitor", "display", "screen"],
+      "response": "🖥️ TechStore có nhiều dòng màn hình máy tính từ các thương hiệu như Dell, LG, Samsung, Asus... với nhiều kích thước và độ phân giải. Bạn có thể xem tại mục 'PC, Màn hình, Máy in' > 'Màn hình'."
+    },
+    {
+      "keywords": ["máy in", "printer", "in ấn"],
+      "response": "🖨️ TechStore có nhiều dòng máy in từ các thương hiệu như HP, Canon, Epson, Brother... Bạn có thể xem tại mục 'PC, Màn hình, Máy in' > 'Máy in' trên menu."
+    },
+    {
+      "keywords": ["tìm kiếm", "search", "tìm sản phẩm", "search product"],
+      "response": "🔍 Bạn có thể tìm kiếm sản phẩm bằng cách nhập từ khóa vào ô tìm kiếm ở đầu trang. Hệ thống sẽ hiển thị các sản phẩm phù hợp. Bạn cũng có thể lọc theo danh mục, giá, thương hiệu."
+    },
+    {
+      "keywords": ["lọc", "filter", "sắp xếp", "sort"],
+      "response": "🔍 Trên trang sản phẩm, bạn có thể lọc theo: danh mục, khoảng giá, thương hiệu. Bạn cũng có thể sắp xếp theo: giá tăng dần, giảm dần, mới nhất, bán chạy nhất."
+    },
+    {
+      "keywords": ["đánh giá", "review", "comment", "bình luận"],
+      "response": "⭐ Bạn có thể xem đánh giá và bình luận của khách hàng khác trên trang chi tiết sản phẩm. Sau khi mua hàng, bạn cũng có thể để lại đánh giá và bình luận về sản phẩm."
+    },
+    {
+      "keywords": ["tài khoản", "account", "profile", "hồ sơ"],
+      "response": "👤 Sau khi đăng nhập, bạn có thể xem và chỉnh sửa thông tin tài khoản tại mục 'Tài khoản' hoặc 'Hồ sơ'. Tại đây bạn có thể cập nhật thông tin cá nhân, địa chỉ, số điện thoại, đổi mật khẩu."
+    },
+    {
+      "keywords": ["đổi mật khẩu", "change password", "thay đổi mật khẩu"],
+      "response": "🔐 Để đổi mật khẩu, bạn vào mục 'Tài khoản' > 'Đổi mật khẩu', nhập mật khẩu cũ và mật khẩu mới. Mật khẩu mới phải có ít nhất 6 ký tự."
+    },
+    {
+      "keywords": ["hủy đơn hàng", "cancel order", "hủy đơn"],
+      "response": "❌ Bạn chỉ có thể hủy đơn hàng khi đơn hàng ở trạng thái 'Đang xử lý' hoặc 'Chờ xác nhận'. Vào mục 'Đơn hàng', chọn đơn hàng cần hủy và click 'Hủy đơn'. Đơn hàng đã giao hoặc đang giao không thể hủy."
+    },
+    {
+      "keywords": ["đổi trả", "return", "refund", "hoàn tiền"],
+      "response": "🔄 TechStore có chính sách đổi trả trong vòng 7 ngày kể từ ngày nhận hàng (nếu sản phẩm còn nguyên vẹn, chưa sử dụng). Bạn có thể yêu cầu đổi trả trong mục 'Đơn hàng' hoặc liên hệ hotline 0905 884 303."
+    },
+    {
+      "keywords": ["vat", "thuế", "tax", "giá đã bao gồm vat"],
+      "response": "✅ Tất cả giá sản phẩm tại TechStore đã bao gồm đầy đủ VAT. Bạn không cần trả thêm bất kỳ khoản phí nào ngoài giá đã hiển thị."
+    },
+    {
+      "keywords": ["miễn phí vận chuyển", "free shipping", "freeship"],
+      "response": "🚚 Đơn hàng từ 300.000đ sẽ được miễn phí vận chuyển toàn quốc. Đơn hàng dưới 300.000đ sẽ tính phí vận chuyển tùy theo khu vực (thường từ 20.000đ - 50.000đ)."
+    },
+    {
+      "keywords": ["thời gian giao hàng", "delivery time", "bao lâu nhận được"],
+      "response": "⏰ Thời gian giao hàng thường từ 1-3 ngày làm việc tùy theo khu vực. Khu vực nội thành TP.HCM và Hà Nội: 1-2 ngày. Các tỉnh thành khác: 2-3 ngày. Bạn có thể theo dõi đơn hàng để biết thời gian giao hàng chính xác."
+    },
+    {
+      "keywords": ["cod", "thanh toán khi nhận", "cash on delivery"],
+      "response": "💵 TechStore hỗ trợ thanh toán khi nhận hàng (COD). Bạn chỉ cần thanh toán khi nhận được sản phẩm. Phí COD thường từ 20.000đ - 30.000đ tùy giá trị đơn hàng."
+    },
+    {
+      "keywords": ["chuyển khoản", "bank transfer", "banking"],
+      "response": "🏦 Bạn có thể thanh toán bằng chuyển khoản ngân hàng. Sau khi đặt hàng, hệ thống sẽ cung cấp thông tin tài khoản ngân hàng. Sau khi chuyển khoản, bạn cần xác nhận để đơn hàng được xử lý."
+    },
+    {
+      "keywords": ["momo", "ví điện tử", "e-wallet"],
+      "response": "📱 TechStore đang phát triển tính năng thanh toán qua ví điện tử như Momo, ZaloPay. Hiện tại chúng tôi hỗ trợ thanh toán COD và chuyển khoản ngân hàng."
+    },
+    {
+      "keywords": ["tin công nghệ", "news", "tech news", "tin tức"],
+      "response": "📰 TechStore có mục 'Tin công nghệ' với các bài viết về công nghệ, đánh giá sản phẩm, hướng dẫn sử dụng. Bạn có thể xem tại mục 'Tin công nghệ' trên menu hoặc truy cập /?page=tech-news."
+    },
+    {
+      "keywords": ["hướng dẫn", "guide", "tutorial", "cách sử dụng"],
+      "response": "📖 TechStore có nhiều bài viết hướng dẫn sử dụng sản phẩm, mẹo vặt công nghệ trong mục 'Tin công nghệ'. Bạn cũng có thể xem hướng dẫn trên trang chi tiết sản phẩm hoặc liên hệ hotline để được tư vấn."
+    },
+    {
+      "keywords": ["sản phẩm nổi bật", "featured", "bestseller", "bán chạy"],
+      "response": "⭐ Trang chủ TechStore hiển thị các sản phẩm nổi bật và bán chạy nhất. Bạn có thể xem tại phần 'Sản phẩm nổi bật' trên trang chủ. Các sản phẩm này được chọn dựa trên đánh giá và số lượng bán ra."
+    },
+    {
+      "keywords": ["danh mục", "category", "categories", "phân loại"],
+      "response": "📂 TechStore có nhiều danh mục sản phẩm như: Điện thoại/Tablet, Laptop, Âm thanh, Đồng hồ/Camera, Phụ kiện, PC/Màn hình/Máy in. Bạn có thể xem tất cả danh mục tại mục 'Danh mục' trên menu."
+    },
+    {
+      "keywords": ["thương hiệu", "brand", "hãng", "manufacturer"],
+      "response": "🏷️ TechStore có sản phẩm từ nhiều thương hiệu nổi tiếng như Apple, Samsung, Xiaomi, Dell, HP, Lenovo, Asus, Acer... Bạn có thể lọc sản phẩm theo thương hiệu trên trang sản phẩm."
+    },
+    {
+      "keywords": ["hàng mới", "new", "mới về", "new arrival"],
+      "response": "🆕 TechStore thường xuyên cập nhật sản phẩm mới. Bạn có thể xem các sản phẩm mới nhất bằng cách sắp xếp theo 'Mới nhất' trên trang sản phẩm hoặc xem tại mục 'Sản phẩm mới' trên trang chủ."
+    },
+    {
+      "keywords": ["tồn kho", "stock", "còn hàng", "hết hàng", "out of stock"],
+      "response": "📦 Trạng thái tồn kho được hiển thị trên trang sản phẩm. Nếu sản phẩm 'Còn hàng', bạn có thể đặt mua ngay. Nếu 'Hết hàng' hoặc 'Tạm hết', bạn có thể đăng ký nhận thông báo khi có hàng."
+    },
+    {
+      "keywords": ["thông báo", "notify", "alert", "nhận thông báo"],
+      "response": "🔔 Bạn có thể đăng ký nhận thông báo khi sản phẩm hết hàng có lại, hoặc khi có chương trình khuyến mãi mới. Đăng ký tại trang sản phẩm hoặc trong tài khoản của bạn."
+    },
+    {
+      "keywords": ["so sánh", "compare", "so sánh sản phẩm"],
+      "response": "⚖️ Bạn có thể so sánh các sản phẩm bằng cách xem thông số kỹ thuật chi tiết trên trang sản phẩm. TechStore hiển thị đầy đủ thông tin để bạn dễ dàng so sánh và lựa chọn."
+    },
+    {
+      "keywords": ["thông số", "spec", "specification", "cấu hình"],
+      "response": "📋 Thông số kỹ thuật chi tiết được hiển thị đầy đủ trên trang chi tiết sản phẩm. Bạn có thể xem cấu hình, kích thước, trọng lượng, tính năng... của từng sản phẩm."
+    },
+    {
+      "keywords": ["ảnh", "image", "hình ảnh", "photo", "gallery"],
+      "response": "📸 Mỗi sản phẩm có nhiều hình ảnh từ các góc độ khác nhau. Bạn có thể xem ảnh lớn hơn bằng cách click vào ảnh trên trang chi tiết sản phẩm."
+    },
+    {
+      "keywords": ["video", "video review", "video đánh giá"],
+      "response": "🎥 Một số sản phẩm có video đánh giá và hướng dẫn sử dụng. Bạn có thể xem video trên trang chi tiết sản phẩm hoặc trong các bài viết tin công nghệ."
+    },
+    {
+      "keywords": ["ưu đãi", "deal", "offer", "khuyến mãi đặc biệt"],
+      "response": "🎁 TechStore có nhiều chương trình ưu đãi đặc biệt như giảm giá, tặng kèm phụ kiện, trả góp 0%... Bạn có thể xem các ưu đãi đang diễn ra tại mục 'Khuyến mãi' hoặc trên trang chủ."
+    },
+    {
+      "keywords": ["trả góp", "installment", "trả chậm", "credit"],
+      "response": "💳 TechStore hỗ trợ trả góp 0% lãi suất cho nhiều sản phẩm. Bạn có thể chọn phương thức trả góp khi thanh toán. Liên hệ hotline 0905 884 303 để được tư vấn về trả góp."
+    },
+    {
+      "keywords": ["tặng kèm", "gift", "freebie", "quà tặng"],
+      "response": "🎁 Nhiều sản phẩm tại TechStore có chương trình tặng kèm phụ kiện như ốp lưng, tai nghe, cáp sạc... Bạn có thể xem thông tin tặng kèm trên trang sản phẩm hoặc trong mục khuyến mãi."
+    },
+    {
+      "keywords": ["bảo mật", "security", "an toàn", "privacy"],
+      "response": "🔒 TechStore cam kết bảo mật thông tin khách hàng. Tất cả thông tin thanh toán và cá nhân đều được mã hóa. Chúng tôi không chia sẻ thông tin của bạn cho bên thứ ba."
+    },
+    {
+      "keywords": ["chính sách", "policy", "quy định", "terms"],
+      "response": "📄 TechStore có đầy đủ chính sách về bảo hành, đổi trả, vận chuyển, thanh toán. Bạn có thể xem chi tiết các chính sách tại footer của website hoặc liên hệ hotline để được giải đáp."
+    },
+    {
+      "keywords": ["câu hỏi thường gặp", "faq", "frequently asked"],
+      "response": "❓ Bạn đang xem chatbot hỗ trợ - đây là nơi giải đáp các câu hỏi thường gặp. Nếu câu hỏi của bạn chưa được giải đáp, vui lòng liên hệ hotline 0905 884 303 hoặc email hỗ trợ."
+    },
+    {
+      "keywords": ["email", "e-mail", "gửi email", "contact email"],
+      "response": "📧 Bạn có thể liên hệ TechStore qua email hỗ trợ. Thông tin email được hiển thị tại footer của website hoặc trong mục 'Liên hệ'. Chúng tôi sẽ phản hồi trong vòng 24 giờ."
+    },
+    {
+      "keywords": ["facebook", "fb", "fanpage", "social media"],
+      "response": "📱 TechStore có fanpage Facebook và các kênh mạng xã hội. Bạn có thể theo dõi để nhận thông tin về sản phẩm mới, khuyến mãi. Link mạng xã hội được hiển thị tại footer website."
+    },
+    {
+      "keywords": ["youtube", "video", "channel"],
+      "response": "📺 TechStore có kênh YouTube với các video đánh giá sản phẩm, hướng dẫn sử dụng. Bạn có thể subscribe kênh để xem các video mới nhất. Link YouTube được hiển thị tại footer."
+    },
+    {
+      "keywords": ["zalo", "zalo page"],
+      "response": "💬 TechStore có trang Zalo để hỗ trợ khách hàng. Bạn có thể nhắn tin trực tiếp qua Zalo để được tư vấn nhanh chóng. Link Zalo được hiển thị tại footer website."
+    },
+    {
+      "keywords": ["giờ làm việc", "working hours", "thời gian", "mở cửa"],
+      "response": "🕐 Hotline hỗ trợ khách hàng hoạt động 24/7. Cửa hàng mở cửa từ 8:00 - 22:00 hàng ngày. Bạn có thể đến cửa hàng hoặc gọi hotline bất cứ lúc nào."
+    },
+    {
+      "keywords": ["dịch vụ", "service", "hỗ trợ", "support"],
+      "response": "🛠️ TechStore cung cấp nhiều dịch vụ: bán hàng, bảo hành, sửa chữa, thu cũ đổi mới, tư vấn kỹ thuật. Chúng tôi cam kết hỗ trợ khách hàng tận tâm, chuyên nghiệp."
+    },
+    {
+      "keywords": ["sửa chữa", "repair", "bảo trì", "maintenance"],
+      "response": "🔧 TechStore có dịch vụ sửa chữa và bảo trì sản phẩm. Bạn có thể mang sản phẩm đến cửa hàng hoặc liên hệ hotline để được hỗ trợ. Chúng tôi có đội ngũ kỹ thuật viên chuyên nghiệp."
+    },
+    {
+      "keywords": ["tư vấn", "consult", "advice", "hỗ trợ tư vấn"],
+      "response": "💡 Đội ngũ tư vấn viên của TechStore sẵn sàng hỗ trợ bạn chọn sản phẩm phù hợp. Bạn có thể chat trực tuyến, gọi hotline 0905 884 303 hoặc đến cửa hàng để được tư vấn trực tiếp."
+    },
+    {
+      "keywords": ["chất lượng", "quality", "uy tín", "reliable"],
+      "response": "⭐ TechStore cam kết chất lượng sản phẩm và dịch vụ. Với hơn 10 năm kinh nghiệm, chúng tôi đã phục vụ hàng nghìn khách hàng và nhận được đánh giá tích cực. Chúng tôi luôn đặt chất lượng lên hàng đầu."
+    },
+    {
+      "keywords": ["kinh nghiệm", "experience", "năm kinh nghiệm"],
+      "response": "🏆 TechStore có hơn 10 năm kinh nghiệm trong ngành bán lẻ công nghệ. Chúng tôi tự hào là một trong những nhà bán lẻ công nghệ hàng đầu tại Việt Nam với đội ngũ nhân viên chuyên nghiệp, tận tâm."
+    },
+    {
+      "keywords": ["khách hàng", "customer", "client"],
+      "response": "👥 TechStore đã phục vụ hàng nghìn khách hàng và nhận được nhiều đánh giá tích cực. Chúng tôi luôn lắng nghe phản hồi của khách hàng để cải thiện dịch vụ. Cảm ơn bạn đã tin tưởng TechStore!"
+    },
+    {
+      "keywords": ["phản hồi", "feedback", "đánh giá dịch vụ"],
+      "response": "💬 TechStore rất trân trọng phản hồi của khách hàng. Bạn có thể để lại đánh giá trên website, gửi email hoặc liên hệ hotline. Mọi phản hồi đều được xem xét và cải thiện dịch vụ."
+    },
+    {
+      "keywords": ["cảm ơn", "thank you", "thanks", "thank"],
+      "response": "🙏 Cảm ơn bạn đã quan tâm đến TechStore! Nếu bạn cần hỗ trợ thêm, đừng ngần ngại liên hệ với chúng tôi qua hotline 0905 884 303 hoặc chat trực tuyến. Chúc bạn một ngày tốt lành!"
+    },
+    {
+      "keywords": ["tạm biệt", "goodbye", "bye", "see you"],
+      "response": "👋 Tạm biệt bạn! Nếu có bất kỳ câu hỏi nào khác, hãy quay lại chat với mình nhé. TechStore luôn sẵn sàng hỗ trợ bạn. Chúc bạn một ngày tốt lành! 😊"
+    },
+    {
+      "keywords": ["không", "không có", "không biết", "không hiểu"],
+      "response": "🤔 Mình hiểu bạn đang thắc mắc. Bạn có thể mô tả rõ hơn câu hỏi không? Hoặc bạn có thể liên hệ hotline 0905 884 303 để được tư vấn trực tiếp từ nhân viên của chúng tôi."
+    },
+    {
+      "keywords": ["giúp", "help", "hỗ trợ", "assist"],
+      "response": "💪 Mình sẵn sàng giúp bạn! Bạn có thể hỏi về: sản phẩm, đơn hàng, thanh toán, giao hàng, bảo hành, khuyến mãi... Hoặc bạn có thể chọn một danh mục ở trên để xem các câu hỏi thường gặp."
+    },
+    {
+      "keywords": ["làm sao", "how", "như thế nào", "cách"],
+      "response": "📖 Bạn muốn biết cách làm gì? Mình có thể hướng dẫn bạn: đăng ký tài khoản, đặt hàng, thanh toán, theo dõi đơn hàng, đổi mật khẩu... Hãy cho mình biết cụ thể bạn cần làm gì nhé!"
+    },
+    {
+      "keywords": ["khi nào", "when", "thời gian", "lúc nào"],
+      "response": "⏰ Bạn hỏi về thời gian nào? Mình có thể giải đáp về: thời gian giao hàng, thời gian bảo hành, giờ làm việc, thời gian khuyến mãi... Hãy cho mình biết cụ thể bạn muốn biết gì nhé!"
+    },
+    {
+      "keywords": ["ở đâu", "where", "địa điểm", "location"],
+      "response": "📍 Bạn muốn biết địa điểm nào? Mình có thể giúp bạn tìm: cửa hàng gần bạn, địa chỉ giao hàng, địa chỉ công ty... Bạn có thể xem danh sách cửa hàng tại mục 'Cửa hàng gần bạn' trên menu."
+    },
+    {
+      "keywords": ["ai", "who", "người nào"],
+      "response": "👤 TechStore có đội ngũ nhân viên chuyên nghiệp, tận tâm sẵn sàng hỗ trợ bạn. Bạn có thể liên hệ qua hotline 0905 884 303 hoặc đến cửa hàng để được tư vấn trực tiếp."
+    },
+    {
+      "keywords": ["tại sao", "why", "vì sao", "lý do"],
+      "response": "🤔 Bạn đang thắc mắc về điều gì? Mình có thể giải thích về: chính sách, quy định, quy trình... Hãy cho mình biết cụ thể bạn muốn hiểu rõ điều gì nhé!"
+    },
+    {
+      "keywords": ["có thể", "can", "được không", "có được"],
+      "response": "✅ Tùy vào yêu cầu của bạn, mình sẽ kiểm tra xem có thể thực hiện được không. Hãy cho mình biết cụ thể bạn muốn làm gì, mình sẽ tư vấn cho bạn cách tốt nhất!"
+    },
+    {
+      "keywords": ["ok", "okay", "được", "đồng ý"],
+      "response": "👍 Tuyệt vời! Nếu bạn cần hỗ trợ thêm điều gì, hãy cho mình biết nhé. TechStore luôn sẵn sàng phục vụ bạn!"
+    },
+    {
+      "keywords": ["được rồi", "alright", "fine", "tốt"],
+      "response": "😊 Cảm ơn bạn! Nếu có bất kỳ câu hỏi nào khác, đừng ngần ngại hỏi mình nhé. Chúc bạn mua sắm vui vẻ tại TechStore!"
+    }
+  ]
+}
+

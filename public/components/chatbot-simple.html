@@ -1,0 +1,304 @@
+<!-- Simple Chatbot Widget - No API Required -->
+<style>
+  .chatbot-widget-simple {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 9999;
+    font-family: 'Inter', sans-serif;
+  }
+
+  .chatbot-toggle-btn {
+    width: 60px !important;
+    height: 60px !important;
+    border-radius: 50% !important;
+    background: #2563eb !important;
+    color: white !important;
+    border: none !important;
+    cursor: pointer !important;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: all 0.3s ease !important;
+    font-size: 24px !important;
+    padding: 0 !important;
+  }
+
+  .chatbot-toggle-btn:hover {
+    background: #1d4ed8 !important;
+    transform: scale(1.1) !important;
+    box-shadow: 0 6px 16px rgba(37, 99, 235, 0.6) !important;
+  }
+
+  .chatbot-container-simple {
+    position: absolute;
+    bottom: 80px;
+    right: 0;
+    width: 380px;
+    max-height: 600px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 5px 40px rgba(0, 0, 0, 0.16);
+    display: none;
+    flex-direction: column;
+    overflow: hidden;
+    animation: slideUp 0.3s ease;
+  }
+
+  .chatbot-container-simple.active {
+    display: flex;
+  }
+
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .chatbot-header-simple {
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    color: white;
+    padding: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .chatbot-header-simple h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+  }
+
+  .chatbot-close-btn {
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    font-size: 24px;
+    padding: 0;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background 0.2s;
+  }
+
+  .chatbot-close-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+  }
+
+  .chatbot-content-simple {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    background: #f9fafb;
+  }
+
+  .chatbot-message-simple {
+    display: flex;
+    gap: 8px;
+    animation: fadeIn 0.3s ease;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .message-bot-simple {
+    flex-direction: row;
+  }
+
+  .message-user-simple {
+    flex-direction: row-reverse;
+  }
+
+  .message-avatar-simple {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+
+  .message-avatar-simple.bot {
+    background: #e5e7eb;
+    color: #2563eb;
+  }
+
+  .message-avatar-simple.user {
+    background: #2563eb;
+    color: white;
+  }
+
+  .message-bubble-simple {
+    max-width: 75%;
+    padding: 12px 16px;
+    border-radius: 12px;
+    word-wrap: break-word;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  .message-bot-simple .message-bubble-simple {
+    background: white;
+    color: #1f2937;
+    border: 1px solid #e5e7eb;
+  }
+
+  .message-user-simple .message-bubble-simple {
+    background: #2563eb;
+    color: white;
+  }
+
+  .chatbot-input-area-simple {
+    padding: 12px;
+    border-top: 1px solid #e5e7eb;
+    display: flex;
+    gap: 8px;
+    background: white;
+  }
+
+  .chatbot-input-simple {
+    flex: 1;
+    border: 1px solid #d1d5db;
+    border-radius: 20px;
+    padding: 10px 16px;
+    font-size: 14px;
+    outline: none;
+    transition: all 0.2s;
+  }
+
+  .chatbot-input-simple:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  }
+
+  .chatbot-send-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #2563eb;
+    border: none;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    transition: all 0.2s;
+  }
+
+  .chatbot-send-btn:hover {
+    background: #1d4ed8;
+    transform: scale(1.05);
+  }
+
+  .chatbot-send-btn:active {
+    transform: scale(0.95);
+  }
+
+  .typing-indicator {
+    display: flex;
+    gap: 4px;
+    padding: 12px 16px;
+  }
+
+  .typing-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #9ca3af;
+    animation: typing 1.4s infinite;
+  }
+
+  .typing-dot:nth-child(2) {
+    animation-delay: 0.2s;
+  }
+
+  .typing-dot:nth-child(3) {
+    animation-delay: 0.4s;
+  }
+
+  @keyframes typing {
+    0%, 60%, 100% {
+      transform: translateY(0);
+      opacity: 0.7;
+    }
+    30% {
+      transform: translateY(-10px);
+      opacity: 1;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .chatbot-container-simple {
+      width: calc(100vw - 32px);
+      max-height: calc(100vh - 100px);
+      right: 16px;
+    }
+  }
+</style>
+
+<div class="chatbot-widget-simple">
+  <!-- Toggle Button -->
+  <button type="button" class="chatbot-toggle-btn" id="chatbotToggleSimple" onclick="return false;" onmousedown="event.preventDefault(); return false;">
+    <i class="fas fa-comments"></i>
+  </button>
+
+  <!-- Chat Container -->
+  <div class="chatbot-container-simple" id="chatbotContainerSimple">
+    <!-- Header -->
+    <div class="chatbot-header-simple">
+      <h3>💬 Trợ lý ảo TechStore</h3>
+      <button type="button" class="chatbot-close-btn" id="chatbotCloseSimple">×</button>
+    </div>
+
+    <!-- Messages -->
+    <div class="chatbot-content-simple" id="chatbotContentSimple">
+      <div class="chatbot-message-simple message-bot-simple">
+        <div class="message-avatar-simple bot">🤖</div>
+        <div class="message-bubble-simple">
+          Xin chào! 👋 Mình là trợ lý ảo của TechStore. Mình có thể giúp bạn tìm hiểu về sản phẩm, đơn hàng, chính sách và nhiều thứ khác. Hãy hỏi mình bất cứ điều gì nhé!
+        </div>
+      </div>
+    </div>
+
+    <!-- Input Area -->
+    <div class="chatbot-input-area-simple">
+      <input 
+        type="text" 
+        class="chatbot-input-simple" 
+        id="chatbotInputSimple" 
+        placeholder="Nhập câu hỏi của bạn..."
+        autocomplete="off"
+      >
+      <button type="button" class="chatbot-send-btn" id="chatbotSendSimple">
+        <i class="fas fa-paper-plane"></i>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Script moved to chatbot-simple.js -->

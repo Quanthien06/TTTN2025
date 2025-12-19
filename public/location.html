@@ -11,6 +11,7 @@
     #map { height: 420px; }
     .store-item { border-bottom: 1px solid #eee; padding: 12px; }
     .system-chip { display:inline-block; padding:4px 8px; border-radius:999px; font-size:12px; margin-right:6px; }
+    .chip-techstore { background:#fee2e2; color:#991b1b; }
     .chip-cellphone { background:#fde68a; color:#92400e; }
     .chip-dtv { background:#dbeafe; color:#1e40af; }
     .chip-care { background:#e0f2fe; color:#0369a1; }
@@ -66,8 +67,20 @@
       <div class="md:col-span-2">
         <div class="bg-white rounded-lg shadow p-4">
           <h2 class="font-bold mb-3">Bản đồ</h2>
-          <p class="text-sm text-gray-500 mb-3">Nhấp vào một cửa hàng ở danh sách để zoom tới vị trí.</p>
-          <div id="mapLarge" style="height:360px;"></div>
+          <p class="text-sm text-gray-500 mb-3">Nhấp vào một cửa hàng ở danh sách để xem hình ảnh và vị trí.</p>
+          <div id="mapLarge" style="height:360px; display: none;"></div>
+          <div id="storeImageContainer" style="display: none; text-align: center; padding: 20px;">
+            <img id="storeImage" src="" alt="Hình ảnh cửa hàng" style="max-width: 100%; max-height: 320px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" />
+            <div id="storeImageInfo" class="mt-3 text-sm text-gray-600"></div>
+          </div>
+          <div id="mapPlaceholder" style="height: 360px; display: flex; align-items: center; justify-content: center; background: #f3f4f6; border-radius: 8px; color: #6b7280;">
+            <div style="text-align: center;">
+              <svg style="width: 64px; height: 64px; margin: 0 auto 16px; opacity: 0.5;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path>
+              </svg>
+              <p>Chọn một cửa hàng để xem hình ảnh</p>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -189,9 +202,10 @@
         const el = document.createElement('div');
         el.className = 'store-item';
         let chipClass = '';
-        if (s.system === 'cellphone') chipClass = 'chip-cellphone';
-        if (s.system === 'dienthoaivui') chipClass = 'chip-dtv';
-        if (s.system === 'care') chipClass = 'chip-care';
+        if (s.system === 'techstore') chipClass = 'chip-techstore';
+        else if (s.system === 'cellphone') chipClass = 'chip-cellphone';
+        else if (s.system === 'dienthoaivui') chipClass = 'chip-dtv';
+        else if (s.system === 'care') chipClass = 'chip-care';
 
         el.innerHTML = `
           <div class="flex justify-between items-start">
@@ -245,9 +259,10 @@
         const el = document.createElement('div');
         el.className = 'store-item';
         let chipClass = '';
-        if (s.system === 'cellphone') chipClass = 'chip-cellphone';
-        if (s.system === 'dienthoaivui') chipClass = 'chip-dtv';
-        if (s.system === 'care') chipClass = 'chip-care';
+        if (s.system === 'techstore') chipClass = 'chip-techstore';
+        else if (s.system === 'cellphone') chipClass = 'chip-cellphone';
+        else if (s.system === 'dienthoaivui') chipClass = 'chip-dtv';
+        else if (s.system === 'care') chipClass = 'chip-care';
         el.innerHTML = `
           <div class="flex justify-between items-start">
             <div>
@@ -292,7 +307,9 @@
         if (s.lat != null && s.lng != null && typeof google !== 'undefined' && map) {
           const pos = new google.maps.LatLng(s.lat, s.lng);
           map.panTo(pos); map.setZoom(16);
-          mapLarge.panTo(pos); mapLarge.setZoom(16);
+          if (mapLarge) {
+            mapLarge.panTo(pos); mapLarge.setZoom(16);
+          }
           const m = markers.find(mm => mm.storeId === id);
           if (m && infoWindow) {
             infoWindow.setContent(`<div><strong>${s.name}</strong><div style="font-size:12px">${s.address}</div><div style="font-size:12px">SĐT: ${s.phone}</div></div>`);
@@ -303,9 +320,36 @@
         // ignore map errors
       }
 
-      // open image modal for demo
-      const imgUrl = s.image || `/img/maps/${s.id}.svg`;
-      openImageModal(imgUrl, s.name);
+      // Show image in right panel
+      const imgContainer = document.getElementById('storeImageContainer');
+      const imgElement = document.getElementById('storeImage');
+      const imgInfo = document.getElementById('storeImageInfo');
+      const mapPlaceholder = document.getElementById('mapPlaceholder');
+      const mapLargeDiv = document.getElementById('mapLarge');
+
+      if (imgContainer && imgElement && imgInfo) {
+        // Try to load image, fallback to placeholder if not found
+        const imgUrl = s.image || `/img/stores/store-${s.id}.jpg` || '/img/store-placeholder.png';
+        
+        // Show image container, hide placeholder
+        if (mapPlaceholder) mapPlaceholder.style.display = 'none';
+        if (mapLargeDiv) mapLargeDiv.style.display = 'none';
+        imgContainer.style.display = 'block';
+        
+        // Load image with error handling
+        imgElement.onerror = function() {
+          this.src = '/img/store-placeholder.png';
+        };
+        imgElement.src = imgUrl;
+        imgElement.alt = s.name;
+        
+        // Show store info
+        imgInfo.innerHTML = `
+          <div class="font-semibold text-gray-800">${s.name}</div>
+          <div class="text-gray-600 mt-1">${s.address}</div>
+          <div class="text-gray-600 mt-1">SĐT: ${s.phone}</div>
+        `;
+      }
     }
 
     window.zoomToStore = zoomToStore;

@@ -54,7 +54,8 @@ async function verifyToken(req, res, next) {
         '/api/reset-password',
         '/api/user-by-email',
         '/api/verify-email',
-        '/api/resend-verification'
+        '/api/resend-verification',
+        '/api/payment/check-account'  // Kiểm tra tài khoản demo - không cần auth
     ];
 
     // Kiểm tra nếu route là public
@@ -63,6 +64,7 @@ async function verifyToken(req, res, next) {
         if (req.path.startsWith(route) && route.includes('/products')) return true;
         if (req.path.startsWith(route) && route.includes('/categories')) return true;
         if (req.path.startsWith(route) && route.includes('/news')) return true;
+        if (req.path.startsWith(route) && route.includes('/payment/check-account')) return true;
         return false;
     });
 
@@ -500,6 +502,63 @@ app.use('/api/orders', async (req, res) => {
         res.status(error.response?.status || 500).json(
             error.response?.data || { message: 'Lỗi server' }
         );
+    }
+});
+
+// ============================================
+// PAYMENT ENDPOINTS → Direct DB Query
+// ============================================
+
+// GET /api/payment/check-account - Kiểm tra số tài khoản
+app.get('/api/payment/check-account', async (req, res) => {
+    try {
+        const { bank, account_number } = req.query;
+        
+        if (!bank || !account_number) {
+            return res.status(400).json({
+                success: false,
+                message: 'Vui lòng cung cấp bank và account_number'
+            });
+        }
+
+        // Use dbPool directly (created at startup)
+        if (!dbPool) {
+            return res.status(500).json({
+                success: false,
+                message: 'Database connection not available'
+            });
+        }
+
+        // Query payment_demo_accounts table
+        const [rows] = await dbPool.query(
+            'SELECT id, bank_type, account_number, account_name, balance, is_active FROM payment_demo_accounts WHERE bank_type = ? AND account_number = ? AND is_active = TRUE',
+            [bank, account_number]
+        );
+
+        if (rows && rows.length > 0) {
+            const account = rows[0];
+            return res.json({
+                success: true,
+                account: {
+                    id: account.id,
+                    bank_type: account.bank_type,
+                    account_number: account.account_number,
+                    account_name: account.account_name,
+                    balance: parseFloat(account.balance)
+                }
+            });
+        } else {
+            return res.json({
+                success: false,
+                message: 'Không tìm thấy tài khoản với số tài khoản này'
+            });
+        }
+    } catch (error) {
+        console.error('Error checking account:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Lỗi server khi kiểm tra tài khoản'
+        });
     }
 });
 

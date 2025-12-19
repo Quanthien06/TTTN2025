@@ -1,38 +1,42 @@
 [
   {
     "id": 1,
-    "system": "cellphone",
-    "name": "CellphoneS - Trung tâm Laptop",
+    "system": "techstore",
+    "name": "TechStore - Chi nhánh Quận 1",
     "address": "218-220 Trần Quang Khải, P. Tân Định, Q1, TP. HCM",
     "phone": "02871000218",
     "lat": 10.776889,
-    "lng": 106.694444
+    "lng": 106.694444,
+    "image": "/img/stores/store-1.jpg"
   },
   {
     "id": 2,
-    "system": "cellphone",
-    "name": "CellphoneS - 55B Trần Quang Khải",
+    "system": "techstore",
+    "name": "TechStore - Chi nhánh Trần Quang Khải",
     "address": "55B Trần Quang Khải, P. Tân Định, Q1, TP. HCM",
     "phone": "02871003355",
     "lat": 10.776200,
-    "lng": 106.694900
+    "lng": 106.694900,
+    "image": "/img/stores/store-2.jpg"
   },
   {
     "id": 3,
-    "system": "dienthoaivui",
-    "name": "DienThoaiVui - CN Nguyễn Đình Chiểu",
+    "system": "techstore",
+    "name": "TechStore - Chi nhánh Quận 3",
     "address": "120 Nguyễn Đình Chiểu, Q3, TP. HCM",
     "phone": "02838483838",
     "lat": 10.777500,
-    "lng": 106.693000
+    "lng": 106.693000,
+    "image": "/img/stores/store-3.jpg"
   },
   {
     "id": 4,
-    "system": "care",
-    "name": "CareS - Trung tâm bảo hành",
+    "system": "techstore",
+    "name": "TechStore - Trung tâm bảo hành Phú Nhuận",
     "address": "114 Phan Đăng Lưu, P.3, Q. Phú Nhuận, TP. HCM",
     "phone": "02839993311",
     "lat": 10.795800,
-    "lng": 106.680600
+    "lng": 106.680600,
+    "image": "/img/stores/store-4.jpg"
   }
 ]
