@@ -329,16 +329,21 @@
 
       if (imgContainer && imgElement && imgInfo) {
         // Try to load image, fallback to placeholder if not found
-        const imgUrl = s.image || `/img/stores/store-${s.id}.jpg` || '/img/store-placeholder.png';
+        let imgUrl = s.image || `/img/stores/store-${s.id}.jpg`;
         
         // Show image container, hide placeholder
         if (mapPlaceholder) mapPlaceholder.style.display = 'none';
         if (mapLargeDiv) mapLargeDiv.style.display = 'none';
         imgContainer.style.display = 'block';
         
-        // Load image with error handling
+        // Load image with error handling - use data URI as fallback
         imgElement.onerror = function() {
-          this.src = '/img/store-placeholder.png';
+          // If image fails, show a placeholder using data URI
+          this.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzljYTNhZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg==';
+          this.alt = 'Không có hình ảnh';
+        };
+        imgElement.onload = function() {
+          // Image loaded successfully
         };
         imgElement.src = imgUrl;
         imgElement.alt = s.name;
@@ -366,9 +371,10 @@
       sliceStoresForList(storesList).forEach(s => {
         const el = document.createElement('div');
         el.className = 'store-item flex items-center gap-4 p-3 border-b';
-        const imgUrl = s.image || '/img/store-placeholder.png';
+        const imgUrl = s.image || `/img/stores/store-${s.id}.jpg`;
+        const placeholderSvg = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iOTYiIGhlaWdodD0iOTYiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0iI2YzZjRmNiIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTIiIGZpbGw9IiM5Y2EzYWYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5ObyBJbWFnZTwvdGV4dD48L3N2Zz4=';
         el.innerHTML = `
-          <img src="${imgUrl}" alt="${s.name}" class="w-24 h-24 object-cover rounded">
+          <img src="${imgUrl}" alt="${s.name}" class="w-24 h-24 object-cover rounded" onerror="this.src='${placeholderSvg}'">
           <div class="flex-1">
             <div class="font-semibold">${s.name}</div>
             <div class="text-xs text-gray-600">${s.address}</div>
