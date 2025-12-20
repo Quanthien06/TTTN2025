@@ -488,6 +488,28 @@
                             >
                                 <i class="fas fa-eye mr-2"></i>Chi Tiết
                             </button>
+                            ${order.status === 'pending' ? `
+                                <button 
+                                    onclick="cancelOrder(${order.id})"
+                                    class="flex-1 bg-orange-500 text-white py-2 rounded-lg hover:bg-orange-600 transition-colors font-semibold"
+                                >
+                                    <i class="fas fa-times mr-2"></i>Hủy Đơn
+                                </button>
+                                <button 
+                                    onclick="editOrder(${order.id})"
+                                    class="flex-1 bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition-colors font-semibold"
+                                >
+                                    <i class="fas fa-edit mr-2"></i>Sửa Đơn
+                                </button>
+                            ` : ''}
+                            ${order.status === 'delivered' || order.status === 'cancelled' ? `
+                                <button 
+                                    onclick="reorder(${order.id})"
+                                    class="flex-1 bg-green-500 text-white py-2 rounded-lg hover:bg-green-600 transition-colors font-semibold"
+                                >
+                                    <i class="fas fa-redo mr-2"></i>Đặt Lại
+                                </button>
+                            ` : ''}
                         </div>
                     </div>
                 `;
@@ -656,7 +678,92 @@
 
         // View order details
         function viewOrderDetails(orderId) {
-            showToast('Tính năng đang phát triển', 'info');
+            showTracking(orderId);
+        }
+
+        // Cancel order
+        async function cancelOrder(orderId) {
+            if (!confirm('Bạn có chắc chắn muốn hủy đơn hàng này?')) {
+                return;
+            }
+
+            const reason = prompt('Vui lòng nhập lý do hủy đơn hàng (tùy chọn):') || 'Người dùng hủy đơn hàng';
+
+            try {
+                const response = await apiCall(`/orders/${orderId}/cancel`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ reason })
+                });
+
+                showToast('Đã hủy đơn hàng thành công', 'success');
+                setTimeout(() => {
+                    loadOrders();
+                }, 1000);
+            } catch (error) {
+                console.error('Error cancelling order:', error);
+                showToast(error.message || 'Lỗi khi hủy đơn hàng', 'error');
+            }
+        }
+
+        // Edit order
+        async function editOrder(orderId) {
+            try {
+                // Lấy thông tin đơn hàng
+                const response = await apiCall(`/orders/${orderId}`);
+                const order = response.order || response;
+
+                // Hiển thị form chỉnh sửa
+                const newAddress = prompt('Nhập địa chỉ giao hàng mới:', order.shipping_address || '');
+                if (newAddress === null) return; // User cancelled
+
+                const newPhone = prompt('Nhập số điện thoại mới:', order.shipping_phone || '');
+                if (newPhone === null) return; // User cancelled
+
+                if (!newAddress.trim()) {
+                    showToast('Địa chỉ giao hàng không được để trống', 'error');
+                    return;
+                }
+
+                // Cập nhật đơn hàng
+                const updateResponse = await apiCall(`/orders/${orderId}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({
+                        shipping_address: newAddress.trim(),
+                        phone: newPhone.trim()
+                    })
+                });
+
+                showToast('Đã cập nhật đơn hàng thành công', 'success');
+                setTimeout(() => {
+                    loadOrders();
+                }, 1000);
+            } catch (error) {
+                console.error('Error editing order:', error);
+                showToast(error.message || 'Lỗi khi cập nhật đơn hàng', 'error');
+            }
+        }
+
+        // Reorder
+        async function reorder(orderId) {
+            if (!confirm('Bạn có muốn đặt lại đơn hàng này? Các sản phẩm sẽ được thêm vào giỏ hàng.')) {
+                return;
+            }
+
+            try {
+                const response = await apiCall(`/orders/${orderId}/reorder`, {
+                    method: 'POST'
+                });
+
+                showToast(`Đã thêm ${response.items_added || 0} sản phẩm vào giỏ hàng`, 'success');
+                
+                // Chuyển đến giỏ hàng sau 1.5 giây
+                setTimeout(() => {
+                    window.location.href = '/cart.html';
+                }, 1500);
+            } catch (error) {
+                console.error('Error reordering:', error);
+                showToast(error.message || 'Lỗi khi đặt lại đơn hàng', 'error');
+            }
         }
 
         // Show toast

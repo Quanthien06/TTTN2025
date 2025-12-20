@@ -1,145 +1,153 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Về chúng tôi - TechStore</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="/styles.css">
-  <link rel="apple-touch-icon" sizes="180x180" href="./img/logo/apple-touch-icon.png">
-  <link rel="icon" type="image/png" sizes="32x32" href="./img/logo/favicon-32x32.png">
-  <link rel="icon" type="image/png" sizes="16x16" href="./img/logo/favicon-16x16.png">
-  <link rel="manifest" href="./img/logo/site.webmanifest">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <style>
-    body {
-      font-family: 'Inter', sans-serif;
-    }
-  </style>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Về chúng tôi - TechStore</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/styles.css">
+    <link rel="apple-touch-icon" sizes="180x180" href="./img/logo/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="./img/logo/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="./img/logo/favicon-16x16.png">
+    <link rel="manifest" href="./img/logo/site.webmanifest">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+      body {
+        font-family: 'Inter', sans-serif;
+      }
+    </style>
 </head>
-<body class="bg-gray-50 font-sans">
-  <div id="site-header"></div>
-  <script src="/include-partials.js" defer></script>
+<body class="bg-gray-100 font-sans">
+    <div id="site-header"></div>
+    <script src="/include-partials.js" defer></script>
 
-  <main class="container mx-auto px-4 py-8 max-w-6xl">
-    <h1 class="text-4xl font-bold mb-8 text-gray-900">Về chúng tôi</h1>
+    <main class="container mx-auto px-4 py-12 max-w-6xl">
+        <header class="text-center mb-12">
+            <h1 class="text-5xl font-extrabold text-gray-900 mb-2 tracking-tight">TechStore</h1>
+            <p class="text-xl text-red-600 font-semibold uppercase tracking-wider">Về chúng tôi</p>
+        </header>
 
-    <!-- Giới thiệu -->
-    <div class="bg-white rounded-lg shadow-md p-8 mb-8">
-      <div class="flex items-center gap-4 mb-6">
-        <img src="/img/logo/logo.png" alt="TechStore Logo" class="w-16 h-16 object-contain">
-        <h2 class="text-3xl font-bold text-red-600">TechStore</h2>
-      </div>
-      <p class="text-lg text-gray-700 leading-relaxed mb-4">
-        TechStore là địa chỉ tin cậy cho mọi nhu cầu công nghệ của bạn. Với hơn 10 năm kinh nghiệm trong ngành bán lẻ điện tử, chúng tôi tự hào là một trong những nhà bán lẻ công nghệ hàng đầu tại Việt Nam.
-      </p>
-      <p class="text-lg text-gray-700 leading-relaxed">
-        Chúng tôi cam kết mang đến cho khách hàng những sản phẩm công nghệ chính hãng, chất lượng cao với giá cả cạnh tranh nhất thị trường. Đội ngũ nhân viên chuyên nghiệp, tận tâm luôn sẵn sàng tư vấn và hỗ trợ khách hàng 24/7.
-      </p>
-    </div>
+        <section class="bg-white rounded-xl shadow-2xl overflow-hidden mb-12 transform hover:scale-[1.01] transition duration-300">
+            <div class="md:flex">
+                <div class="md:w-1/3 bg-red-600 flex items-center justify-center p-8">
+                    <img src="/img/logo/logo.png" alt="TechStore Logo" class="w-24 h-24 md:w-32 md:h-32 object-contain filter invert opacity-90">
+                </div>
+                
+                <div class="md:w-2/3 p-8 md:p-10">
+                    <h2 class="text-3xl font-bold text-gray-900 mb-4 flex items-center">
+                        <i class="fas fa-handshake text-red-600 mr-3"></i>
+                        Địa chỉ tin cậy cho mọi nhu cầu công nghệ
+                    </h2>
+                    <p class="text-lg text-gray-700 leading-relaxed mb-4 border-l-4 border-red-500 pl-4">
+                        TechStore là địa chỉ tin cậy cho mọi nhu cầu công nghệ của bạn. Với **hơn 10 năm kinh nghiệm** trong ngành bán lẻ điện tử, chúng tôi tự hào là một trong những nhà bán lẻ công nghệ hàng đầu tại Việt Nam.
+                    </p>
+                    <p class="text-lg text-gray-700 leading-relaxed">
+                        Chúng tôi cam kết mang đến cho khách hàng những sản phẩm công nghệ **chính hãng, chất lượng cao** với **giá cả cạnh tranh nhất** thị trường. Đội ngũ nhân viên chuyên nghiệp, tận tâm luôn sẵn sàng tư vấn và hỗ trợ khách hàng **24/7**.
+                    </p>
+                </div>
+            </div>
+        </section>
 
-    <!-- Tầm nhìn & Sứ mệnh -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-      <div class="bg-white rounded-lg shadow-md p-6">
-        <div class="flex items-center gap-3 mb-4">
-          <i class="fas fa-eye text-3xl text-red-600"></i>
-          <h3 class="text-2xl font-bold text-gray-900">Tầm nhìn</h3>
-        </div>
-        <p class="text-gray-700 leading-relaxed">
-          Trở thành hệ thống bán lẻ công nghệ số 1 Việt Nam, mang công nghệ tiên tiến đến mọi người dân với giá cả phải chăng và dịch vụ tốt nhất.
-        </p>
-      </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+            <div class="bg-white rounded-xl shadow-lg p-8 border-t-4 border-red-600 transform hover:shadow-xl transition duration-300">
+                <div class="flex items-center gap-4 mb-4">
+                    <i class="fas fa-eye text-4xl text-red-600"></i>
+                    <h3 class="text-2xl font-extrabold text-gray-900">Tầm nhìn</h3>
+                </div>
+                <p class="text-gray-700 leading-relaxed text-base">
+                    Trở thành hệ thống bán lẻ công nghệ **số 1 Việt Nam**, mang công nghệ tiên tiến đến mọi người dân với giá cả phải chăng và dịch vụ tốt nhất, kiến tạo tương lai số hóa.
+                </p>
+            </div>
 
-      <div class="bg-white rounded-lg shadow-md p-6">
-        <div class="flex items-center gap-3 mb-4">
-          <i class="fas fa-bullseye text-3xl text-red-600"></i>
-          <h3 class="text-2xl font-bold text-gray-900">Sứ mệnh</h3>
+            <div class="bg-white rounded-xl shadow-lg p-8 border-t-4 border-red-600 transform hover:shadow-xl transition duration-300">
+                <div class="flex items-center gap-4 mb-4">
+                    <i class="fas fa-bullseye text-4xl text-red-600"></i>
+                    <h3 class="text-2xl font-extrabold text-gray-900">Sứ mệnh</h3>
+                </div>
+                <p class="text-gray-700 leading-relaxed text-base">
+                    Cung cấp sản phẩm công nghệ chính hãng, dịch vụ chăm sóc khách hàng **xuất sắc (Excellence)**, và trải nghiệm mua sắm tuyệt vời, giúp khách hàng khai thác tối đa tiềm năng công nghệ.
+                </p>
+            </div>
         </div>
-        <p class="text-gray-700 leading-relaxed">
-          Cung cấp sản phẩm công nghệ chính hãng, dịch vụ chăm sóc khách hàng xuất sắc, và trải nghiệm mua sắm tuyệt vời cho mọi khách hàng.
-        </p>
-      </div>
-    </div>
 
-    <!-- Giá trị cốt lõi -->
-    <div class="bg-white rounded-lg shadow-md p-8 mb-8">
-      <h3 class="text-2xl font-bold text-gray-900 mb-6">Giá trị cốt lõi</h3>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div class="text-center">
-          <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <i class="fas fa-check-circle text-3xl text-red-600"></i>
-          </div>
-          <h4 class="text-xl font-semibold mb-2 text-gray-900">Chính hãng</h4>
-          <p class="text-gray-600">100% sản phẩm chính hãng, có bảo hành đầy đủ</p>
-        </div>
-        <div class="text-center">
-          <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <i class="fas fa-dollar-sign text-3xl text-red-600"></i>
-          </div>
-          <h4 class="text-xl font-semibold mb-2 text-gray-900">Giá tốt</h4>
-          <p class="text-gray-600">Giá cả cạnh tranh nhất thị trường, nhiều ưu đãi hấp dẫn</p>
-        </div>
-        <div class="text-center">
-          <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <i class="fas fa-headset text-3xl text-red-600"></i>
-          </div>
-          <h4 class="text-xl font-semibold mb-2 text-gray-900">Dịch vụ</h4>
-          <p class="text-gray-600">Hỗ trợ khách hàng 24/7, giao hàng nhanh chóng</p>
-        </div>
-      </div>
-    </div>
+        <section class="mb-12">
+            <h3 class="text-3xl font-bold text-gray-900 text-center mb-8">Giá trị cốt lõi</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                
+                <div class="bg-white rounded-xl shadow-lg p-6 text-center group transition duration-300 hover:bg-red-50 hover:shadow-2xl">
+                    <div class="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center mx-auto mb-4 transform group-hover:scale-110 transition duration-300">
+                        <i class="fas fa-check-circle text-3xl text-white"></i>
+                    </div>
+                    <h4 class="text-xl font-extrabold mb-2 text-gray-900 group-hover:text-red-700">Chính hãng</h4>
+                    <p class="text-gray-600 text-sm">100% sản phẩm được nhập khẩu chính thức, có bảo hành đầy đủ từ hãng.</p>
+                </div>
+                
+                <div class="bg-white rounded-xl shadow-lg p-6 text-center group transition duration-300 hover:bg-red-50 hover:shadow-2xl">
+                    <div class="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center mx-auto mb-4 transform group-hover:scale-110 transition duration-300">
+                        <i class="fas fa-dollar-sign text-3xl text-white"></i>
+                    </div>
+                    <h4 class="text-xl font-extrabold mb-2 text-gray-900 group-hover:text-red-700">Giá tốt</h4>
+                    <p class="text-gray-600 text-sm">Giá cả tối ưu và cạnh tranh nhất, đi kèm nhiều ưu đãi độc quyền.</p>
+                </div>
+                
+                <div class="bg-white rounded-xl shadow-lg p-6 text-center group transition duration-300 hover:bg-red-50 hover:shadow-2xl">
+                    <div class="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center mx-auto mb-4 transform group-hover:scale-110 transition duration-300">
+                        <i class="fas fa-headset text-3xl text-white"></i>
+                    </div>
+                    <h4 class="text-xl font-extrabold mb-2 text-gray-900 group-hover:text-red-700">Dịch vụ</h4>
+                    <p class="text-gray-600 text-sm">Hỗ trợ khách hàng 24/7 chuyên nghiệp, giao hàng nhanh thần tốc.</p>
+                </div>
+            </div>
+        </section>
 
-    <!-- Cam kết -->
-    <div class="bg-gradient-to-r from-red-600 to-red-700 rounded-lg shadow-md p-8 mb-8 text-white">
-      <h3 class="text-2xl font-bold mb-6">Cam kết của chúng tôi</h3>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div class="flex items-start gap-3">
-          <i class="fas fa-check text-xl mt-1"></i>
-          <p>✓ Đã bao gồm VAT đầy đủ</p>
-        </div>
-        <div class="flex items-start gap-3">
-          <i class="fas fa-truck text-xl mt-1"></i>
-          <p>🚚 Giao nhanh - Miễn phí cho đơn 300k</p>
-        </div>
-        <div class="flex items-start gap-3">
-          <i class="fas fa-sync-alt text-xl mt-1"></i>
-          <p>🔄 Thu cũ giá ngon – Lên đời tiết kiệm</p>
-        </div>
-        <div class="flex items-start gap-3">
-          <i class="fas fa-shield-alt text-xl mt-1"></i>
-          <p>✓ Sản phẩm Chính hãng</p>
-        </div>
-      </div>
-    </div>
+        <section class="bg-red-700 rounded-xl shadow-2xl p-8 md:p-10 mb-12 text-white">
+            <h3 class="text-3xl font-bold mb-6 text-center">🏆 Cam kết vàng từ TechStore</h3>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+                <div class="flex flex-col items-center">
+                    <i class="fas fa-shield-alt text-4xl mb-2 text-red-300"></i>
+                    <p class="font-semibold text-lg">Chính hãng 100%</p>
+                </div>
+                <div class="flex flex-col items-center">
+                    <i class="fas fa-truck text-4xl mb-2 text-red-300"></i>
+                    <p class="font-semibold text-lg">Giao hàng Miễn phí</p>
+                </div>
+                <div class="flex flex-col items-center">
+                    <i class="fas fa-sync-alt text-4xl mb-2 text-red-300"></i>
+                    <p class="font-semibold text-lg">Thu cũ đổi mới</p>
+                </div>
+                <div class="flex flex-col items-center">
+                    <i class="fas fa-tags text-4xl mb-2 text-red-300"></i>
+                    <p class="font-semibold text-lg">Giá đã bao gồm VAT</p>
+                </div>
+            </div>
+        </section>
 
-    <!-- Thông tin liên hệ -->
-    <div class="bg-white rounded-lg shadow-md p-8">
-      <h3 class="text-2xl font-bold text-gray-900 mb-6">Thông tin liên hệ</h3>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-          <h4 class="text-lg font-semibold mb-3 text-gray-900">Hotline</h4>
-          <p class="text-gray-700 mb-4">
-            <i class="fas fa-phone text-red-600 mr-2"></i>
-            <strong>0905 884 303</strong>
-          </p>
-          <p class="text-gray-600 text-sm">Hỗ trợ 24/7, tất cả các ngày trong tuần</p>
-        </div>
-        <div>
-          <h4 class="text-lg font-semibold mb-3 text-gray-900">Địa chỉ cửa hàng</h4>
-          <p class="text-gray-700 mb-4">
-            <i class="fas fa-map-marker-alt text-red-600 mr-2"></i>
-            Xem <a href="/location.html" class="text-red-600 hover:underline font-medium">các cửa hàng gần bạn</a>
-          </p>
-          <p class="text-gray-600 text-sm">Hệ thống cửa hàng rộng khắp cả nước</p>
-        </div>
-      </div>
-    </div>
-  </main>
+        <section class="bg-white rounded-xl shadow-lg p-8">
+            <h3 class="text-3xl font-bold text-gray-900 mb-6 text-center">Liên hệ với chúng tôi</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 border-t pt-6 border-gray-200">
+                <div class="flex items-start gap-4 p-4 bg-gray-50 rounded-lg">
+                    <i class="fas fa-phone-volume text-4xl text-red-600 mt-1"></i>
+                    <div>
+                        <h4 class="text-xl font-extrabold text-gray-900 mb-1">Hotline Hỗ trợ 24/7</h4>
+                        <a href="tel:0905884303" class="text-2xl font-bold text-red-600 hover:text-red-700 transition duration-150">0905 884 303</a>
+                        <p class="text-gray-600 text-sm mt-1">Sẵn sàng phục vụ bạn mọi lúc, tất cả các ngày trong tuần.</p>
+                    </div>
+                </div>
+                <div class="flex items-start gap-4 p-4 bg-gray-50 rounded-lg">
+                    <i class="fas fa-map-marked-alt text-4xl text-red-600 mt-1"></i>
+                    <div>
+                        <h4 class="text-xl font-extrabold text-gray-900 mb-1">Hệ thống Cửa hàng</h4>
+                        <a href="/location.html" class="text-lg font-bold text-red-600 hover:underline transition duration-150">Tìm kiếm cửa hàng gần bạn nhất</a>
+                        <p class="text-gray-600 text-sm mt-1">Với hệ thống cửa hàng trải dài trên toàn quốc.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
 
-  <div id="site-footer"></div>
+    <div id="site-footer"></div>
 </body>
 </html>
-

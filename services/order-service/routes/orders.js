@@ -349,55 +349,9 @@ router.get('/admin/:id', async (req, res) => {
     }
 });
 
-// GET /orders/:id - Lấy chi tiết đơn hàng
-router.get('/:id', async (req, res) => {
-    const pool = req.app.locals.pool;
-    const userId = req.user.id;
-    const orderId = req.params.id;
-
-    try {
-        const [orders] = await pool.query(
-            'SELECT * FROM orders WHERE id = ? AND user_id = ?',
-            [orderId, userId]
-        );
-
-        if (orders.length === 0) {
-            return res.status(404).json({ message: 'Đơn hàng không tồn tại' });
-        }
-
-        const order = orders[0];
-
-        const [orderItems] = await pool.query(
-            `SELECT oi.*, 
-                p.name as product_name, 
-                p.category,
-                (oi.price * oi.quantity) as subtotal
-            FROM order_items oi
-            JOIN products p ON oi.product_id = p.id
-            WHERE oi.order_id = ?`,
-            [orderId]
-        );
-
-        const formattedItems = orderItems.map(item => ({
-            ...item,
-            price: parseFloat(item.price),
-            subtotal: parseFloat(item.subtotal)
-        }));
-
-        res.json({
-            order: {
-                ...order,
-                total: parseFloat(order.total),
-                items: formattedItems,
-                item_count: formattedItems.length
-            }
-        });
-
-    } catch (error) {
-        console.error('Lỗi khi lấy chi tiết đơn hàng:', error);
-        res.status(500).json({ message: 'Lỗi máy chủ nội bộ' });
-    }
-});
+// ============================================
+// CÁC ROUTES CỤ THỂ PHẢI ĐẶT TRƯỚC /orders/:id
+// ============================================
 
 // PUT /orders/:id/status - Cập nhật trạng thái (Admin only)
 router.put('/:id/status', async (req, res) => {
@@ -449,6 +403,271 @@ router.put('/:id/status', async (req, res) => {
 
     } catch (error) {
         console.error('Lỗi khi cập nhật trạng thái đơn hàng:', error);
+        res.status(500).json({ message: 'Lỗi máy chủ nội bộ' });
+    }
+});
+
+// PUT /orders/:id/cancel - Hủy đơn hàng (User only, chỉ khi status = pending)
+router.put('/:id/cancel', async (req, res) => {
+    const pool = req.app.locals.pool;
+    const userId = req.user.id;
+    const orderId = req.params.id;
+    const { reason } = req.body;
+
+    try {
+        // Kiểm tra đơn hàng có tồn tại và thuộc về user không
+        const [orders] = await pool.query(
+            'SELECT * FROM orders WHERE id = ? AND user_id = ?',
+            [orderId, userId]
+        );
+
+        if (orders.length === 0) {
+            return res.status(404).json({ message: 'Đơn hàng không tồn tại hoặc không thuộc về bạn' });
+        }
+
+        const order = orders[0];
+
+        // Chỉ cho phép hủy khi status = pending
+        if (order.status !== 'pending') {
+            return res.status(400).json({ 
+                message: 'Chỉ có thể hủy đơn hàng khi đang ở trạng thái "Chờ xử lý"',
+                current_status: order.status
+            });
+        }
+
+        // Cập nhật trạng thái thành cancelled
+        await pool.query(
+            'UPDATE orders SET status = ? WHERE id = ?',
+            ['cancelled', orderId]
+        );
+
+        // Lấy đơn hàng đã cập nhật
+        const [updatedOrders] = await pool.query(
+            'SELECT * FROM orders WHERE id = ?',
+            [orderId]
+        );
+
+        res.json({
+            message: 'Đã hủy đơn hàng thành công',
+            order: {
+                ...updatedOrders[0],
+                total: parseFloat(updatedOrders[0].total)
+            }
+        });
+
+    } catch (error) {
+        console.error('Lỗi khi hủy đơn hàng:', error);
+        res.status(500).json({ message: 'Lỗi máy chủ nội bộ' });
+    }
+});
+
+// PUT /orders/:id - Chỉnh sửa đơn hàng (User only, chỉ khi status = pending)
+router.put('/:id', async (req, res) => {
+    const pool = req.app.locals.pool;
+    const userId = req.user.id;
+    const orderId = req.params.id;
+    const { shipping_address, phone, payment_method, payment_details } = req.body;
+
+    try {
+        // Kiểm tra đơn hàng có tồn tại và thuộc về user không
+        const [orders] = await pool.query(
+            'SELECT * FROM orders WHERE id = ? AND user_id = ?',
+            [orderId, userId]
+        );
+
+        if (orders.length === 0) {
+            return res.status(404).json({ message: 'Đơn hàng không tồn tại hoặc không thuộc về bạn' });
+        }
+
+        const order = orders[0];
+
+        // Chỉ cho phép chỉnh sửa khi status = pending
+        if (order.status !== 'pending') {
+            return res.status(400).json({ 
+                message: 'Chỉ có thể chỉnh sửa đơn hàng khi đang ở trạng thái "Chờ xử lý"',
+                current_status: order.status
+            });
+        }
+
+        // Validate input
+        const updates = {};
+        if (shipping_address && shipping_address.trim() !== '') {
+            updates.shipping_address = shipping_address.trim();
+        }
+        if (phone && phone.trim() !== '') {
+            updates.shipping_phone = phone.trim();
+        }
+
+        if (Object.keys(updates).length === 0) {
+            return res.status(400).json({ message: 'Không có thông tin nào để cập nhật' });
+        }
+
+        // Cập nhật đơn hàng
+        const updateFields = Object.keys(updates).map(key => `${key} = ?`).join(', ');
+        const updateValues = Object.values(updates);
+        updateValues.push(orderId);
+
+        await pool.query(
+            `UPDATE orders SET ${updateFields}, updated_at = NOW() WHERE id = ?`,
+            updateValues
+        );
+
+        // Lấy đơn hàng đã cập nhật
+        const [updatedOrders] = await pool.query(
+            'SELECT * FROM orders WHERE id = ?',
+            [orderId]
+        );
+
+        res.json({
+            message: 'Đã cập nhật đơn hàng thành công',
+            order: {
+                ...updatedOrders[0],
+                total: parseFloat(updatedOrders[0].total)
+            }
+        });
+
+    } catch (error) {
+        console.error('Lỗi khi cập nhật đơn hàng:', error);
+        res.status(500).json({ message: 'Lỗi máy chủ nội bộ' });
+    }
+});
+
+// POST /orders/:id/reorder - Đặt lại đơn hàng (tạo đơn hàng mới từ đơn hàng cũ)
+router.post('/:id/reorder', async (req, res) => {
+    const pool = req.app.locals.pool;
+    const userId = req.user.id;
+    const orderId = req.params.id;
+    const CART_SERVICE_URL = req.app.locals.CART_SERVICE_URL;
+
+    try {
+        // Kiểm tra đơn hàng có tồn tại và thuộc về user không
+        const [orders] = await pool.query(
+            'SELECT * FROM orders WHERE id = ? AND user_id = ?',
+            [orderId, userId]
+        );
+
+        if (orders.length === 0) {
+            return res.status(404).json({ message: 'Đơn hàng không tồn tại hoặc không thuộc về bạn' });
+        }
+
+        const oldOrder = orders[0];
+
+        // Lấy order_items từ đơn hàng cũ
+        const [orderItems] = await pool.query(
+            `SELECT oi.*, p.name as product_name, p.price as current_price
+             FROM order_items oi
+             JOIN products p ON oi.product_id = p.id
+             WHERE oi.order_id = ?`,
+            [orderId]
+        );
+
+        if (orderItems.length === 0) {
+            return res.status(400).json({ message: 'Đơn hàng không có sản phẩm nào' });
+        }
+
+        // Thêm các sản phẩm vào giỏ hàng
+        let itemsAdded = 0;
+        let itemsSkipped = 0;
+        
+        try {
+            for (const item of orderItems) {
+                // Kiểm tra sản phẩm còn tồn tại không
+                const [products] = await pool.query(
+                    'SELECT * FROM products WHERE id = ?',
+                    [item.product_id]
+                );
+
+                if (products.length === 0) {
+                    console.warn(`Sản phẩm ${item.product_id} không còn tồn tại, bỏ qua`);
+                    itemsSkipped++;
+                    continue;
+                }
+
+                try {
+                    // Thêm vào giỏ hàng qua Cart Service
+                    await axios.post(`${CART_SERVICE_URL}/cart/items`, {
+                        product_id: item.product_id,
+                        quantity: item.quantity
+                    }, {
+                        headers: { 'Authorization': req.headers['authorization'] }
+                    });
+                    itemsAdded++;
+                } catch (itemError) {
+                    console.error(`Lỗi khi thêm sản phẩm ${item.product_id} vào giỏ hàng:`, itemError.message);
+                    itemsSkipped++;
+                }
+            }
+        } catch (cartError) {
+            console.error('Lỗi khi thêm vào giỏ hàng:', cartError);
+        }
+
+        if (itemsAdded === 0) {
+            return res.status(400).json({ 
+                message: 'Không thể thêm sản phẩm vào giỏ hàng. Vui lòng thử lại.',
+                items_added: 0,
+                items_skipped: itemsSkipped
+            });
+        }
+
+        res.json({
+            message: `Đã thêm ${itemsAdded} sản phẩm vào giỏ hàng${itemsSkipped > 0 ? ` (${itemsSkipped} sản phẩm không thể thêm)` : ''}`,
+            redirect_to_cart: true,
+            items_added: itemsAdded,
+            items_skipped: itemsSkipped
+        });
+
+    } catch (error) {
+        console.error('Lỗi khi đặt lại đơn hàng:', error);
+        res.status(500).json({ message: 'Lỗi máy chủ nội bộ' });
+    }
+});
+
+// GET /orders/:id - Lấy chi tiết đơn hàng (ĐẶT CUỐI CÙNG để tránh match nhầm)
+router.get('/:id', async (req, res) => {
+    const pool = req.app.locals.pool;
+    const userId = req.user.id;
+    const orderId = req.params.id;
+
+    try {
+        const [orders] = await pool.query(
+            'SELECT * FROM orders WHERE id = ? AND user_id = ?',
+            [orderId, userId]
+        );
+
+        if (orders.length === 0) {
+            return res.status(404).json({ message: 'Đơn hàng không tồn tại' });
+        }
+
+        const order = orders[0];
+
+        const [orderItems] = await pool.query(
+            `SELECT oi.*, 
+                p.name as product_name, 
+                p.category,
+                (oi.price * oi.quantity) as subtotal
+            FROM order_items oi
+            JOIN products p ON oi.product_id = p.id
+            WHERE oi.order_id = ?`,
+            [orderId]
+        );
+
+        const formattedItems = orderItems.map(item => ({
+            ...item,
+            price: parseFloat(item.price),
+            subtotal: parseFloat(item.subtotal)
+        }));
+
+        res.json({
+            order: {
+                ...order,
+                total: parseFloat(order.total),
+                items: formattedItems,
+                item_count: formattedItems.length
+            }
+        });
+
+    } catch (error) {
+        console.error('Lỗi khi lấy chi tiết đơn hàng:', error);
         res.status(500).json({ message: 'Lỗi máy chủ nội bộ' });
     }
 });
