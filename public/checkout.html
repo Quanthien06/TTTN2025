@@ -393,6 +393,37 @@
             return new Intl.NumberFormat('vi-VN').format(price) + ' ₫';
         }
 
+        // Tạo slug từ tên sản phẩm
+        function createSlug(name) {
+            if (!name) return '';
+            return name
+                .toLowerCase()
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .replace(/[^a-z0-9\s-]/g, '')
+                .replace(/\s+/g, '-')
+                .replace(/-+/g, '-')
+                .trim();
+        }
+
+        // Lấy ảnh sản phẩm từ folder structure hoặc database (giống app.js và cart.html)
+        function getProductImage(item) {
+            // Ưu tiên dùng slug từ item, nếu không có thì tạo từ tên
+            const slug = item.product_slug || createSlug(item.product_name);
+            const basePath = `/img/products/${slug}`;
+            
+            // Ưu tiên load từ folder structure: /img/products/[slug]/1.jpg
+            const folderImage = `${basePath}/1.jpg`;
+            
+            // Fallback về database hoặc placeholder
+            const fallbackImage = item.product_main_image_url || item.product_image || '/img/placeholder.png';
+            
+            return {
+                primary: folderImage,
+                fallback: fallbackImage
+            };
+        }
+
         // Hiển thị toast
         function showToast(message, type = 'success') {
             const toast = document.getElementById('toast');
@@ -634,16 +665,28 @@
             const items = cart.items || [];
 
             // Render items
-            const itemsHtml = items.map(item => `
+            const itemsHtml = items.map(item => {
+                // Sử dụng hàm getProductImage để lấy ảnh đúng cách (giống app.js và cart.html)
+                const imageData = getProductImage(item);
+                const mainImage = imageData.primary;
+                const fallbackImage = imageData.fallback;
+                
+                return `
                 <div class="flex items-center space-x-3 py-2 border-b">
-                    <img src="${item.product_image || 'https://via.placeholder.com/50'}" alt="${item.product_name}" class="w-12 h-12 object-cover rounded">
+                    <img 
+                        src="${mainImage}" 
+                        alt="${item.product_name || 'Sản phẩm'}" 
+                        class="w-12 h-12 object-cover rounded"
+                        onerror="this.src='${fallbackImage}'; this.onerror=null;"
+                    >
                     <div class="flex-1">
-                        <div class="text-sm font-medium">${item.product_name}</div>
-                        <div class="text-xs text-gray-500">x${item.quantity}</div>
+                        <div class="text-sm font-medium">${item.product_name || 'Sản phẩm'}</div>
+                        <div class="text-xs text-gray-500">x${item.quantity || 1}</div>
                     </div>
-                    <div class="text-sm font-semibold">${formatPrice(item.subtotal)}</div>
+                    <div class="text-sm font-semibold">${formatPrice(item.subtotal || 0)}</div>
                 </div>
-            `).join('');
+            `;
+            }).join('');
             document.getElementById('orderItems').innerHTML = itemsHtml;
 
             // Calculate totals

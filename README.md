@@ -88,7 +88,10 @@ docker compose logs -f order-service
 
 ## Documentation
 
-- Docs index: `docs/README.md`
-- Docker guide: `docs/docker.md`
-- Admin guide: `docs/admin.md`
-- OAuth + Email: `docs/oauth-email.md`
+- **Docs index**: `docs/README.md`
+- **Architecture**: `ARCHITECTURE.md` - Kiến trúc hệ thống
+- **Docker guide**: `docs/docker.md`
+- **Admin guide**: `docs/admin.md`
+- **OAuth + Email**: `docs/oauth-email.md`
+- **Setup guides**: `docs/setup/` - Hướng dẫn cấu hình
+- **User guides**: `docs/guides/` - Hướng dẫn sử dụng
