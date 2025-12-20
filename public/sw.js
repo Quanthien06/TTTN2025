@@ -1,12 +1,12 @@
 // Service Worker for PWA and Offline Support
-const CACHE_NAME = 'techstore-v1';
-const RUNTIME_CACHE = 'techstore-runtime-v1';
+const CACHE_NAME = 'techstore-v2'; // Updated version to force cache refresh
+const RUNTIME_CACHE = 'techstore-runtime-v2';
 
-// Assets to cache on install
+// Assets to cache on install (excluding CSS for development)
 const STATIC_ASSETS = [
     '/',
     '/index.html',
-    '/styles.css',
+    // '/styles.css', // Don't cache CSS - always fetch from network
     '/app.js',
     '/js/theme.js',
     '/js/i18n.js',
@@ -80,7 +80,21 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // Cache strategy: Cache First, then Network
+    // Cache strategy: Network First for CSS, Cache First for others
+    if (url.pathname.endsWith('.css')) {
+        // For CSS files, always fetch from network first (bypass cache)
+        event.respondWith(
+            fetch(request, { cache: 'no-store' }).then((response) => {
+                return response;
+            }).catch(() => {
+                // Fallback to cache only if network fails
+                return caches.match(request);
+            })
+        );
+        return;
+    }
+
+    // For other files, use Cache First strategy
     event.respondWith(
         caches.match(request).then((cachedResponse) => {
             if (cachedResponse) {
