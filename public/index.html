@@ -15,7 +15,7 @@
     <link rel="apple-touch-icon" sizes="180x180" href="./img/logo/apple-touch-icon.png">
     <link rel="icon" type="image/png" sizes="32x32" href="./img/logo/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="./img/logo/favicon-16x16.png">
-    <link rel="manifest" href="./img/logo/site.webmanifest">
+    <link rel="manifest" href="/manifest.json">
     <!-- Custom styles -->
     <link rel="stylesheet" href="/styles.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -219,6 +219,22 @@
 
                 <!-- Right Actions -->
                 <div class="flex items-center gap-4">
+                    <!-- Theme Toggle -->
+                    <button id="themeToggle" 
+                            class="theme-toggle" 
+                            aria-label="Toggle theme"
+                            title="Chuyển đổi giao diện">
+                        <i class="fas fa-moon"></i>
+                    </button>
+
+                    <!-- Language Toggle -->
+                    <select id="langToggle" 
+                            class="lang-toggle"
+                            title="Chọn ngôn ngữ">
+                        <option value="vi">🇻🇳 VI</option>
+                        <option value="en">🇬🇧 EN</option>
+                    </select>
+
                     <!-- Cart -->
                     <a href="#" onclick="navigateTo('cart'); return false;"
                         class="relative flex items-center gap-2 text-gray-700 hover:text-red-600 transition-colors">
@@ -1007,6 +1023,111 @@
                 console.error('Failed to load chatbot HTML:', err);
             }
         })();
+    </script>
+
+    <!-- Theme, i18n, and Animations -->
+    <script src="/js/theme.js"></script>
+    <script src="/js/i18n.js"></script>
+    <script src="/js/animations.js"></script>
+
+    <!-- Initialize Theme and Language Toggles -->
+    <script>
+        // Wait for scripts to load and initialize
+        function initThemeAndLang() {
+            // Initialize theme toggle
+            const themeToggle = document.getElementById('themeToggle');
+            if (themeToggle) {
+                // Wait for themeManager to be available
+                let attempts = 0;
+                const maxAttempts = 20;
+                const checkTheme = setInterval(() => {
+                    attempts++;
+                    if (window.themeManager || attempts >= maxAttempts) {
+                        clearInterval(checkTheme);
+                        if (window.themeManager) {
+                            // Update icon based on current theme
+                            const currentTheme = window.themeManager.get();
+                            const icon = themeToggle.querySelector('i');
+                            if (icon) {
+                                icon.className = currentTheme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+                            }
+                            
+                            // Remove old listeners and add new one
+                            const newToggle = themeToggle.cloneNode(true);
+                            themeToggle.parentNode.replaceChild(newToggle, themeToggle);
+                            
+                            // Add click handler
+                            newToggle.addEventListener('click', function(e) {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                if (window.themeManager) {
+                                    const newTheme = window.themeManager.toggle();
+                                    const icon = newToggle.querySelector('i');
+                                    if (icon) {
+                                        icon.className = newTheme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+                                    }
+                                }
+                            });
+                        } else {
+                            console.warn('ThemeManager not available');
+                        }
+                    }
+                }, 100);
+            }
+
+            // Initialize language toggle
+            const langToggle = document.getElementById('langToggle');
+            if (langToggle) {
+                // Wait for i18n to be available
+                let attempts = 0;
+                const maxAttempts = 20;
+                const checkI18n = setInterval(() => {
+                    attempts++;
+                    if (window.i18n || attempts >= maxAttempts) {
+                        clearInterval(checkI18n);
+                        if (window.i18n) {
+                            // Set current language
+                            langToggle.value = window.i18n.getLanguage();
+                            
+                            // Remove old listeners and add new one
+                            const newLangToggle = langToggle.cloneNode(true);
+                            langToggle.parentNode.replaceChild(newLangToggle, langToggle);
+                            
+                            // Add change handler
+                            newLangToggle.addEventListener('change', function(e) {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                if (window.i18n) {
+                                    window.i18n.setLanguage(e.target.value);
+                                }
+                            });
+                        } else {
+                            console.warn('i18n not available');
+                        }
+                    }
+                }, 100);
+            }
+        }
+
+        // Run after page loads
+        window.addEventListener('load', function() {
+            setTimeout(initThemeAndLang, 200);
+        });
+    </script>
+
+    <!-- Service Worker Registration (PWA) -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then((registration) => {
+                        console.log('Service Worker registered:', registration.scope);
+                    })
+                    .catch((error) => {
+                        console.log('Service Worker registration failed:', error);
+                    });
+            });
+        }
     </script>
 </body>
 

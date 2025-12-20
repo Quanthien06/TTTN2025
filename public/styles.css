@@ -16,6 +16,125 @@
     font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
+/* Dark Mode */
+[data-theme="dark"] {
+    --bg: #0f172a;
+    --bg-alt: #1e293b;
+    --accent: #ef4444;
+    --accent-hover: #f87171;
+    --accent-soft: rgba(239, 68, 68, 0.2);
+    --text: #f1f5f9;
+    --text-muted: #94a3b8;
+    --card: #1e293b;
+    --card-alt: #334155;
+    --border: #334155;
+    --success: #10b981;
+    --error: #ef4444;
+    --warning: #f59e0b;
+}
+
+[data-theme="dark"] body {
+    background: radial-gradient(circle at 20% 20%, rgba(239, 68, 68, 0.15), transparent 35%),
+        radial-gradient(circle at 80% 0%, rgba(59, 130, 246, 0.1), transparent 30%),
+        var(--bg);
+}
+
+[data-theme="dark"] .nav-dropdown-menu {
+    background: var(--card);
+    border-color: var(--border);
+}
+
+[data-theme="dark"] .nav-dropdown-menu a {
+    color: var(--text);
+}
+
+[data-theme="dark"] .nav-dropdown-menu a:hover {
+    background-color: var(--card-alt);
+}
+
+/* Dark mode fixes for product cards and text colors */
+[data-theme="dark"] .product-card {
+    background: var(--card) !important;
+    border-color: var(--border) !important;
+}
+
+/* Fix product name (h3) - most important */
+[data-theme="dark"] .product-card h3,
+[data-theme="dark"] h3.text-gray-800,
+[data-theme="dark"] .product-card h3.text-gray-800,
+[data-theme="dark"] .font-bold.text-gray-800 {
+    color: var(--text) !important;
+}
+
+/* Fix category text */
+[data-theme="dark"] .product-card .text-gray-500,
+[data-theme="dark"] .text-xs.text-gray-500,
+[data-theme="dark"] .text-gray-500 {
+    color: var(--text-muted) !important;
+}
+
+/* Fix description text */
+[data-theme="dark"] .product-card .text-gray-600,
+[data-theme="dark"] .text-sm.text-gray-600,
+[data-theme="dark"] .text-gray-600 {
+    color: var(--text-muted) !important;
+}
+
+/* Fix old price text */
+[data-theme="dark"] .product-card .text-gray-400,
+[data-theme="dark"] .text-gray-400,
+[data-theme="dark"] .price-old {
+    color: var(--text-muted) !important;
+    opacity: 0.7;
+}
+
+/* Dark mode for product cards using Tailwind classes */
+[data-theme="dark"] .bg-white {
+    background-color: var(--card) !important;
+}
+
+[data-theme="dark"] .group-hover\:text-red-600:hover,
+[data-theme="dark"] .product-card:hover h3 {
+    color: var(--accent) !important;
+}
+
+/* Fix other text elements in dark mode */
+[data-theme="dark"] .text-gray-900,
+[data-theme="dark"] h1.text-gray-900,
+[data-theme="dark"] h2.text-gray-900 {
+    color: var(--text) !important;
+}
+
+[data-theme="dark"] .text-gray-700 {
+    color: var(--text) !important;
+}
+
+/* Fix buttons in dark mode */
+[data-theme="dark"] .bg-gray-200 {
+    background-color: var(--card-alt) !important;
+}
+
+[data-theme="dark"] .bg-gray-200:hover {
+    background-color: var(--border) !important;
+}
+
+[data-theme="dark"] .text-gray-700 {
+    color: var(--text) !important;
+}
+
+/* Dark mode scrollbar */
+[data-theme="dark"] ::-webkit-scrollbar-track {
+    background: var(--bg);
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+    background: var(--border);
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+    background: var(--text-muted);
+}
+
 * {
     box-sizing: border-box;
     margin: 0;
@@ -1238,4 +1357,155 @@ footer ul li a {
     footer h3 {
         margin-bottom: 1rem;
     }
+}
+
+/* ============================================
+   ADVANCED ANIMATIONS
+   ============================================ */
+
+/* Fade in animation */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-fade-in {
+    animation: fadeIn 0.6s ease-out forwards;
+}
+
+.fade-in-on-scroll {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+}
+
+/* Stagger animation */
+@keyframes stagger {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-stagger {
+    animation: stagger 0.5s ease-out forwards;
+}
+
+/* Pulse animation */
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+.animate-pulse {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Bounce animation */
+@keyframes bounce {
+    0%, 100% {
+        transform: translateY(-25%);
+        animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+    }
+    50% {
+        transform: translateY(0);
+        animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+    }
+}
+
+.animate-bounce {
+    animation: bounce 1s infinite;
+}
+
+/* Slide in from right */
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+.animate-slide-in-right {
+    animation: slideInRight 0.3s ease-out;
+}
+
+/* Scale in */
+@keyframes scaleIn {
+    from {
+        transform: scale(0.9);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.animate-scale-in {
+    animation: scaleIn 0.3s ease-out;
+}
+
+/* Theme Toggle Button */
+.theme-toggle {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    color: var(--text);
+}
+
+.theme-toggle:hover {
+    background: var(--card-alt);
+    transform: rotate(15deg) scale(1.1);
+}
+
+.theme-toggle i {
+    font-size: 1.1rem;
+    transition: transform 0.3s ease;
+}
+
+/* Language Toggle */
+.lang-toggle {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: var(--text);
+    font-weight: 500;
+}
+
+.lang-toggle:hover {
+    background: var(--card-alt);
+    border-color: var(--accent);
+}
+
+/* Smooth transitions for theme changes */
+* {
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }

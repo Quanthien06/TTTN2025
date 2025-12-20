@@ -51,6 +51,22 @@
 
       <!-- Right Actions -->
       <div class="flex items-center gap-4">
+        <!-- Theme Toggle -->
+        <button id="themeToggle" onclick="if(window.themeManager) { window.themeManager.toggle(); }" 
+                class="theme-toggle" 
+                aria-label="Toggle theme"
+                title="Chuyển đổi giao diện">
+          <i class="fas fa-moon"></i>
+        </button>
+
+        <!-- Language Toggle -->
+        <select id="langToggle" onchange="if(window.i18n) { window.i18n.setLanguage(this.value); }" 
+                class="lang-toggle"
+                title="Chọn ngôn ngữ">
+          <option value="vi">🇻🇳 VI</option>
+          <option value="en">🇬🇧 EN</option>
+        </select>
+
         <a href="/cart.html" class="relative flex items-center gap-2 text-gray-700 hover:text-red-600 transition-colors">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"

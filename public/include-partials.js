@@ -113,6 +113,23 @@
     // After header is loaded
     syncHeaderAuthUI();
     syncCartBadge();
+    
+    // Initialize theme and language selectors
+    if (window.themeManager) {
+      window.themeManager.init();
+      const themeToggle = document.getElementById('themeToggle');
+      if (themeToggle) {
+        themeToggle.addEventListener('click', () => window.themeManager.toggle());
+      }
+    }
+    
+    if (window.i18n) {
+      const langToggle = document.getElementById('langToggle');
+      if (langToggle) {
+        langToggle.value = window.i18n.getLanguage();
+        langToggle.addEventListener('change', (e) => window.i18n.setLanguage(e.target.value));
+      }
+    }
   }
 
   if (document.readyState === 'loading') {
