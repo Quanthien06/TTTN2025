@@ -6,6 +6,8 @@ const mysql = require('mysql2/promise');
 const jwt = require('jsonwebtoken');
 const axios = require('axios');
 const orderRouter = require('./routes/orders');
+const couponRouter = require('./routes/coupons');
+const { router: loyaltyRouter } = require('./routes/loyalty');
 
 const app = express();
 
@@ -50,6 +52,8 @@ app.use(express.json());
 
 // Routes
 app.use('/orders', orderRouter);
+app.use('/coupons', couponRouter);
+app.use('/loyalty', loyaltyRouter);
 
 // Health check
 app.get('/health', (req, res) => {

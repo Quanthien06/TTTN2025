@@ -328,6 +328,59 @@
                             <div id="orderItems"></div>
                         </div>
 
+                        <!-- Coupon Code -->
+                        <div class="mb-4 border-t pt-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Mã giảm giá</label>
+                            <div class="flex gap-2">
+                                <input 
+                                    type="text" 
+                                    id="couponCode" 
+                                    placeholder="Nhập mã giảm giá"
+                                    class="flex-1 border rounded-lg px-3 py-2 focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
+                                />
+                                <button 
+                                    onclick="applyCoupon()"
+                                    class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg font-medium transition"
+                                >
+                                    Áp dụng
+                                </button>
+                            </div>
+                            <div id="couponMessage" class="mt-2 text-sm hidden"></div>
+                        </div>
+
+                        <!-- Loyalty Points -->
+                        <div class="mb-4 border-t pt-4">
+                            <div class="flex items-center justify-between mb-2">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Điểm tích lũy</label>
+                                    <div id="loyaltyBalance" class="text-xs text-gray-500">Đang tải...</div>
+                                </div>
+                                <button 
+                                    onclick="loadLoyaltyBalance()"
+                                    class="text-xs text-blue-600 hover:text-blue-700"
+                                >
+                                    <i class="fas fa-sync"></i>
+                                </button>
+                            </div>
+                            <div class="flex gap-2">
+                                <input 
+                                    type="number" 
+                                    id="useLoyaltyPoints" 
+                                    placeholder="Số điểm muốn dùng"
+                                    min="0"
+                                    class="flex-1 border rounded-lg px-3 py-2 focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
+                                    onchange="updateLoyaltyDiscount()"
+                                />
+                                <button 
+                                    onclick="useMaxPoints()"
+                                    class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-2 rounded-lg text-sm font-medium transition"
+                                >
+                                    Dùng tối đa
+                                </button>
+                            </div>
+                            <div id="loyaltyMessage" class="mt-2 text-sm hidden"></div>
+                        </div>
+
                         <div class="border-t pt-4 space-y-2">
                             <div class="flex justify-between text-gray-600">
                                 <span>Tạm tính</span>
@@ -337,9 +390,13 @@
                                 <span>Phí vận chuyển</span>
                                 <span id="shippingCost">0 ₫</span>
                             </div>
-                            <div id="discountRow" class="hidden flex justify-between text-green-600">
-                                <span>Giảm giá</span>
-                                <span id="discountAmount">-0 ₫</span>
+                            <div id="couponDiscountRow" class="hidden flex justify-between text-green-600">
+                                <span>Giảm giá (Mã giảm giá)</span>
+                                <span id="couponDiscountAmount">-0 ₫</span>
+                            </div>
+                            <div id="loyaltyDiscountRow" class="hidden flex justify-between text-green-600">
+                                <span>Giảm giá (Điểm tích lũy)</span>
+                                <span id="loyaltyDiscountAmount">-0 ₫</span>
                             </div>
                             <div class="flex justify-between text-gray-600">
                                 <span>Thuế VAT (10%)</span>
@@ -483,8 +540,12 @@
                 // Load thông tin user nếu có
                 loadUserInfo();
                 
-                // Render order summary
-                renderOrderSummary();
+                // Load loyalty balance (async)
+                loadLoyaltyBalance().then(() => {
+                    renderOrderSummary();
+                }).catch(() => {
+                    renderOrderSummary();
+                });
                 
                 // Hiển thị bank details mặc định (vì bank là phương thức mặc định)
                 const bankDetailsEl = document.getElementById('bankDetails');
@@ -697,18 +758,221 @@
                 'overnight': 100000
             };
             const shipping = shippingRates[checkoutData.shippingMethod] || 30000;
-            const discount = checkoutData.discount || 0;
-            const tax = (subtotal - discount) * 0.1;
-            const total = subtotal + shipping + tax - discount;
+            const couponDiscount = checkoutData.couponDiscount || 0;
+            const loyaltyDiscount = checkoutData.loyaltyDiscount || 0;
+            const totalDiscount = couponDiscount + loyaltyDiscount;
+            const tax = (subtotal - totalDiscount) * 0.1;
+            const total = subtotal + shipping + tax - totalDiscount;
 
             document.getElementById('subtotal').textContent = formatPrice(subtotal);
             document.getElementById('shippingCost').textContent = formatPrice(shipping);
             document.getElementById('taxAmount').textContent = formatPrice(tax);
             document.getElementById('totalAmount').textContent = formatPrice(total);
 
-            if (discount > 0) {
-                document.getElementById('discountRow').classList.remove('hidden');
-                document.getElementById('discountAmount').textContent = '-' + formatPrice(discount);
+            // Show coupon discount
+            if (couponDiscount > 0) {
+                document.getElementById('couponDiscountRow').classList.remove('hidden');
+                document.getElementById('couponDiscountAmount').textContent = '-' + formatPrice(couponDiscount);
+            } else {
+                document.getElementById('couponDiscountRow').classList.add('hidden');
+            }
+
+            // Show loyalty discount
+            if (loyaltyDiscount > 0) {
+                document.getElementById('loyaltyDiscountRow').classList.remove('hidden');
+                document.getElementById('loyaltyDiscountAmount').textContent = '-' + formatPrice(loyaltyDiscount);
+            } else {
+                document.getElementById('loyaltyDiscountRow').classList.add('hidden');
+            }
+        }
+
+        // Apply coupon
+        async function applyCoupon() {
+            const couponCode = document.getElementById('couponCode').value.trim();
+            const messageEl = document.getElementById('couponMessage');
+            
+            if (!couponCode) {
+                messageEl.className = 'mt-2 text-sm text-red-600';
+                messageEl.textContent = 'Vui lòng nhập mã giảm giá';
+                messageEl.classList.remove('hidden');
+                return;
+            }
+
+            try {
+                const subtotal = checkoutData?.cart?.total || 0;
+                const response = await apiCall('/coupons/validate', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        code: couponCode,
+                        total_amount: subtotal
+                    })
+                });
+
+                if (response.valid) {
+                    checkoutData.couponDiscount = response.coupon.discount_amount;
+                    checkoutData.couponCode = couponCode;
+                    messageEl.className = 'mt-2 text-sm text-green-600';
+                    messageEl.innerHTML = `<i class="fas fa-check-circle mr-1"></i>${response.coupon.name}: Giảm ${formatPrice(response.coupon.discount_amount)}`;
+                    messageEl.classList.remove('hidden');
+                    renderOrderSummary();
+                } else {
+                    throw new Error('Mã giảm giá không hợp lệ');
+                }
+            } catch (error) {
+                checkoutData.couponDiscount = 0;
+                checkoutData.couponCode = null;
+                messageEl.className = 'mt-2 text-sm text-red-600';
+                messageEl.textContent = error.message || 'Mã giảm giá không hợp lệ';
+                messageEl.classList.remove('hidden');
+                renderOrderSummary();
+            }
+        }
+
+        // Load loyalty balance
+        async function loadLoyaltyBalance() {
+            try {
+                const response = await apiCall('/loyalty/balance');
+                const balanceEl = document.getElementById('loyaltyBalance');
+                const points = response.balance || 0;
+                const pointsValue = points * 1000; // 1 point = 1000 VNĐ
+                balanceEl.textContent = `Bạn có ${points.toLocaleString('vi-VN')} điểm (${formatPrice(pointsValue)})`;
+                checkoutData.loyaltyBalance = points;
+                return response;
+            } catch (error) {
+                console.error('Error loading loyalty balance:', error);
+                document.getElementById('loyaltyBalance').textContent = 'Không thể tải điểm tích lũy';
+                return { balance: 0 };
+            }
+        }
+
+        // Update loyalty discount
+        function updateLoyaltyDiscount() {
+            const usePoints = parseInt(document.getElementById('useLoyaltyPoints').value || 0);
+            const balance = checkoutData.loyaltyBalance || 0;
+            const messageEl = document.getElementById('loyaltyMessage');
+
+            if (usePoints > balance) {
+                messageEl.className = 'mt-2 text-sm text-red-600';
+                messageEl.textContent = `Bạn chỉ có ${balance.toLocaleString('vi-VN')} điểm`;
+                messageEl.classList.remove('hidden');
+                document.getElementById('useLoyaltyPoints').value = balance;
+                checkoutData.loyaltyDiscount = balance * 1000;
+            } else if (usePoints > 0) {
+                checkoutData.loyaltyDiscount = usePoints * 1000;
+                checkoutData.useLoyaltyPoints = usePoints;
+                messageEl.className = 'mt-2 text-sm text-green-600';
+                messageEl.textContent = `Giảm ${formatPrice(usePoints * 1000)}`;
+                messageEl.classList.remove('hidden');
+            } else {
+                checkoutData.loyaltyDiscount = 0;
+                checkoutData.useLoyaltyPoints = 0;
+                messageEl.classList.add('hidden');
+            }
+
+            renderOrderSummary();
+        }
+
+        // Use max points
+        function useMaxPoints() {
+            const balance = checkoutData.loyaltyBalance || 0;
+            if (balance > 0) {
+                document.getElementById('useLoyaltyPoints').value = balance;
+                updateLoyaltyDiscount();
+            }
+        }
+
+        // Apply coupon
+        async function applyCoupon() {
+            const couponCode = document.getElementById('couponCode').value.trim();
+            const messageEl = document.getElementById('couponMessage');
+            
+            if (!couponCode) {
+                messageEl.className = 'mt-2 text-sm text-red-600';
+                messageEl.textContent = 'Vui lòng nhập mã giảm giá';
+                messageEl.classList.remove('hidden');
+                return;
+            }
+
+            try {
+                const subtotal = checkoutData?.cart?.total || 0;
+                const response = await apiCall('/coupons/validate', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        code: couponCode,
+                        total_amount: subtotal
+                    })
+                });
+
+                if (response.valid) {
+                    checkoutData.couponDiscount = response.coupon.discount_amount;
+                    checkoutData.couponCode = couponCode;
+                    messageEl.className = 'mt-2 text-sm text-green-600';
+                    messageEl.innerHTML = `<i class="fas fa-check-circle mr-1"></i>${response.coupon.name}: Giảm ${formatPrice(response.coupon.discount_amount)}`;
+                    messageEl.classList.remove('hidden');
+                    renderOrderSummary();
+                } else {
+                    throw new Error('Mã giảm giá không hợp lệ');
+                }
+            } catch (error) {
+                checkoutData.couponDiscount = 0;
+                checkoutData.couponCode = null;
+                messageEl.className = 'mt-2 text-sm text-red-600';
+                messageEl.textContent = error.message || 'Mã giảm giá không hợp lệ';
+                messageEl.classList.remove('hidden');
+                renderOrderSummary();
+            }
+        }
+
+        // Load loyalty balance
+        async function loadLoyaltyBalance() {
+            try {
+                const response = await apiCall('/loyalty/balance');
+                const balanceEl = document.getElementById('loyaltyBalance');
+                const points = response.balance || 0;
+                const pointsValue = points * 1000; // 1 point = 1000 VNĐ
+                balanceEl.textContent = `Bạn có ${points.toLocaleString('vi-VN')} điểm (${formatPrice(pointsValue)})`;
+                checkoutData.loyaltyBalance = points;
+                return response;
+            } catch (error) {
+                console.error('Error loading loyalty balance:', error);
+                document.getElementById('loyaltyBalance').textContent = 'Không thể tải điểm tích lũy';
+                return { balance: 0 };
+            }
+        }
+
+        // Update loyalty discount
+        function updateLoyaltyDiscount() {
+            const usePoints = parseInt(document.getElementById('useLoyaltyPoints').value || 0);
+            const balance = checkoutData.loyaltyBalance || 0;
+            const messageEl = document.getElementById('loyaltyMessage');
+
+            if (usePoints > balance) {
+                messageEl.className = 'mt-2 text-sm text-red-600';
+                messageEl.textContent = `Bạn chỉ có ${balance.toLocaleString('vi-VN')} điểm`;
+                messageEl.classList.remove('hidden');
+                document.getElementById('useLoyaltyPoints').value = balance;
+                checkoutData.loyaltyDiscount = balance * 1000;
+            } else if (usePoints > 0) {
+                checkoutData.loyaltyDiscount = usePoints * 1000;
+                checkoutData.useLoyaltyPoints = usePoints;
+                messageEl.className = 'mt-2 text-sm text-green-600';
+                messageEl.textContent = `Giảm ${formatPrice(usePoints * 1000)}`;
+                messageEl.classList.remove('hidden');
+            } else {
+                checkoutData.loyaltyDiscount = 0;
+                checkoutData.useLoyaltyPoints = 0;
+                messageEl.classList.add('hidden');
+            }
+
+            renderOrderSummary();
+        }
+
+        // Use max points
+        function useMaxPoints() {
+            const balance = checkoutData.loyaltyBalance || 0;
+            if (balance > 0) {
+                document.getElementById('useLoyaltyPoints').value = balance;
+                updateLoyaltyDiscount();
             }
         }
 
@@ -949,12 +1213,18 @@
                 if (city) shippingAddress += `, ${city}`;
                 if (notes) shippingAddress += `\nGhi chú: ${notes}`;
 
+                // Get coupon code and loyalty points
+                const couponCode = checkoutData.couponCode || null;
+                const useLoyaltyPoints = checkoutData.useLoyaltyPoints || null;
+
                 // Create order
                 const orderData = {
                     shipping_address: shippingAddress,
                     phone: phone,  // Backend expect 'phone' not 'shipping_phone'
                     payment_method: selectedPaymentMethod,
-                    payment_details: {}
+                    payment_details: {},
+                    coupon_code: couponCode,
+                    use_loyalty_points: useLoyaltyPoints
                 };
 
                 // Add payment details based on method

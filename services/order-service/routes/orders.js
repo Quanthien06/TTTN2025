@@ -14,8 +14,9 @@ router.use((req, res, next) => {
 router.post('/', async (req, res) => {
     const pool = req.app.locals.pool;
     const userId = req.user.id;
-    const { shipping_address, phone, payment_method, payment_details } = req.body;
+    const { shipping_address, phone, payment_method, payment_details, coupon_code, use_loyalty_points } = req.body;
     const CART_SERVICE_URL = req.app.locals.CART_SERVICE_URL;
+    const { earnPoints } = require('./loyalty');
 
     try {
         // Validate input
@@ -52,28 +53,79 @@ router.post('/', async (req, res) => {
             }
         }
 
-        const total = parseFloat(cartData.total || 0);
+        let subtotal = parseFloat(cartData.total || 0);
+        let discountAmount = 0;
+        let loyaltyDiscount = 0;
+        let couponId = null;
+        let finalTotal = subtotal;
 
-        if (total <= 0) {
+        if (subtotal <= 0) {
             return res.status(400).json({ message: 'Tổng tiền đơn hàng không hợp lệ' });
         }
 
+        // Apply coupon if provided
+        if (coupon_code && coupon_code.trim()) {
+            try {
+                // Call coupon validation endpoint
+                const baseUrl = `${req.protocol}://${req.get('host')}`;
+                const couponResponse = await axios.post(`${baseUrl}/coupons/validate`, {
+                    code: coupon_code,
+                    total_amount: subtotal
+                }, {
+                    headers: { 'Authorization': req.headers['authorization'] }
+                });
+
+                if (couponResponse.data.valid) {
+                    discountAmount = couponResponse.data.coupon.discount_amount;
+                    couponId = couponResponse.data.coupon.id;
+                    finalTotal = subtotal - discountAmount;
+                }
+            } catch (couponError) {
+                console.warn('Coupon validation failed:', couponError.response?.data?.message || couponError.message);
+                // Continue without coupon if validation fails
+            }
+        }
+
+        // Apply loyalty points if requested
+        if (use_loyalty_points && use_loyalty_points > 0) {
+            try {
+                // Get user's balance
+                const [userPoints] = await pool.query(
+                    'SELECT balance FROM loyalty_points WHERE user_id = ?',
+                    [userId]
+                );
+
+                if (userPoints.length > 0 && userPoints[0].balance >= use_loyalty_points) {
+                    loyaltyDiscount = use_loyalty_points * 1000; // 1 point = 1000 VNĐ
+                    finalTotal = Math.max(0, finalTotal - loyaltyDiscount);
+                } else {
+                    return res.status(400).json({ message: 'Số điểm không đủ' });
+                }
+            } catch (pointsError) {
+                console.warn('Loyalty points check failed:', pointsError.message);
+                return res.status(400).json({ message: 'Lỗi khi kiểm tra điểm tích lũy' });
+            }
+        }
+
+        finalTotal = Math.max(0, finalTotal);
+
         // 2. Tạo đơn hàng
-        // Lưu payment_method vào shipping_address (có thể mở rộng thêm cột payment_method sau)
         const paymentInfo = payment_method ? `\n[Payment Method: ${payment_method}]` : '';
         const fullShippingAddress = shipping_address + paymentInfo;
         
         console.log('Creating order with data:', {
             userId,
-            total,
-            shipping_address: fullShippingAddress.substring(0, 50),
-            phone: phone || null,
-            payment_method
+            subtotal,
+            discountAmount,
+            loyaltyDiscount,
+            finalTotal,
+            coupon_code,
+            use_loyalty_points
         });
         
         const [orderResult] = await pool.query(
             'INSERT INTO orders (user_id, total, shipping_address, shipping_phone, status) VALUES (?, ?, ?, ?, ?)',
-            [userId, total, fullShippingAddress, phone || null, 'pending']
+            [userId, finalTotal, fullShippingAddress, phone || null, 'pending']
         );
         const orderId = orderResult.insertId;
 
@@ -91,7 +143,47 @@ router.post('/', async (req, res) => {
             }
         }
 
-        // 4. Xóa cart items và đánh dấu cart completed (gọi Cart Service)
+        // 4. Record coupon usage if applied
+        if (couponId) {
+            try {
+                await pool.query(
+                    'INSERT INTO coupon_usage (coupon_id, user_id, order_id) VALUES (?, ?, ?)',
+                    [couponId, userId, orderId]
+                );
+                await pool.query(
+                    'UPDATE coupons SET used_count = used_count + 1 WHERE id = ?',
+                    [couponId]
+                );
+            } catch (couponError) {
+                console.error('Lỗi khi ghi nhận coupon usage:', couponError);
+            }
+        }
+
+        // 5. Redeem loyalty points if used
+        if (use_loyalty_points && use_loyalty_points > 0) {
+            try {
+                await pool.query(
+                    'UPDATE loyalty_points SET balance = balance - ?, total_redeemed = total_redeemed + ? WHERE user_id = ?',
+                    [use_loyalty_points, use_loyalty_points, userId]
+                );
+                await pool.query(
+                    `INSERT INTO loyalty_points_transactions (user_id, points, type, description, order_id)
+                     VALUES (?, ?, 'redeem', ?, ?)`,
+                    [userId, use_loyalty_points, `Đổi ${use_loyalty_points} điểm cho đơn hàng #${orderId}`, orderId]
+                );
+            } catch (pointsError) {
+                console.error('Lỗi khi đổi điểm:', pointsError);
+            }
+        }
+
+        // 6. Earn loyalty points (1 point per 10,000 VNĐ spent on final total)
+        try {
+            await earnPoints(pool, userId, orderId, finalTotal);
+        } catch (earnError) {
+            console.error('Lỗi khi tích lũy điểm:', earnError);
+        }
+
+        // 7. Xóa cart items và đánh dấu cart completed (gọi Cart Service)
         try {
             // Lấy cart_id từ cartData hoặc query lại
             const [carts] = await pool.query(
@@ -110,7 +202,7 @@ router.post('/', async (req, res) => {
             // Không fail order nếu xóa cart lỗi
         }
 
-        // 5. Lấy đơn hàng vừa tạo với items
+        // 8. Lấy đơn hàng vừa tạo với items
         const [orders] = await pool.query(
             `SELECT o.*, 
                 COUNT(oi.id) as item_count

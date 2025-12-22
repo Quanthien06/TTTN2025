@@ -1,6 +1,7 @@
 // Service Worker for PWA and Offline Support
-const CACHE_NAME = 'techstore-v2'; // Updated version to force cache refresh
-const RUNTIME_CACHE = 'techstore-runtime-v2';
+const CACHE_NAME = 'techstore-v3'; // Updated version to force cache refresh
+const RUNTIME_CACHE = 'techstore-runtime-v3';
+const DEV_MODE = true; // Set to false in production
 
 // Assets to cache on install (excluding CSS for development)
 const STATIC_ASSETS = [
@@ -80,6 +81,24 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
+    // In development mode, bypass cache for HTML and CSS files
+    if (DEV_MODE && (url.pathname.endsWith('.html') || url.pathname.endsWith('.css') || url.pathname === '/')) {
+        // Always fetch from network, never cache
+        event.respondWith(
+            fetch(request, { 
+                cache: 'no-store',
+                headers: {
+                    'Cache-Control': 'no-cache, no-store, must-revalidate',
+                    'Pragma': 'no-cache'
+                }
+            }).catch(() => {
+                // Only fallback to cache if network completely fails
+                return caches.match(request);
+            })
+        );
+        return;
+    }
+
     // Cache strategy: Network First for CSS, Cache First for others
     if (url.pathname.endsWith('.css')) {
         // For CSS files, always fetch from network first (bypass cache)
@@ -89,6 +108,38 @@ self.addEventListener('fetch', (event) => {
             }).catch(() => {
                 // Fallback to cache only if network fails
                 return caches.match(request);
+            })
+        );
+        return;
+    }
+
+    // For HTML files, use Network First strategy (always check network first)
+    if (url.pathname.endsWith('.html') || url.pathname === '/') {
+        event.respondWith(
+            fetch(request, { cache: 'no-store' }).then((response) => {
+                // Don't cache HTML in development
+                if (!DEV_MODE && response && response.status === 200) {
+                    const responseToCache = response.clone();
+                    caches.open(RUNTIME_CACHE).then((cache) => {
+                        cache.put(request, responseToCache);
+                    });
+                }
+                return response;
+            }).catch(() => {
+                // Fallback to cache only if network fails
+                return caches.match(request).then((cachedResponse) => {
+                    if (cachedResponse) {
+                        return cachedResponse;
+                    }
+                    // Return offline page for navigation requests
+                    if (request.mode === 'navigate') {
+                        return caches.match('/index.html');
+                    }
+                    return new Response('Offline', {
+                        headers: { 'Content-Type': 'text/plain' },
+                        status: 503
+                    });
+                });
             })
         );
         return;

@@ -103,6 +103,97 @@
       "question": "Sản phẩm bị lỗi khi nhận hàng thì sao?",
       "answer": "Nếu sản phẩm bị lỗi hoặc hư hỏng, vui lòng liên hệ ngay với chúng tôi trong vòng 48 giờ nhận hàng với hình ảnh chứng minh. Chúng tôi sẽ gửi sản phẩm mới hoặc hoàn tiền ngay lập tức.",
       "keywords": ["lỗi", "hư hỏng", "sản phẩm", "hư"]
+    },
+    {
+      "id": 12,
+      "category": "shipping",
+      "question": "Có miễn phí vận chuyển không?",
+      "answer": "Có, chúng tôi miễn phí vận chuyển cho tất cả đơn hàng từ 300.000đ trở lên trên toàn quốc. Đối với đơn hàng dưới 300.000đ, phí vận chuyển sẽ được tính theo khoảng cách và trọng lượng sản phẩm.",
+      "keywords": ["miễn phí", "vận chuyển", "free shipping", "phí ship"]
+    },
+    {
+      "id": 13,
+      "category": "shipping",
+      "question": "Tôi có thể theo dõi đơn hàng như thế nào?",
+      "answer": "Sau khi đặt hàng thành công, bạn sẽ nhận được mã đơn hàng qua email và SMS. Bạn có thể theo dõi tình trạng đơn hàng bằng cách: 1) Đăng nhập vào tài khoản và vào mục 'Đơn hàng của tôi', 2) Nhập mã đơn hàng tại trang 'Tra cứu đơn hàng' trên website, hoặc 3) Liên hệ hotline 0905 884 303.",
+      "keywords": ["theo dõi", "đơn hàng", "tracking", "tra cứu"]
+    },
+    {
+      "id": 14,
+      "category": "payment",
+      "question": "Tôi có thể thanh toán trả góp không?",
+      "answer": "Có, TechStore hỗ trợ trả góp 0% lãi suất cho nhiều sản phẩm. Bạn có thể chọn phương thức trả góp khi thanh toán. Chúng tôi hợp tác với các ngân hàng và công ty tài chính uy tín. Liên hệ hotline 0905 884 303 để được tư vấn về chương trình trả góp phù hợp.",
+      "keywords": ["trả góp", "installment", "trả chậm", "credit"]
+    },
+    {
+      "id": 15,
+      "category": "payment",
+      "question": "Thanh toán COD có mất phí không?",
+      "answer": "Thanh toán khi nhận hàng (COD) không mất phí phụ thu. Tuy nhiên, một số khu vực xa có thể có phí thu hộ tùy theo đơn vị vận chuyển. Phí này sẽ được thông báo rõ ràng trước khi bạn xác nhận đơn hàng.",
+      "keywords": ["COD", "thanh toán khi nhận", "phí thu hộ", "cash on delivery"]
+    },
+    {
+      "id": 16,
+      "category": "return",
+      "question": "Tôi có thể đổi sản phẩm khác không?",
+      "answer": "Có, bạn có thể đổi sang sản phẩm khác trong vòng 30 ngày kể từ ngày nhận hàng. Sản phẩm phải còn nguyên vẹn, chưa sử dụng, còn đầy đủ hộp và phụ kiện. Nếu sản phẩm mới có giá cao hơn, bạn sẽ thanh toán phần chênh lệch. Nếu thấp hơn, chúng tôi sẽ hoàn lại phần tiền chênh lệch.",
+      "keywords": ["đổi sản phẩm", "đổi hàng", "exchange", "đổi khác"]
+    },
+    {
+      "id": 17,
+      "category": "return",
+      "question": "Thời gian xử lý đổi trả là bao lâu?",
+      "answer": "Sau khi nhận được sản phẩm đổi trả, chúng tôi sẽ kiểm tra trong vòng 3-5 ngày làm việc. Nếu đủ điều kiện, chúng tôi sẽ xử lý đổi trả hoặc hoàn tiền ngay. Thời gian hoàn tiền về tài khoản của bạn là 5-7 ngày làm việc tùy theo ngân hàng.",
+      "keywords": ["thời gian", "xử lý", "đổi trả", "hoàn tiền"]
+    },
+    {
+      "id": 18,
+      "category": "account",
+      "question": "Làm sao để cập nhật thông tin tài khoản?",
+      "answer": "Bạn có thể cập nhật thông tin tài khoản bằng cách: 1) Đăng nhập vào tài khoản, 2) Vào mục 'Tài khoản' hoặc 'Thông tin cá nhân', 3) Chỉnh sửa thông tin cần thay đổi (tên, số điện thoại, địa chỉ), 4) Nhấp 'Lưu thay đổi'. Lưu ý: Email không thể thay đổi sau khi đăng ký.",
+      "keywords": ["cập nhật", "thông tin", "tài khoản", "profile", "chỉnh sửa"]
+    },
+    {
+      "id": 19,
+      "category": "account",
+      "question": "Tôi quên mật khẩu, làm sao để lấy lại?",
+      "answer": "Trên trang đăng nhập, nhấp vào 'Quên mật khẩu?'. Nhập email hoặc số điện thoại đã đăng ký, bạn sẽ nhận được mã OTP hoặc link đặt lại mật khẩu qua email/SMS. Mã OTP có hiệu lực trong 10 phút, link đặt lại mật khẩu có hiệu lực trong 24 giờ.",
+      "keywords": ["quên mật khẩu", "forgot password", "lấy lại", "reset password"]
+    },
+    {
+      "id": 20,
+      "category": "product",
+      "question": "Sản phẩm có bảo hành không?",
+      "answer": "Tất cả sản phẩm tại TechStore đều có bảo hành chính hãng từ nhà sản xuất. Thời gian bảo hành tùy theo từng sản phẩm (thường từ 12-24 tháng). Thông tin chi tiết về bảo hành được ghi rõ trên trang sản phẩm và trong hóa đơn. Bạn có thể bảo hành tại các trung tâm bảo hành chính hãng hoặc cửa hàng TechStore.",
+      "keywords": ["bảo hành", "warranty", "chính hãng", "bảo hành sản phẩm"]
+    },
+    {
+      "id": 21,
+      "category": "product",
+      "question": "Sản phẩm có phải hàng chính hãng không?",
+      "answer": "Tất cả sản phẩm tại TechStore đều là hàng chính hãng 100%, được nhập khẩu trực tiếp từ nhà sản xuất hoặc đại lý phân phối chính thức. Chúng tôi cam kết không bán hàng giả, hàng nhái, hàng kém chất lượng. Mỗi sản phẩm đều có tem bảo hành và hóa đơn VAT đầy đủ.",
+      "keywords": ["chính hãng", "authentic", "hàng thật", "original"]
+    },
+    {
+      "id": 22,
+      "category": "product",
+      "question": "Tôi có thể xem sản phẩm trước khi mua không?",
+      "answer": "Có, bạn có thể đến các cửa hàng TechStore để xem và trải nghiệm sản phẩm trước khi mua. Chúng tôi có nhiều cửa hàng trên toàn quốc. Bạn có thể xem danh sách cửa hàng và địa chỉ tại trang 'Cửa hàng gần bạn' trên website. Ngoài ra, bạn cũng có thể xem hình ảnh và video chi tiết sản phẩm trên website.",
+      "keywords": ["xem sản phẩm", "cửa hàng", "showroom", "trải nghiệm"]
+    },
+    {
+      "id": 23,
+      "category": "shipping",
+      "question": "Tôi có thể yêu cầu giao hàng vào giờ cụ thể không?",
+      "answer": "Có, bạn có thể yêu cầu giao hàng vào khung giờ cụ thể khi đặt hàng. Tuy nhiên, khung giờ giao hàng phụ thuộc vào lịch trình của đơn vị vận chuyển. Chúng tôi sẽ cố gắng đáp ứng yêu cầu của bạn. Bạn sẽ nhận được cuộc gọi từ nhân viên giao hàng trước khi đến để xác nhận thời gian giao hàng.",
+      "keywords": ["giờ giao hàng", "thời gian giao", "delivery time", "hẹn giờ"]
+    },
+    {
+      "id": 24,
+      "category": "payment",
+      "question": "Tôi có thể hủy đơn hàng sau khi đã thanh toán không?",
+      "answer": "Có, bạn có thể hủy đơn hàng trong vòng 24 giờ kể từ khi đặt hàng hoặc trước khi đơn hàng được xác nhận và chuẩn bị giao. Sau khi hủy, chúng tôi sẽ hoàn tiền về tài khoản của bạn trong vòng 5-7 ngày làm việc. Để hủy đơn hàng, vui lòng liên hệ hotline 0905 884 303 hoặc vào mục 'Đơn hàng của tôi' trong tài khoản.",
+      "keywords": ["hủy đơn hàng", "cancel order", "hủy", "hoàn tiền"]
     }
   ]
 }

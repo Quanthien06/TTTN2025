@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Câu hỏi thường gặp - TechStore</title>
+    
+    <!-- Prevent caching in development -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="apple-touch-icon" sizes="180x180" href="./img/logo/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="./img/logo/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="./img/logo/favicon-16x16.png">
+    <link rel="manifest" href="/manifest.json">
+    <!-- Custom styles -->
+    <link rel="stylesheet" href="/styles.css?v=3">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .faq-item {
+            transition: all 0.3s ease;
+        }
+        
+        .faq-item:hover {
+            background-color: #f9fafb;
+        }
+        
+        .faq-answer {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease, padding 0.3s ease;
+        }
+        
+        .faq-item.active .faq-answer {
+            max-height: 500px;
+            padding-top: 1rem;
+        }
+        
+        .faq-icon {
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        
+        .category-tab {
+            transition: all 0.2s ease;
+        }
+        
+        .category-tab.active {
+            background-color: #111827;
+            color: white;
+        }
+        
+        .category-tab:not(.active) {
+            background-color: white;
+            color: #111827;
+            border: 1px solid #e5e7eb;
+        }
+        
+        .category-tab:not(.active):hover {
+            background-color: #f9fafb;
+        }
+        
+        .chat-button {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 56px;
+            height: 56px;
+            background-color: #111827;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            transition: all 0.3s ease;
+            z-index: 50;
+        }
+        
+        .chat-button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+        }
+        
+        .chat-button i {
+            color: white;
+            font-size: 24px;
+        }
+        
+        [data-theme="dark"] .faq-item:hover {
+            background-color: #1e293b;
+        }
+        
+        [data-theme="dark"] .category-tab:not(.active) {
+            background-color: #1e293b;
+            border-color: #334155;
+            color: #f1f5f9;
+        }
+        
+        [data-theme="dark"] .category-tab:not(.active):hover {
+            background-color: #334155;
+        }
+        
+        [data-theme="dark"] .faq-item {
+            background-color: #1e293b;
+            border-color: #334155;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div id="site-header"></div>
+    <script src="/include-partials.js" defer></script>
+
+    <main class="container mx-auto px-4 py-12 max-w-4xl">
+        <!-- Header Section -->
+        <header class="text-center mb-12">
+            <h1 class="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+                Câu hỏi thường gặp
+            </h1>
+            <p class="text-lg text-gray-600 max-w-2xl mx-auto">
+                Đây là những câu hỏi thường gặp nhất về TechStore. Không tìm thấy câu trả lời bạn cần? 
+                <a href="#" id="chatLink" class="text-gray-900 underline hover:text-red-600 transition-colors">
+                    Chat với đội ngũ hỗ trợ của chúng tôi!
+                </a>
+            </p>
+        </header>
+
+        <!-- Category Tabs -->
+        <div class="flex flex-wrap gap-3 justify-center mb-8" id="categoryTabs">
+            <!-- Tabs will be dynamically generated -->
+        </div>
+
+        <!-- FAQ List -->
+        <div class="space-y-4" id="faqList">
+            <!-- FAQ items will be dynamically generated -->
+        </div>
+    </main>
+
+    <!-- Floating Chat Button -->
+    <div class="chat-button" id="chatButton" title="Chat với chúng tôi">
+        <i class="fas fa-comments"></i>
+    </div>
+
+    <div id="site-footer"></div>
+
+    <script>
+        // FAQ Data
+        let categories = [];
+        let faqs = [];
+        let activeCategory = 'all';
+
+        // Icon mapping for categories
+        const categoryIcons = {
+            'shipping': '🚚',
+            'payment': '💳',
+            'return': '🔄',
+            'account': '👤',
+            'product': '📦',
+            'all': '📋'
+        };
+
+        // Icon mapping for FAQ items (fallback)
+        const faqIcons = ['😊', '📦', '📄', '➕', '💰', '✉️', '💬', '▶️'];
+
+        // Load FAQs from API
+        async function loadFAQs() {
+            try {
+                // Add cache-busting parameter
+                const response = await fetch(`/api/faqs?t=${Date.now()}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    categories = data.data.categories;
+                    faqs = data.data.faqs;
+                    renderCategories();
+                    renderFAQs();
+                } else {
+                    console.error('Lỗi khi tải FAQs:', data.message);
+                }
+            } catch (error) {
+                console.error('Lỗi khi tải FAQs:', error);
+            }
+        }
+
+        // Render category tabs
+        function renderCategories() {
+            const tabsContainer = document.getElementById('categoryTabs');
+            tabsContainer.innerHTML = '';
+
+            // Add "Tất cả" tab
+            const allTab = document.createElement('button');
+            allTab.className = `category-tab px-6 py-2 rounded-full font-medium ${activeCategory === 'all' ? 'active' : ''}`;
+            allTab.textContent = 'Tất cả';
+            allTab.onclick = () => filterByCategory('all');
+            tabsContainer.appendChild(allTab);
+
+            // Add category tabs
+            categories.forEach(category => {
+                const tab = document.createElement('button');
+                tab.className = `category-tab px-6 py-2 rounded-full font-medium ${activeCategory === category.id ? 'active' : ''}`;
+                tab.innerHTML = `${categoryIcons[category.id] || '📋'} ${category.name}`;
+                tab.onclick = () => filterByCategory(category.id);
+                tabsContainer.appendChild(tab);
+            });
+        }
+
+        // Filter FAQs by category
+        function filterByCategory(categoryId) {
+            activeCategory = categoryId;
+            renderCategories();
+            renderFAQs();
+        }
+
+        // Render FAQ items
+        function renderFAQs() {
+            const faqList = document.getElementById('faqList');
+            faqList.innerHTML = '';
+
+            // Filter FAQs by active category
+            const filteredFAQs = activeCategory === 'all' 
+                ? faqs 
+                : faqs.filter(faq => faq.category === activeCategory);
+
+            if (filteredFAQs.length === 0) {
+                faqList.innerHTML = '<p class="text-center text-gray-500 py-8">Không có câu hỏi nào trong danh mục này.</p>';
+                return;
+            }
+
+            filteredFAQs.forEach((faq, index) => {
+                const faqItem = document.createElement('div');
+                faqItem.className = 'faq-item bg-white border border-gray-200 rounded-lg p-6 cursor-pointer';
+                faqItem.onclick = () => toggleFAQ(faqItem);
+                
+                // Get category icon
+                const category = categories.find(c => c.id === faq.category);
+                const icon = categoryIcons[faq.category] || faqIcons[index % faqIcons.length];
+
+                faqItem.innerHTML = `
+                    <div class="flex items-start justify-between gap-4">
+                        <div class="flex items-start gap-4 flex-1">
+                            <div class="faq-icon text-2xl">${icon}</div>
+                            <div class="flex-1">
+                                <h3 class="font-semibold text-gray-900 text-lg mb-0">${faq.question}</h3>
+                                <div class="faq-answer">
+                                    <p class="text-gray-600 mt-2 leading-relaxed">${faq.answer}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="faq-toggle text-gray-400 text-xl flex-shrink-0">
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                    </div>
+                `;
+
+                // Expand first item by default
+                if (index === 0 && activeCategory === 'all') {
+                    faqItem.classList.add('active');
+                    const toggle = faqItem.querySelector('.faq-toggle i');
+                    toggle.classList.remove('fa-chevron-down');
+                    toggle.classList.add('fa-chevron-up');
+                }
+
+                faqList.appendChild(faqItem);
+            });
+        }
+
+        // Toggle FAQ item
+        function toggleFAQ(item) {
+            const isActive = item.classList.contains('active');
+            const toggle = item.querySelector('.faq-toggle i');
+            
+            // Close all other items
+            document.querySelectorAll('.faq-item').forEach(faq => {
+                if (faq !== item) {
+                    faq.classList.remove('active');
+                    const otherToggle = faq.querySelector('.faq-toggle i');
+                    otherToggle.classList.remove('fa-chevron-up');
+                    otherToggle.classList.add('fa-chevron-down');
+                }
+            });
+
+            // Toggle current item
+            if (isActive) {
+                item.classList.remove('active');
+                toggle.classList.remove('fa-chevron-up');
+                toggle.classList.add('fa-chevron-down');
+            } else {
+                item.classList.add('active');
+                toggle.classList.remove('fa-chevron-down');
+                toggle.classList.add('fa-chevron-up');
+            }
+        }
+
+        // Chat button functionality
+        document.getElementById('chatButton').addEventListener('click', () => {
+            // Scroll to top and show chat widget if available
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            // If chatbot widget exists, trigger it
+            if (window.chatbotWidget) {
+                window.chatbotWidget.toggleChat();
+            } else {
+                // Fallback: scroll to chat link
+                document.getElementById('chatLink').scrollIntoView({ behavior: 'smooth' });
+            }
+        });
+
+        document.getElementById('chatLink').addEventListener('click', (e) => {
+            e.preventDefault();
+            document.getElementById('chatButton').click();
+        });
+
+        // Initialize
+        loadFAQs();
+    </script>
+
+    <!-- Service Worker - Unregister old and register new (for development) -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            // Unregister old service workers on page load (for development)
+            navigator.serviceWorker.getRegistrations().then((registrations) => {
+                for (let registration of registrations) {
+                    registration.unregister().then(() => {
+                        console.log('Old Service Worker unregistered');
+                    });
+                }
+            });
+
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then((registration) => {
+                        console.log('Service Worker registered:', registration.scope);
+                        // Force update on next page load
+                        registration.update();
+                    })
+                    .catch((error) => {
+                        console.log('Service Worker registration failed:', error);
+                    });
+            });
+        }
+    </script>
+
+    <!-- Include chatbot if available -->
+    <script>
+        // Check if chatbot component exists and load it
+        fetch('/components/chatbot-simple.html')
+            .then(response => {
+                if (response.ok) {
+                    return response.text();
+                }
+            })
+            .then(html => {
+                if (html) {
+                    document.body.insertAdjacentHTML('beforeend', html);
+                    // Load chatbot script if exists
+                    const script = document.createElement('script');
+                    script.src = '/components/chatbot-simple.js';
+                    script.defer = true;
+                    document.body.appendChild(script);
+                }
+            })
+            .catch(() => {
+                // Chatbot not available, that's okay
+            });
+    </script>
+</body>
+</html>
+

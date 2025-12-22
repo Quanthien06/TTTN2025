@@ -570,16 +570,10 @@
         }
 
         // Áp dụng mã giảm giá
-        function applyPromoCode() {
-            const code = document.getElementById('promoCodeInput').value.trim().toUpperCase();
+        async function applyPromoCode() {
+            const code = document.getElementById('promoCodeInput').value.trim();
             const messageEl = document.getElementById('promoMessage');
             
-            const promoCodes = {
-                'SAVE10': { discount: 0.1, message: 'Giảm 10% đã được áp dụng!' },
-                'FREESHIP': { discount: 0, message: 'Miễn phí vận chuyển!', freeShipping: true },
-                'WELCOME20': { discount: 0.2, message: 'Giảm 20% đã được áp dụng!' }
-            };
-
             if (!code) {
                 messageEl.textContent = 'Vui lòng nhập mã giảm giá';
                 messageEl.className = 'mt-2 text-sm text-red-600';
@@ -587,18 +581,31 @@
                 return;
             }
 
-            const promo = promoCodes[code];
-            if (promo) {
-                discount = promo.discount ? (cartData.total * promo.discount) : 0;
-                promoCode = code;
-                messageEl.textContent = promo.message;
-                messageEl.className = 'mt-2 text-sm text-green-600';
-                messageEl.classList.remove('hidden');
-                updateOrderSummary();
-            } else {
+            try {
+                const subtotal = cartData?.total || 0;
+                const response = await apiCall('/coupons/validate', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        code: code,
+                        total_amount: subtotal
+                    })
+                });
+
+                if (response.valid) {
+                    discount = response.coupon.discount_amount;
+                    promoCode = code;
+                    messageEl.className = 'mt-2 text-sm text-green-600';
+                    messageEl.innerHTML = `<i class="fas fa-check-circle mr-1"></i>${response.coupon.name}: Giảm ${formatPrice(response.coupon.discount_amount)}`;
+                    messageEl.classList.remove('hidden');
+                    updateOrderSummary();
+                } else {
+                    throw new Error('Mã giảm giá không hợp lệ');
+                }
+            } catch (error) {
                 discount = 0;
-                messageEl.textContent = 'Mã giảm giá không hợp lệ';
+                promoCode = '';
                 messageEl.className = 'mt-2 text-sm text-red-600';
+                messageEl.textContent = error.message || 'Mã giảm giá không hợp lệ';
                 messageEl.classList.remove('hidden');
                 updateOrderSummary();
             }

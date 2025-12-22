@@ -23,6 +23,19 @@ const JWT_SECRET = process.env.JWT_SECRET || 'HhGg78@!kYpQzXcVbNmL1o2P3oI4U5yT6r
 
 // Middleware
 app.use(express.json());
+
+// Prevent caching for HTML, CSS, JS files in development
+app.use((req, res, next) => {
+    if (req.path.endsWith('.html') || req.path.endsWith('.css') || req.path.endsWith('.js') || req.path === '/') {
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
+        res.setHeader('Last-Modified', new Date().toUTCString());
+        res.setHeader('ETag', `"${Date.now()}"`);
+    }
+    next();
+});
+
 // Serve static files: in Docker image `public` is copied to /app/public; in repo it is ../public
 const publicDirCandidates = [
     path.join(__dirname, 'public'),
@@ -48,6 +61,8 @@ async function verifyToken(req, res, next) {
         '/api/register',
         '/api/login',
         '/api/products',
+        '/api/coupons/validate',
+        '/api/coupons/active',
         '/api/categories',
         '/api/news',
         '/api/forgot-password',
@@ -55,7 +70,8 @@ async function verifyToken(req, res, next) {
         '/api/user-by-email',
         '/api/verify-email',
         '/api/resend-verification',
-        '/api/payment/check-account'  // Kiểm tra tài khoản demo - không cần auth
+        '/api/payment/check-account',  // Kiểm tra tài khoản demo - không cần auth
+        '/api/faqs'  // FAQs - công khai
     ];
 
     // Kiểm tra nếu route là public
@@ -65,6 +81,7 @@ async function verifyToken(req, res, next) {
         if (req.path.startsWith(route) && route.includes('/categories')) return true;
         if (req.path.startsWith(route) && route.includes('/news')) return true;
         if (req.path.startsWith(route) && route.includes('/payment/check-account')) return true;
+        if (req.path.startsWith(route) && route.includes('/coupons')) return true;
         return false;
     });
 
@@ -506,6 +523,68 @@ app.use('/api/orders', async (req, res) => {
 });
 
 // ============================================
+// COUPON ENDPOINTS → Order Service
+// ============================================
+
+app.use('/api/coupons', async (req, res) => {
+    try {
+        const url = `${SERVICES.order}/coupons${req.url}`;
+        const method = req.method.toLowerCase();
+        
+        const config = {
+            method,
+            url,
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': req.headers['authorization'] || ''
+            }
+        };
+
+        if (method !== 'get' && method !== 'delete') {
+            config.data = req.body;
+        }
+
+        const response = await axios(config);
+        res.json(response.data);
+    } catch (error) {
+        res.status(error.response?.status || 500).json(
+            error.response?.data || { message: 'Lỗi server' }
+        );
+    }
+});
+
+// ============================================
+// LOYALTY POINTS ENDPOINTS → Order Service
+// ============================================
+
+app.use('/api/loyalty', async (req, res) => {
+    try {
+        const url = `${SERVICES.order}/loyalty${req.url}`;
+        const method = req.method.toLowerCase();
+        
+        const config = {
+            method,
+            url,
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': req.headers['authorization']
+            }
+        };
+
+        if (method !== 'get' && method !== 'delete') {
+            config.data = req.body;
+        }
+
+        const response = await axios(config);
+        res.json(response.data);
+    } catch (error) {
+        res.status(error.response?.status || 500).json(
+            error.response?.data || { message: 'Lỗi server' }
+        );
+    }
+});
+
+// ============================================
 // PAYMENT ENDPOINTS → Direct DB Query
 // ============================================
 
@@ -742,6 +821,29 @@ app.delete('/api/comments/:id', async (req, res) => {
     } catch (error) {
         console.error('Lỗi khi xóa comment:', error);
         res.status(500).json({ message: 'Lỗi máy chủ nội bộ' });
+    }
+});
+
+// GET /api/faqs - Lấy danh sách FAQs
+app.get('/api/faqs', (req, res) => {
+    // Prevent caching for API responses
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    
+    try {
+        const faqsPath = path.join(__dirname, '..', 'config', 'faqs.json');
+        const faqsData = JSON.parse(fs.readFileSync(faqsPath, 'utf8'));
+        res.json({
+            success: true,
+            data: faqsData
+        });
+    } catch (error) {
+        console.error('Lỗi khi đọc FAQs:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Không thể tải FAQs'
+        });
     }
 });
 

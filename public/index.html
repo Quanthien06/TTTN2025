@@ -352,10 +352,10 @@
                         </div>
                     </div>
                     
-                    <!-- Khuyến mãi -->
-                    <a href="/promotions.html"
+                    <!-- FAQ -->
+                    <a href="/faq.html"
                         class="nav-link text-gray-700 hover:text-red-600 font-medium transition-colors"
-                        data-page="promotions">Khuyến mãi</a>
+                        data-page="faq">FAQ</a>
                     
                     <!-- Về chúng tôi -->
                     <a href="/about.html"
@@ -1118,10 +1118,21 @@
     <!-- Service Worker Registration (PWA) -->
     <script>
         if ('serviceWorker' in navigator) {
+            // Unregister old service workers on page load (for development)
+            navigator.serviceWorker.getRegistrations().then((registrations) => {
+                for (let registration of registrations) {
+                    registration.unregister().then(() => {
+                        console.log('Old Service Worker unregistered');
+                    });
+                }
+            });
+
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/sw.js')
                     .then((registration) => {
                         console.log('Service Worker registered:', registration.scope);
+                        // Force update on next page load
+                        registration.update();
                     })
                     .catch((error) => {
                         console.log('Service Worker registration failed:', error);
