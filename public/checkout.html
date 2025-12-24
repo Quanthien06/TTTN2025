@@ -1254,6 +1254,16 @@
 
                 // Show success message
                 showToast('Đặt hàng thành công!', 'success');
+                
+                // Add notification if function exists
+                if (typeof addNotification !== 'undefined' && typeof NOTIFICATION_TYPES !== 'undefined') {
+                    const orderId = response.order?.id || response.id;
+                    addNotification(
+                        NOTIFICATION_TYPES.ORDER_PLACED,
+                        `Đặt hàng thành công! Đơn hàng #${orderId}`,
+                        { orderId }
+                    );
+                }
 
                 // Redirect to orders page (SPA route)
                 setTimeout(() => {

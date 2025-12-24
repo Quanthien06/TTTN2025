@@ -156,6 +156,7 @@
 <body class="bg-gray-50 font-sans">
     <div id="site-header"></div>
     <script src="/include-partials.js" defer></script>
+    <script src="/app.js" defer></script>
 
     <!-- Main Content -->
     <div class="container mx-auto px-4 py-8 max-w-5xl">
@@ -696,6 +697,16 @@
                 });
 
                 showToast('Đã hủy đơn hàng thành công', 'success');
+                
+                // Add notification if function exists
+                if (typeof addNotification !== 'undefined' && typeof NOTIFICATION_TYPES !== 'undefined') {
+                    addNotification(
+                        NOTIFICATION_TYPES.ORDER_CANCELLED,
+                        `Đơn hàng #${orderId} đã bị hủy`,
+                        { orderId }
+                    );
+                }
+                
                 setTimeout(() => {
                     loadOrders();
                 }, 1000);

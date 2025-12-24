@@ -159,6 +159,42 @@
             background-color: #f3f4f6;
             color: #dc2626;
         }
+        
+        /* Notification Dropdown Styles */
+        #notificationDropdown {
+            max-height: 500px;
+        }
+        
+        #notificationList {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        #notificationList::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        #notificationList::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        
+        #notificationList::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+        
+        #notificationList::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        
+        .notification-item {
+            transition: background-color 0.2s;
+        }
+        
+        #notificationBadge {
+            font-size: 11px;
+            font-weight: 600;
+        }
     </style>
 </head>
 
@@ -247,6 +283,31 @@
                         <span id="cartBadgeHeader"
                             class="absolute -top-2 -right-2 bg-red-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center hidden">0</span>
                     </a>
+
+                    <!-- Notifications -->
+                    <div id="navNotifications" class="relative hidden">
+                        <button id="notificationBtn"
+                            class="relative flex items-center gap-2 text-gray-700 hover:text-red-600 transition-colors">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9">
+                                </path>
+                            </svg>
+                            <span class="hidden md:block font-medium">Thông báo</span>
+                            <span id="notificationBadge"
+                                class="absolute -top-2 -right-2 bg-red-600 text-white text-xs rounded-full min-w-[20px] h-5 flex items-center justify-center px-1.5 hidden">0</span>
+                        </button>
+                        <div id="notificationDropdown"
+                            class="hidden absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-[60] max-h-[500px] overflow-hidden flex flex-col">
+                            <div class="p-4 border-b border-gray-200 flex items-center justify-between">
+                                <h3 class="font-bold text-gray-800">Thông báo</h3>
+                                <button id="markAllReadBtn" class="text-sm text-red-600 hover:text-red-700">Đánh dấu đã đọc</button>
+                            </div>
+                            <div id="notificationList" class="overflow-y-auto flex-1">
+                                <div class="p-4 text-center text-gray-500">Không có thông báo nào</div>
+                            </div>
+                        </div>
+                    </div>
 
                     <!-- User Menu / Auth Buttons -->
                     <div id="navUser" class="hidden">

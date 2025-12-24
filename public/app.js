@@ -365,6 +365,7 @@ function logout() {
 function updateUIForAuth(isLoggedIn) {
     const navAuth = document.getElementById('navAuth');
     const navUser = document.getElementById('navUser');
+    const navNotifications = document.getElementById('navNotifications');
     const userName = document.getElementById('userName');
     const userAvatar = document.getElementById('userAvatar');
 
@@ -386,6 +387,12 @@ function updateUIForAuth(isLoggedIn) {
         if (navUser) {
             navUser.classList.remove('hidden');
             console.log('Shown navUser');
+        }
+        
+        // Hiển thị notifications
+        if (navNotifications) {
+            navNotifications.classList.remove('hidden');
+            updateNotificationUI();
         }
         
         // Cập nhật tên user
@@ -431,6 +438,11 @@ function updateUIForAuth(isLoggedIn) {
         if (navUser) {
             navUser.classList.add('hidden');
             console.log('Hidden navUser');
+        }
+        
+        // Ẩn notifications
+        if (navNotifications) {
+            navNotifications.classList.add('hidden');
         }
         
         // Xóa tên user
@@ -1458,6 +1470,12 @@ async function addToCart(productId, productName, price) {
             body: JSON.stringify({ product_id: productId, quantity: 1 })
         });
         showToast(`Đã thêm "${productName}" vào giỏ hàng`, 'success');
+        // Add notification
+        addNotification(
+            NOTIFICATION_TYPES.CART_ADDED,
+            `Đã thêm "${productName}" vào giỏ hàng`,
+            { productId, productName }
+        );
         loadCartCount();
     } catch (error) {
         showToast(error.message, 'error');
@@ -1551,6 +1569,15 @@ async function checkout(shippingAddress, phone) {
         
         closeModal('checkoutModal');
         showToast('Đặt hàng thành công!', 'success');
+        
+        // Add notification
+        const orderId = data.order?.id || data.id;
+        addNotification(
+            NOTIFICATION_TYPES.ORDER_PLACED,
+            `Đặt hàng thành công! Đơn hàng #${orderId}`,
+            { orderId }
+        );
+        
         loadCart();
         loadCartCount();
         
@@ -1562,6 +1589,235 @@ async function checkout(shippingAddress, phone) {
         hideLoading();
     }
 }
+
+// ============================================
+// NOTIFICATIONS
+// ============================================
+
+// Notification types
+const NOTIFICATION_TYPES = {
+    CART_ADDED: 'cart_added',
+    ORDER_PLACED: 'order_placed',
+    ORDER_DELIVERED: 'order_delivered',
+    ORDER_CANCELLED: 'order_cancelled'
+};
+
+// Get notifications from localStorage
+function getNotifications() {
+    try {
+        const stored = localStorage.getItem('notifications');
+        return stored ? JSON.parse(stored) : [];
+    } catch {
+        return [];
+    }
+}
+
+// Save notifications to localStorage
+function saveNotifications(notifications) {
+    localStorage.setItem('notifications', JSON.stringify(notifications));
+}
+
+// Add a new notification
+function addNotification(type, message, data = {}) {
+    const notifications = getNotifications();
+    const newNotification = {
+        id: Date.now(),
+        type,
+        message,
+        data,
+        read: false,
+        timestamp: new Date().toISOString()
+    };
+    notifications.unshift(newNotification); // Add to beginning
+    // Keep only last 50 notifications
+    if (notifications.length > 50) {
+        notifications.splice(50);
+    }
+    saveNotifications(notifications);
+    updateNotificationUI();
+    return newNotification;
+}
+
+// Mark notification as read
+function markNotificationRead(notificationId) {
+    const notifications = getNotifications();
+    const notification = notifications.find(n => n.id === notificationId);
+    if (notification) {
+        notification.read = true;
+        saveNotifications(notifications);
+        updateNotificationUI();
+    }
+}
+
+// Mark all notifications as read
+function markAllNotificationsRead() {
+    const notifications = getNotifications();
+    notifications.forEach(n => n.read = true);
+    saveNotifications(notifications);
+    updateNotificationUI();
+}
+
+// Get unread count
+function getUnreadCount() {
+    const notifications = getNotifications();
+    return notifications.filter(n => !n.read).length;
+}
+
+// Update notification UI
+function updateNotificationUI() {
+    const navNotifications = document.getElementById('navNotifications');
+    const notificationBadge = document.getElementById('notificationBadge');
+    const notificationList = document.getElementById('notificationList');
+    
+    if (!navNotifications || !notificationBadge || !notificationList) return;
+    
+    const notifications = getNotifications();
+    const unreadCount = getUnreadCount();
+    
+    // Update badge
+    if (unreadCount > 0) {
+        notificationBadge.textContent = unreadCount > 10 ? '10+' : unreadCount;
+        notificationBadge.classList.remove('hidden');
+    } else {
+        notificationBadge.classList.add('hidden');
+    }
+    
+    // Update list
+    if (notifications.length === 0) {
+        notificationList.innerHTML = '<div class="p-4 text-center text-gray-500">Không có thông báo nào</div>';
+        return;
+    }
+    
+    notificationList.innerHTML = notifications.map(notif => {
+        const date = new Date(notif.timestamp);
+        const timeAgo = getTimeAgo(date);
+        const icon = getNotificationIcon(notif.type);
+        const bgColor = notif.read ? 'bg-white' : 'bg-red-50';
+        
+        return `
+            <div class="notification-item ${bgColor} border-b border-gray-100 p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+                 onclick="markNotificationRead(${notif.id}); this.classList.remove('bg-red-50'); this.classList.add('bg-white');">
+                <div class="flex items-start gap-3">
+                    <div class="flex-shrink-0 mt-1">
+                        ${icon}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm text-gray-800 ${notif.read ? '' : 'font-semibold'}">${notif.message}</p>
+                        <p class="text-xs text-gray-500 mt-1">${timeAgo}</p>
+                    </div>
+                    ${!notif.read ? '<div class="flex-shrink-0 w-2 h-2 bg-red-600 rounded-full mt-2"></div>' : ''}
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+// Get notification icon
+function getNotificationIcon(type) {
+    const icons = {
+        [NOTIFICATION_TYPES.CART_ADDED]: '<svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>',
+        [NOTIFICATION_TYPES.ORDER_PLACED]: '<svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>',
+        [NOTIFICATION_TYPES.ORDER_DELIVERED]: '<svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>',
+        [NOTIFICATION_TYPES.ORDER_CANCELLED]: '<svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>'
+    };
+    return icons[type] || '<svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>';
+}
+
+// Get time ago string
+function getTimeAgo(date) {
+    const now = new Date();
+    const diff = now - date;
+    const seconds = Math.floor(diff / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+    
+    if (days > 0) return `${days} ngày trước`;
+    if (hours > 0) return `${hours} giờ trước`;
+    if (minutes > 0) return `${minutes} phút trước`;
+    return 'Vừa xong';
+}
+
+// Initialize notification system
+function initNotifications() {
+    const notificationBtn = document.getElementById('notificationBtn');
+    const notificationDropdown = document.getElementById('notificationDropdown');
+    const markAllReadBtn = document.getElementById('markAllReadBtn');
+    
+    if (!notificationBtn || !notificationDropdown) {
+        console.warn('Notification elements not found');
+        return;
+    }
+    
+    notificationBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        notificationDropdown.classList.toggle('hidden');
+        updateNotificationUI();
+    });
+    
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+        if (notificationDropdown && !notificationDropdown.contains(e.target) && !notificationBtn.contains(e.target)) {
+            notificationDropdown.classList.add('hidden');
+        }
+    });
+    
+    if (markAllReadBtn) {
+        markAllReadBtn.addEventListener('click', () => {
+            markAllNotificationsRead();
+        });
+    }
+    
+    // Update UI immediately
+    updateNotificationUI();
+    
+    console.log('Notifications initialized');
+    
+    // Debug: Log notification element status
+    const navNotifications = document.getElementById('navNotifications');
+    if (navNotifications) {
+        console.log('Notification element found, hidden:', navNotifications.classList.contains('hidden'));
+    } else {
+        console.warn('Notification element not found in DOM');
+    }
+}
+
+// Check for order status changes
+let lastOrderStatuses = {}; // Store last known order statuses
+
+function checkOrderStatusChanges(orders) {
+    const currentStatuses = {};
+    orders.forEach(order => {
+        currentStatuses[order.id] = order.status;
+    });
+    
+    // Check for status changes
+    orders.forEach(order => {
+        const lastStatus = lastOrderStatuses[order.id];
+        if (lastStatus && lastStatus !== order.status) {
+            // Status changed
+            if (order.status === 'delivered') {
+                addNotification(
+                    NOTIFICATION_TYPES.ORDER_DELIVERED,
+                    `Đơn hàng #${order.id} đã được giao thành công!`,
+                    { orderId: order.id }
+                );
+            } else if (order.status === 'cancelled') {
+                addNotification(
+                    NOTIFICATION_TYPES.ORDER_CANCELLED,
+                    `Đơn hàng #${order.id} đã bị hủy`,
+                    { orderId: order.id }
+                );
+            }
+        }
+    });
+    
+    // Update last known statuses
+    lastOrderStatuses = currentStatuses;
+}
+
+// Make functions available globally
+window.markNotificationRead = markNotificationRead;
 
 // ============================================
 // ORDERS
@@ -1645,6 +1901,9 @@ async function loadOrders() {
                 totalItems: Number(data.pagination.totalItems || 0)
             };
         }
+
+        // Check for order status changes
+        checkOrderStatusChanges(data.orders || []);
 
         content.innerHTML = data.orders.map(order => `
             <div class="order-card">
@@ -2388,6 +2647,11 @@ function openModal(modalId) {
 // ============================================
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Initialize notifications
+    if (typeof initNotifications === 'function') {
+        initNotifications();
+    }
+    
     // Đồng bộ UI ngay lập tức theo localStorage trước khi gọi API
     const cachedUser = getCachedUser();
     const token = getToken();

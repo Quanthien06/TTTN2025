@@ -678,6 +678,15 @@
 
                 showToast(`Đã thêm ${currentQuantity} sản phẩm vào giỏ hàng!`, 'success');
                 
+                // Add notification if function exists
+                if (typeof addNotification !== 'undefined' && typeof NOTIFICATION_TYPES !== 'undefined') {
+                    addNotification(
+                        NOTIFICATION_TYPES.CART_ADDED,
+                        `Đã thêm ${currentQuantity} "${currentProduct.name}" vào giỏ hàng`,
+                        { productId: currentProduct.id, productName: currentProduct.name }
+                    );
+                }
+                
                 // Cập nhật số lượng trong giỏ hàng
                 loadCartCount();
                 
