@@ -894,12 +894,37 @@ async function loadCategories() {
         const grid = document.getElementById('categoriesGrid');
         
         if (data.categories.length === 0) {
-            grid.innerHTML = '<div class="empty-state">Chưa có danh mục nào</div>';
+            const scrollWrapper = grid.querySelector('.categories-scroll-wrapper');
+            if (scrollWrapper) {
+                scrollWrapper.innerHTML = '<div class="empty-state">Chưa có danh mục nào</div>';
+            } else {
+                grid.innerHTML = '<div class="empty-state">Chưa có danh mục nào</div>';
+            }
             return;
         }
 
-        // Hiển thị tất cả categories (không giới hạn 6)
-        grid.innerHTML = data.categories.map(cat => {
+        // Load product image for each category
+        const categoriesWithImages = await Promise.all(
+            data.categories.map(async (cat) => {
+                let productImage = null;
+                try {
+                    // Fetch one product from this category
+                    const productsData = await apiCall(`/products?category=${encodeURIComponent(cat.name)}&limit=1`);
+                    if (productsData.products && productsData.products.length > 0) {
+                        const product = productsData.products[0];
+                        const imageData = getProductImage(product);
+                        productImage = imageData.primary;
+                    }
+                } catch (err) {
+                    console.warn(`Could not load product image for category ${cat.name}:`, err);
+                }
+                return { ...cat, productImage };
+            })
+        );
+
+        // Hiển thị tất cả categories với hình ảnh sản phẩm
+        const scrollWrapper = grid.querySelector('.categories-scroll-wrapper');
+        const cardsHTML = categoriesWithImages.map(cat => {
             const route = cat.route || 'products';
             const categoryName = cat.name;
             
@@ -907,17 +932,45 @@ async function loadCategories() {
             <a 
                 href="/${route}.html"
                 onclick="event.preventDefault(); navigateTo('${route}'); return false;"
-                class="category-card bg-white rounded-lg shadow-md p-6 text-center cursor-pointer hover:shadow-lg hover:scale-105 transition-all duration-300 animate-fade-in block"
+                class="category-card-new bg-white rounded-xl shadow-sm p-4 cursor-pointer hover:shadow-md transition-all duration-300 animate-fade-in block flex items-center gap-3"
             >
-                <div class="text-4xl mb-3">${cat.icon || '📦'}</div>
-                <h3 class="font-bold text-gray-800 mb-2">${categoryName}</h3>
-                <div class="text-sm text-gray-500">${cat.product_count || 0} sản phẩm</div>
+                ${cat.productImage ? `
+                    <div class="category-image-wrapper flex-shrink-0">
+                        <img 
+                            src="${cat.productImage}" 
+                            alt="${categoryName}"
+                            class="category-product-image w-16 h-16 object-cover rounded-lg"
+                            onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+                        />
+                        <div class="text-3xl hidden w-16 h-16 items-center justify-center bg-gray-100 rounded-lg">${cat.icon || '📦'}</div>
+                    </div>
+                ` : `
+                    <div class="category-image-wrapper flex-shrink-0">
+                        <div class="text-3xl w-16 h-16 flex items-center justify-center bg-gray-100 rounded-lg">${cat.icon || '📦'}</div>
+                    </div>
+                `}
+                <div class="category-info flex-1 min-w-0">
+                    <h3 class="font-bold text-gray-800 mb-1 text-sm md:text-base">${categoryName}</h3>
+                    <div class="text-xs text-gray-500">${cat.product_count || 0} sản phẩm</div>
+                </div>
             </a>
             `;
         }).join('');
+        
+        if (scrollWrapper) {
+            scrollWrapper.innerHTML = cardsHTML;
+        } else {
+            // Fallback: create wrapper if it doesn't exist
+            grid.innerHTML = `<div class="categories-scroll-wrapper flex gap-3 min-w-max">${cardsHTML}</div>`;
+        }
     } catch (error) {
-        document.getElementById('categoriesGrid').innerHTML = 
-            `<div class="empty-state">Lỗi khi tải danh mục: ${error.message}</div>`;
+        const grid = document.getElementById('categoriesGrid');
+        const scrollWrapper = grid?.querySelector('.categories-scroll-wrapper');
+        if (scrollWrapper) {
+            scrollWrapper.innerHTML = `<div class="empty-state">Lỗi khi tải danh mục: ${error.message}</div>`;
+        } else {
+            grid.innerHTML = `<div class="empty-state">Lỗi khi tải danh mục: ${error.message}</div>`;
+        }
     }
 }
 
