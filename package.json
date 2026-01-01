@@ -4,7 +4,18 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:unit": "jest tests/unit",
+    "test:integration": "jest tests/integration",
+    "test:auth": "jest tests/integration/auth.test.js",
+    "test:product": "jest tests/integration/product.test.js",
+    "test:cart": "jest tests/integration/cart.test.js",
+    "test:order": "jest tests/integration/order.test.js",
+    "test:quick": "node tests/quick-test.js",
+    "setup:test-db": "node create-test-db.js",
+    "setup:test-schema": "node setup-test-schema.js"
   },
   "repository": {
     "type": "git",
@@ -19,6 +30,7 @@
   },
   "homepage": "https://github.com/Quanthien06/TTTN2025#readme",
   "dependencies": {
+    "axios": "^1.13.2",
     "bcrypt": "^6.0.0",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
@@ -29,5 +41,9 @@
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
     "sharp": "^0.33.5"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "supertest": "^7.1.3"
   }
 }
