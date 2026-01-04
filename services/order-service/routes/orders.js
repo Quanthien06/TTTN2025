@@ -30,7 +30,7 @@ router.post('/', async (req, res) => {
             const cartResponse = await axios.get(`${CART_SERVICE_URL}/cart`, {
                 headers: { 'Authorization': req.headers['authorization'] }
             });
-            cartData = cartResponse.data.cart;
+            cartData = cartResponse.data;
         } catch (error) {
             if (error.response?.status === 404) {
                 return res.status(404).json({ message: 'Giỏ hàng trống' });
@@ -43,12 +43,30 @@ router.post('/', async (req, res) => {
             return res.status(400).json({ message: 'Giỏ hàng không có sản phẩm' });
         }
 
-        // Validate cart items có price
+        // Validate cart items có price và stock
         for (const item of cartData.items) {
             if (!item.price || item.price <= 0) {
                 console.error('Cart item missing price:', item);
-                return res.status(400).json({ 
-                    message: `Sản phẩm "${item.product_id}" không có giá. Vui lòng thử lại.` 
+                return res.status(400).json({
+                    message: `Sản phẩm "${item.product_id}" không có giá. Vui lòng thử lại.`
+                });
+            }
+
+            // Check if product exists and has sufficient stock
+            const [productRows] = await pool.query(
+                'SELECT stock_quantity FROM products WHERE id = ?',
+                [item.product_id]
+            );
+
+            if (productRows.length === 0) {
+                return res.status(400).json({
+                    message: `Sản phẩm với ID ${item.product_id} không tồn tại`
+                });
+            }
+
+            if (productRows[0].stock_quantity < item.quantity) {
+                return res.status(400).json({
+                    message: `Sản phẩm "${item.product_id}" không đủ tồn kho. Còn ${productRows[0].stock_quantity} sản phẩm.`
                 });
             }
         }
@@ -143,6 +161,19 @@ router.post('/', async (req, res) => {
             }
         }
 
+        // 3.1. Deduct stock quantity from products
+        for (const item of cartData.items) {
+            try {
+                await pool.query(
+                    'UPDATE products SET stock_quantity = stock_quantity - ? WHERE id = ?',
+                    [item.quantity, item.product_id]
+                );
+            } catch (stockError) {
+                console.error('Lỗi khi trừ tồn kho:', stockError);
+                throw new Error(`Lỗi khi cập nhật tồn kho cho sản phẩm ${item.product_id}: ${stockError.message}`);
+            }
+        }
+
         // 4. Record coupon usage if applied
         if (couponId) {
             try {
@@ -159,7 +190,17 @@ router.post('/', async (req, res) => {
             }
         }
 
-        // 5. Redeem loyalty points if used
+        // 5. Create order tracking record
+        try {
+            await pool.query(
+                'INSERT INTO order_tracking (order_id, status, description) VALUES (?, ?, ?)',
+                [orderId, 'pending', 'Đơn hàng đã được tạo và đang chờ xử lý']
+            );
+        } catch (trackingError) {
+            console.error('Lỗi khi tạo order tracking:', trackingError);
+        }
+
+        // 6. Redeem loyalty points if used
         if (use_loyalty_points && use_loyalty_points > 0) {
             try {
                 await pool.query(
@@ -176,7 +217,7 @@ router.post('/', async (req, res) => {
             }
         }
 
-        // 6. Earn loyalty points (1 point per 10,000 VNĐ spent on final total)
+        // 7. Earn loyalty points (1 point per 10,000 VNĐ spent on final total)
         try {
             await earnPoints(pool, userId, orderId, finalTotal);
         } catch (earnError) {

@@ -80,12 +80,8 @@ router.get('/', async (req, res) => {
         }));
 
         res.json({
-            cart: {
-                ...cart,
-                items: formattedItems,
-                total: parseFloat(total),
-                item_count: items.length
-            }
+            items: formattedItems,
+            total: parseFloat(total)
         });
     } catch (error) {
         console.error('Lỗi khi lấy giỏ hàng:', error);
@@ -120,6 +116,13 @@ router.post('/items', async (req, res) => {
 
         const product = products[0];
         const productPrice = parseFloat(product.price);
+
+        // Check stock availability
+        if (product.stock_quantity < quantity) {
+            return res.status(400).json({
+                message: `Sản phẩm "${product.name}" không đủ tồn kho. Còn ${product.stock_quantity} sản phẩm.`
+            });
+        }
 
         const cartId = await getOrCreateCart(pool, userId);
         
@@ -183,28 +186,38 @@ router.put('/items/:itemId', async (req, res) => {
         if (!quantity || quantity <= 0) {
             return res.status(400).json({ message: 'Số lượng phải lớn hơn 0' });
         }
-        
+
         const [items] = await pool.query(
-            `SELECT ci.* FROM cart_items ci
+            `SELECT ci.*, p.stock_quantity, p.name as product_name FROM cart_items ci
             JOIN carts c ON ci.cart_id = c.id
+            JOIN products p ON ci.product_id = p.id
             WHERE ci.id = ? AND c.user_id = ?`,
             [itemId, userId]
         );
-        
+
         if (items.length === 0) {
             return res.status(404).json({ message: 'Item không tồn tại hoặc không thuộc giỏ hàng của bạn' });
         }
-        
+
+        const item = items[0];
+
+        // Check stock availability
+        if (item.stock_quantity < quantity) {
+            return res.status(400).json({
+                message: `Sản phẩm "${item.product_name}" không đủ tồn kho. Còn ${item.stock_quantity} sản phẩm.`
+            });
+        }
+
         await pool.query(
             'UPDATE cart_items SET quantity = ? WHERE id = ?',
             [quantity, itemId]
         );
-        
+
         const [updatedItems] = await pool.query(
             'SELECT * FROM cart_items WHERE id = ?',
             [itemId]
         );
-        
+
         res.json({
             message: 'Đã cập nhật số lượng',
             item: {
@@ -279,28 +292,18 @@ router.get('/total', async (req, res) => {
     const userId = req.user.id;
 
     try {
-        const [carts] = await pool.query(
-            'SELECT * FROM carts WHERE user_id = ? AND status = ?',
-            [userId, 'active']
-        );
-        
-        if (carts.length === 0) {
-            return res.json({ total: 0, item_count: 0 });
-        }
-        
-        const cartId = carts[0].id;
+        const cartId = await getOrCreateCart(pool, userId);
+
         const [totalRows] = await pool.query(
-            `SELECT 
-                SUM(price * quantity) as total,
-                COUNT(*) as item_count
-            FROM cart_items 
+            `SELECT
+                SUM(price * quantity) as total
+            FROM cart_items
             WHERE cart_id = ?`,
             [cartId]
         );
-        
+
         res.json({
-            total: parseFloat(totalRows[0].total || 0),
-            item_count: parseInt(totalRows[0].item_count || 0)
+            total: parseFloat(totalRows[0].total || 0)
         });
     } catch (error) {
         console.error('Lỗi khi tính tổng:', error);

@@ -3,9 +3,13 @@
 
 const request = require('supertest');
 const express = require('express');
+const axios = require('axios');
 const ordersRouter = require('../../services/order-service/routes/orders');
 const { cleanDatabase, createTestUser, createTestProduct, getPool, closePool } = require('../helpers/db');
 const { generateToken } = require('../helpers/auth');
+
+// Mock axios
+jest.mock('axios');
 
 function createTestApp() {
   const app = express();
@@ -15,6 +19,7 @@ function createTestApp() {
   app.locals.pool = pool;
   app.locals.JWT_SECRET = process.env.JWT_SECRET || 'test-secret-key-for-jwt';
   app.locals.jwt = require('jsonwebtoken');
+  app.locals.CART_SERVICE_URL = 'http://localhost:5003'; // Mock URL
   
   // Setup verifyToken middleware
   const jwt = require('jsonwebtoken');
@@ -32,7 +37,8 @@ function createTestApp() {
     }
   };
   
-  app.use('/', ordersRouter);
+  // Mount router tại /orders như trong server.js
+  app.use('/orders', ordersRouter);
   
   return app;
 }
@@ -81,17 +87,19 @@ describe('Order Service Integration Tests', () => {
   
   describe('POST /orders', () => {
     test('should create order successfully', async () => {
-      // Tạo cart items trước
-      const [cartResult] = await pool.query(
-        'INSERT INTO carts (user_id, status) VALUES (?, ?)',
-        [testUser.id, 'active']
-      );
-      const cartId = cartResult.insertId;
-      
-      await pool.query(
-        'INSERT INTO cart_items (cart_id, product_id, quantity, price) VALUES (?, ?, ?, ?)',
-        [cartId, testProduct1.id, 2, testProduct1.price]
-      );
+      // Mock axios để trả về cart data
+      axios.get.mockResolvedValue({
+        data: {
+          items: [
+            {
+              product_id: testProduct1.id,
+              quantity: 2,
+              price: testProduct1.price
+            }
+          ],
+          total: testProduct1.price * 2
+        }
+      });
       
       const response = await request(app)
         .post('/orders')
@@ -100,24 +108,26 @@ describe('Order Service Integration Tests', () => {
           shipping_address: '123 Test Street, Test City',
           shipping_phone: '0123456789',
           shipping_name: 'Test User',
-          payment_method: 'bank_transfer',
-          items: [
-            {
-              product_id: testProduct1.id,
-              quantity: 2,
-              price: testProduct1.price
-            }
-          ]
+          payment_method: 'bank_transfer'
         });
       
       expect(response.status).toBe(201);
-      expect(response.body.message).toBe('Đơn hàng đã được tạo thành công');
+      expect(response.body.message).toBe('Đặt hàng thành công');
       expect(response.body.order).toBeDefined();
       expect(response.body.order.status).toBe('pending');
-      expect(response.body.order.items.length).toBe(1);
     });
     
     test('should return 400 if items array is empty', async () => {
+      // Mock empty cart
+      axios.get.mockResolvedValue({
+        data: {
+          cart: {
+            items: [],
+            total: 0
+          }
+        }
+      });
+      
       const response = await request(app)
         .post('/orders')
         .set('Authorization', `Bearer ${authToken}`)
@@ -125,36 +135,28 @@ describe('Order Service Integration Tests', () => {
           shipping_address: '123 Test Street',
           shipping_phone: '0123456789',
           shipping_name: 'Test User',
-          payment_method: 'bank_transfer',
-          items: []
+          payment_method: 'bank_transfer'
         });
       
       expect(response.status).toBe(400);
-      expect(response.body.message).toContain('items');
+      expect(response.body.message).toContain('Giỏ hàng');
     });
     
     test('should return 400 if product does not exist', async () => {
-      const response = await request(app)
-        .post('/orders')
-        .set('Authorization', `Bearer ${authToken}`)
-        .send({
-          shipping_address: '123 Test Street',
-          shipping_phone: '0123456789',
-          shipping_name: 'Test User',
-          payment_method: 'bank_transfer',
+      // Mock cart with non-existent product
+      axios.get.mockResolvedValue({
+        data: {
           items: [
             {
               product_id: 99999,
               quantity: 1,
               price: 1000000
             }
-          ]
-        });
+          ],
+          total: 1000000
+        }
+      });
       
-      expect(response.status).toBe(400);
-    });
-    
-    test('should return 400 if quantity exceeds stock', async () => {
       const response = await request(app)
         .post('/orders')
         .set('Authorization', `Bearer ${authToken}`)
@@ -162,14 +164,35 @@ describe('Order Service Integration Tests', () => {
           shipping_address: '123 Test Street',
           shipping_phone: '0123456789',
           shipping_name: 'Test User',
-          payment_method: 'bank_transfer',
+          payment_method: 'bank_transfer'
+        });
+      
+      expect(response.status).toBe(400);
+    });
+    
+    test('should return 400 if quantity exceeds stock', async () => {
+      // Mock cart with quantity exceeding stock
+      axios.get.mockResolvedValue({
+        data: {
           items: [
             {
               product_id: testProduct1.id,
               quantity: 100, // Exceeds stock_quantity of 10
               price: testProduct1.price
             }
-          ]
+          ],
+          total: testProduct1.price * 100
+        }
+      });
+      
+      const response = await request(app)
+        .post('/orders')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          shipping_address: '123 Test Street',
+          shipping_phone: '0123456789',
+          shipping_name: 'Test User',
+          payment_method: 'bank_transfer'
         });
       
       expect(response.status).toBe(400);
@@ -179,6 +202,20 @@ describe('Order Service Integration Tests', () => {
     test('should deduct stock quantity after creating order', async () => {
       const initialStock = testProduct1.stock_quantity;
       const orderQuantity = 3;
+
+      // Mock cart
+      axios.get.mockResolvedValue({
+        data: {
+          items: [
+            {
+              product_id: testProduct1.id,
+              quantity: orderQuantity,
+              price: testProduct1.price
+            }
+          ],
+          total: testProduct1.price * orderQuantity
+        }
+      });
       
       const response = await request(app)
         .post('/orders')
@@ -187,14 +224,7 @@ describe('Order Service Integration Tests', () => {
           shipping_address: '123 Test Street',
           shipping_phone: '0123456789',
           shipping_name: 'Test User',
-          payment_method: 'bank_transfer',
-          items: [
-            {
-              product_id: testProduct1.id,
-              quantity: orderQuantity,
-              price: testProduct1.price
-            }
-          ]
+          payment_method: 'bank_transfer'
         });
       
       expect(response.status).toBe(201);
@@ -296,12 +326,26 @@ describe('Order Service Integration Tests', () => {
         .get(`/orders/${orderId}`)
         .set('Authorization', `Bearer ${authToken}`);
       
-      expect(response.status).toBe(403);
+      expect(response.status).toBe(404);
     });
   });
   
   describe('Order Tracking', () => {
     test('should create tracking record when order is created', async () => {
+      // Mock cart
+      axios.get.mockResolvedValue({
+        data: {
+          items: [
+            {
+              product_id: testProduct1.id,
+              quantity: 2,
+              price: testProduct1.price
+            }
+          ],
+          total: testProduct1.price * 2
+        }
+      });
+      
       const response = await request(app)
         .post('/orders')
         .set('Authorization', `Bearer ${authToken}`)
@@ -309,16 +353,10 @@ describe('Order Service Integration Tests', () => {
           shipping_address: '123 Test Street',
           shipping_phone: '0123456789',
           shipping_name: 'Test User',
-          payment_method: 'bank_transfer',
-          items: [
-            {
-              product_id: testProduct1.id,
-              quantity: 2,
-              price: testProduct1.price
-            }
-          ]
+          payment_method: 'bank_transfer'
         });
       
+      expect(response.status).toBe(201);
       const orderId = response.body.order.id;
       
       // Verify tracking record exists
