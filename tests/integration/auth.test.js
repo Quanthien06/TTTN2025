@@ -88,10 +88,21 @@ describe('Auth Service Integration Tests', () => {
     });
     
     test('should return 409 if username already exists', async () => {
-      // Tạo user đầu tiên
-      const firstUser = await createTestUser(pool, { username: 'existinguser' });
+      // Tạo user đầu tiên qua API
+      const firstResponse = await request(app)
+        .post('/register')
+        .send({
+          username: 'existinguser',
+          password: 'testpass123'
+        });
       
-      // Thử tạo user với cùng username (không clean database giữa tests)
+      expect(firstResponse.status).toBe(201);
+      
+      // Verify user exists
+      const [users] = await pool.query('SELECT id FROM users WHERE username = ?', ['existinguser']);
+      expect(users.length).toBe(1);
+      
+      // Thử tạo user với cùng username
       const response = await request(app)
         .post('/register')
         .send({
@@ -101,18 +112,17 @@ describe('Auth Service Integration Tests', () => {
       
       expect(response.status).toBe(409);
       expect(response.body.message).toBe('Username đã tồn tại');
-      
-      // Clean up
-      await pool.query('DELETE FROM users WHERE id = ?', [firstUser.id]);
     });
     
     test('should hash password before storing', async () => {
       const username = 'hashtest';
       const password = 'testpass123';
       
-      await request(app)
+      const response = await request(app)
         .post('/register')
         .send({ username, password });
+      
+      expect(response.status).toBe(201);
       
       // Kiểm tra password đã được hash
       const [rows] = await pool.query('SELECT password FROM users WHERE username = ?', [username]);
@@ -287,6 +297,11 @@ describe('Auth Service Integration Tests', () => {
         email: 'reset@example.com',
         password: 'oldpassword'
       });
+      
+      // Verify user was created with email
+      const [userCheck] = await pool.query('SELECT id, email FROM users WHERE id = ?', [testUser.id]);
+      expect(userCheck.length).toBe(1);
+      expect(userCheck[0].email).toBe('reset@example.com');
       
       // Set OTP
       const otpCode = '123456';

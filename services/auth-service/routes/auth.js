@@ -31,6 +31,12 @@ router.post('/register', async (req, res) => {
             return res.status(400).json({ message: 'Username và password là bắt buộc' });
         }
 
+        // Check if username already exists
+        const [existingUsers] = await pool.query('SELECT id FROM users WHERE username = ?', [username]);
+        if (existingUsers.length > 0) {
+            return res.status(409).json({ message: 'Username đã tồn tại' });
+        }
+
         const hashedPassword = await bcrypt.hash(password, 10);
         const sql = 'INSERT INTO users (username, password, role) VALUES (?, ?, ?)';
         await pool.query(sql, [username, hashedPassword, role]);

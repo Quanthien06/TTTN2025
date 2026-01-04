@@ -193,7 +193,7 @@ router.post('/', async (req, res) => {
         // 5. Create order tracking record
         try {
             await pool.query(
-                'INSERT INTO order_tracking (order_id, status, description) VALUES (?, ?, ?)',
+                'INSERT INTO order_tracking (order_id, status, note) VALUES (?, ?, ?)',
                 [orderId, 'pending', 'Đơn hàng đã được tạo và đang chờ xử lý']
             );
         } catch (trackingError) {

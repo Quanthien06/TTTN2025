@@ -118,9 +118,10 @@ router.post('/items', async (req, res) => {
         const productPrice = parseFloat(product.price);
 
         // Check stock availability
-        if (product.stock_quantity < quantity) {
+        const stockQuantity = product.stock_quantity ?? 0;
+        if (stockQuantity < quantity) {
             return res.status(400).json({
-                message: `Sản phẩm "${product.name}" không đủ tồn kho. Còn ${product.stock_quantity} sản phẩm.`
+                message: `Sản phẩm "${product.name}" không đủ tồn kho. Còn ${stockQuantity} sản phẩm.`
             });
         }
 
