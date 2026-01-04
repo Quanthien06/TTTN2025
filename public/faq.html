@@ -178,23 +178,52 @@
         // Icon mapping for FAQ items (fallback)
         const faqIcons = ['😊', '📦', '📄', '➕', '💰', '✉️', '💬', '▶️'];
 
-        // Load FAQs from API
+        // Default fallback data (used if API fails)
+        const DEFAULT_FAQ_DATA = {
+            categories: [
+                { id: 'shipping', name: 'Vận chuyển' },
+                { id: 'payment', name: 'Thanh toán' },
+                { id: 'return', name: 'Đổi trả' },
+                { id: 'account', name: 'Tài khoản' },
+                { id: 'product', name: 'Sản phẩm' }
+            ],
+            faqs: [
+                { category: 'shipping', question: 'Thời gian giao hàng bao lâu?', answer: 'Nội thành 1-2 ngày, tỉnh 2-5 ngày. Bạn sẽ nhận được mã theo dõi sau khi đơn được xác nhận.' },
+                { category: 'shipping', question: 'Phí vận chuyển tính thế nào?', answer: 'Miễn phí với đơn từ 500.000đ. Dưới mức này, phí hiển thị tại bước thanh toán tùy khu vực.' },
+                { category: 'payment', question: 'Tôi có thể thanh toán bằng hình thức nào?', answer: 'Hỗ trợ COD, thẻ ATM nội địa, thẻ tín dụng/ghi nợ, ví điện tử (Momo, ZaloPay) và chuyển khoản.' },
+                { category: 'payment', question: 'Thanh toán online có an toàn không?', answer: 'Chúng tôi dùng cổng thanh toán đạt chuẩn PCI-DSS, mã hóa SSL. Không lưu thông tin thẻ của bạn.' },
+                { category: 'return', question: 'Chính sách đổi trả ra sao?', answer: 'Đổi trả trong 7 ngày nếu lỗi nhà sản xuất, đổi sản phẩm trong 30 ngày nếu còn nguyên tem/hộp và đầy đủ phụ kiện.' },
+                { category: 'account', question: 'Quên mật khẩu phải làm gì?', answer: 'Nhấn “Quên mật khẩu” tại trang đăng nhập, nhập email để nhận OTP và đặt lại mật khẩu.' },
+                { category: 'product', question: 'Sản phẩm có bảo hành không?', answer: 'Có. Thời gian bảo hành tùy sản phẩm (thường 12 tháng). Xem chi tiết trên trang sản phẩm hoặc liên hệ hỗ trợ.' },
+                { category: 'product', question: 'Tôi cần tư vấn chọn sản phẩm?', answer: 'Nhấn nút chat hoặc gọi hotline 0905 884 303. Đội ngũ tư vấn sẽ hỗ trợ bạn lựa chọn phù hợp nhu cầu.' }
+            ]
+        };
+
+        // Load FAQs from API (with fallback)
         async function loadFAQs() {
             try {
                 // Add cache-busting parameter
                 const response = await fetch(`/api/faqs?t=${Date.now()}`);
                 const data = await response.json();
                 
-                if (data.success) {
+                if (data.success && data.data?.faqs?.length) {
                     categories = data.data.categories;
                     faqs = data.data.faqs;
                     renderCategories();
                     renderFAQs();
                 } else {
-                    console.error('Lỗi khi tải FAQs:', data.message);
+                    console.warn('FAQ API không có dữ liệu, dùng mặc định.');
+                    categories = DEFAULT_FAQ_DATA.categories;
+                    faqs = DEFAULT_FAQ_DATA.faqs;
+                    renderCategories();
+                    renderFAQs();
                 }
             } catch (error) {
-                console.error('Lỗi khi tải FAQs:', error);
+                console.warn('Lỗi khi tải FAQs, dùng dữ liệu mặc định.', error);
+                categories = DEFAULT_FAQ_DATA.categories;
+                faqs = DEFAULT_FAQ_DATA.faqs;
+                renderCategories();
+                renderFAQs();
             }
         }
 

@@ -471,9 +471,12 @@ const CATEGORY_ROUTES = [
     'promotions', 'tech-news'
 ];
 
+const STATIC_PAGES = ['faq', 'about', 'warranty', 'returns', 'shipping'];
+
 const SUPPORTED_PAGES = [
     'home', 'products', 'categories', 'cart', 'orders', 'profile',
-    ...CATEGORY_ROUTES
+    ...CATEGORY_ROUTES,
+    ...STATIC_PAGES
 ];
 
 let currentCategoryTitle = 'Sản phẩm';
@@ -485,7 +488,8 @@ function isValidPage(page) {
 
 function buildPageHref(page) {
     if (!isValidPage(page)) return '/';
-    return page === 'home' ? '/' : `/${page}.html`;
+    if (page === 'home') return '/';
+    return `/${page}.html`;
 }
 
 function getInitialPage() {
@@ -2673,6 +2677,7 @@ document.addEventListener('DOMContentLoaded', () => {
     checkAuth();
 
     // Navigation
+    const isSpa = !!document.querySelector('.page');
     document.querySelectorAll('.nav-link[data-page]').forEach(link => {
         const page = link.dataset.page;
         const href = buildPageHref(page);
@@ -2681,8 +2686,20 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         link.addEventListener('click', (e) => {
-            e.preventDefault();
             const targetPage = link.dataset.page;
+            const hrefTarget = href || link.getAttribute('href') || '/';
+
+            // If not in SPA (no .page containers), let browser follow normal href
+            if (!isSpa) return;
+
+            // Static pages should navigate with full page load
+            if (STATIC_PAGES.includes(targetPage)) {
+                // Fallback: ensure navigation happens even if JS interferes
+                window.location.href = hrefTarget;
+                return;
+            }
+
+            e.preventDefault();
             if (targetPage === 'cart' || targetPage === 'orders' || targetPage === 'profile') {
                 if (!currentUser) {
                     showToast('Vui lòng đăng nhập', 'error');
