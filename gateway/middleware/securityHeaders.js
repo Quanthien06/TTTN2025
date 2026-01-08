@@ -6,15 +6,20 @@
 const helmet = require('helmet');
 
 // Configure Helmet with CSP
+// In development, use more relaxed CSP to allow local CSS/JS files
+const isDevelopment = process.env.NODE_ENV !== 'production';
+
 const helmetConfig = helmet({
-    contentSecurityPolicy: {
+    contentSecurityPolicy: isDevelopment ? false : {
+        // Disable CSP in development to avoid blocking local CSS/JS
+        // In production, enable strict CSP
         directives: {
             defaultSrc: ["'self'"],
-            styleSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com"],
-            scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com"],
+            styleSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com", "http://localhost:*"],
+            scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com", "http://localhost:*"],
             imgSrc: ["'self'", "data:", "https:", "http:"],
-            connectSrc: ["'self'"],
-            fontSrc: ["'self'", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com"],
+            connectSrc: ["'self'", "http://localhost:*"],
+            fontSrc: ["'self'", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com", "http://localhost:*"],
             objectSrc: ["'none'"],
             mediaSrc: ["'self'"],
             frameSrc: ["'none'"],
@@ -22,7 +27,8 @@ const helmetConfig = helmet({
     },
     crossOriginEmbedderPolicy: false, // Disable if causing issues
     crossOriginResourcePolicy: { policy: "cross-origin" },
-    hsts: {
+    hsts: isDevelopment ? false : {
+        // Disable HSTS in development
         maxAge: 31536000, // 1 year
         includeSubDomains: true,
         preload: true
