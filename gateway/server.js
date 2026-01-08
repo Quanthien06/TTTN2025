@@ -46,8 +46,14 @@ app.use(cookieParser());
 // Body Parser
 app.use(express.json({ limit: '10mb' })); // Limit request size
 
-// XSS Prevention - Sanitize request body
-app.use(sanitizeRequestBody);
+// XSS Prevention - Sanitize request body (skip for static files)
+app.use((req, res, next) => {
+    // Skip sanitization for static files and GET requests
+    if (req.method === 'GET' || req.path.startsWith('/css/') || req.path.startsWith('/js/') || req.path.startsWith('/img/') || req.path.startsWith('/fonts/')) {
+        return next();
+    }
+    sanitizeRequestBody(req, res, next);
+});
 
 // General Rate Limiting (apply to all API routes)
 app.use('/api', apiLimiter);
