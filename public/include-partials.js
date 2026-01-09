@@ -10,7 +10,16 @@
     const el = document.querySelector(selector);
     if (!el) return false;
     try {
-      const res = await fetch(url, { cache: 'no-cache' });
+      // Add cache busting parameter
+      const cacheBuster = '?v=' + Date.now();
+      const urlWithCache = url.includes('?') ? url + '&_=' + Date.now() : url + cacheBuster;
+      const res = await fetch(urlWithCache, { 
+        cache: 'no-cache',
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
+      });
       if (!res.ok) return false;
       el.innerHTML = await res.text();
       return true;
@@ -49,36 +58,69 @@
     const token = getToken();
     const cachedUser = safeParseJson(localStorage.getItem('user_info'));
 
-    const loginLink = document.getElementById('headerLoginLink');
-    const registerLink = document.getElementById('headerRegisterLink');
     const navAuth = document.getElementById('navAuth');
     const navUser = document.getElementById('navUser');
+    const navNotifications = document.getElementById('navNotifications');
     const userName = document.getElementById('userName');
     const userAvatar = document.getElementById('userAvatar');
     const logoutBtn = document.getElementById('logoutBtn');
     const adminMenuLink = document.getElementById('adminMenuLink');
 
     const loggedIn = !!token;
+    
+    // Debug logging
+    console.log('[syncHeaderAuthUI]', {
+      hasToken: !!token,
+      hasUser: !!cachedUser,
+      username: cachedUser?.username,
+      navAuth: !!navAuth,
+      navUser: !!navUser
+    });
 
     // Show/hide auth buttons vs user menu
     if (navAuth) navAuth.classList.toggle('hidden', loggedIn);
     if (navUser) navUser.classList.toggle('hidden', !loggedIn);
+    
+    // Show notifications only when logged in
+    if (navNotifications) {
+      navNotifications.classList.toggle('hidden', !loggedIn);
+    }
 
     if (loggedIn) {
       // Set user info
       if (userName) {
-        const name = cachedUser?.username || cachedUser?.full_name || 'User';
-        userName.textContent = name;
+        const username = cachedUser?.username || cachedUser?.full_name || 'User';
+        // Format: "Xin chào, {username}!" như trong index.html
+        userName.textContent = username;
       }
-      if (userAvatar && cachedUser?.avatar_url) {
-        userAvatar.src = cachedUser.avatar_url;
-      } else if (userAvatar) {
-        userAvatar.src = '/img/default-avatar.png';
+      if (userAvatar) {
+        const displayName = cachedUser?.full_name || cachedUser?.username || 'User';
+        if (cachedUser?.avatar_url && cachedUser.avatar_url.trim() !== '') {
+          userAvatar.src = cachedUser.avatar_url;
+        } else {
+          // Use ui-avatars as fallback (same as index.html)
+          userAvatar.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=dc2626&color=fff&size=32&bold=true`;
+        }
+        userAvatar.alt = displayName;
+        userAvatar.onerror = function() {
+          // Fallback to ui-avatars if avatar_url fails
+          const fallbackUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=dc2626&color=fff&size=32&bold=true`;
+          if (this.src !== fallbackUrl) {
+            this.src = fallbackUrl;
+          }
+        };
       }
 
       // Show admin link if admin
       if (adminMenuLink && cachedUser?.role === 'admin') {
         adminMenuLink.classList.remove('hidden');
+      } else if (adminMenuLink) {
+        adminMenuLink.classList.add('hidden');
+      }
+    } else {
+      // Hide admin link when logged out
+      if (adminMenuLink) {
+        adminMenuLink.classList.add('hidden');
       }
     }
 
@@ -194,18 +236,57 @@
     }
   }
 
+  // Listen for storage changes (when login/logout happens in another tab/page)
+  function setupStorageListener() {
+    window.addEventListener('storage', (e) => {
+      if (e.key === 'token' || e.key === 'user_info') {
+        // Re-sync header when token or user_info changes
+        setTimeout(() => {
+          syncHeaderAuthUI();
+          syncCartBadge();
+        }, 100);
+      }
+    });
+    
+    // Also listen for custom events (for same-tab updates)
+    window.addEventListener('authStateChanged', () => {
+      setTimeout(() => {
+        syncHeaderAuthUI();
+        syncCartBadge();
+      }, 100);
+    });
+  }
+
   async function init() {
     await loadPartial('#site-header', '/components/header.html');
     await loadPartial('#site-footer', '/components/footer.html');
     adjustForFixedHeader();
     window.addEventListener('resize', adjustForFixedHeader);
 
-    // After header is loaded, setup event handlers
-    syncHeaderAuthUI();
-    syncCartBadge();
-    setupUserMenuDropdown();
-    setupNotificationDropdown();
-    setupSearch();
+    // Setup storage listener first
+    setupStorageListener();
+
+    // Function to setup all header functionality
+    function setupHeader() {
+      syncHeaderAuthUI();
+      syncCartBadge();
+      setupUserMenuDropdown();
+      setupNotificationDropdown();
+      setupSearch();
+    }
+
+    // Setup immediately after header loads
+    setupHeader();
+
+    // Also setup after a short delay to ensure DOM is fully ready
+    setTimeout(() => {
+      setupHeader();
+    }, 50);
+
+    // One more time after a longer delay to catch any edge cases
+    setTimeout(() => {
+      setupHeader();
+    }, 200);
     
     // Initialize theme and language selectors
     if (window.themeManager) {
@@ -224,6 +305,9 @@
       }
     }
   }
+
+  // Make syncHeaderAuthUI available globally so other scripts can call it
+  window.syncHeaderAuthUI = syncHeaderAuthUI;
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);

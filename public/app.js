@@ -44,22 +44,46 @@ function getCachedUser() {
 // Lưu token vào localStorage
 function saveToken(token) {
     localStorage.setItem('token', token);
+    // Trigger event để sync header trên các trang khác
+    window.dispatchEvent(new Event('authStateChanged'));
+    // Also trigger storage event manually for same-tab sync
+    if (window.syncHeaderAuthUI) {
+        setTimeout(() => window.syncHeaderAuthUI(), 100);
+    }
 }
 
 // Lưu user info vào localStorage
 function saveUserInfo(user) {
     if (!user) return;
     localStorage.setItem('user_info', JSON.stringify(user));
+    // Trigger event để sync header trên các trang khác
+    window.dispatchEvent(new Event('authStateChanged'));
+    // Also trigger storage event manually for same-tab sync
+    if (window.syncHeaderAuthUI) {
+        setTimeout(() => window.syncHeaderAuthUI(), 100);
+    }
 }
 
 // Xóa token khỏi localStorage
 function removeToken() {
     localStorage.removeItem('token');
+    // Trigger event để sync header trên các trang khác
+    window.dispatchEvent(new Event('authStateChanged'));
+    // Also trigger storage event manually for same-tab sync
+    if (window.syncHeaderAuthUI) {
+        setTimeout(() => window.syncHeaderAuthUI(), 100);
+    }
 }
 
 // Xóa thông tin user cache
 function removeUserInfo() {
     localStorage.removeItem('user_info');
+    // Trigger event để sync header trên các trang khác
+    window.dispatchEvent(new Event('authStateChanged'));
+    // Also trigger storage event manually for same-tab sync
+    if (window.syncHeaderAuthUI) {
+        setTimeout(() => window.syncHeaderAuthUI(), 100);
+    }
 }
 
 // Format số tiền VNĐ

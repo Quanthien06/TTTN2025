@@ -40,8 +40,7 @@
                         class="w-full px-4 py-2 pr-10 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-red-500 transition-all" 
                         autocomplete="off" />
                     <button id="mainSearchButton"
-                        class="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-red-600 cursor-pointer"
-                        onclick="(function(){var q=document.getElementById('mainSearchInput')?.value||''; window.location.href='/?page=products&q='+encodeURIComponent(q.trim());})();">
+                        class="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-red-600 cursor-pointer">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
@@ -62,16 +61,14 @@
                 <button id="themeToggle" 
                         class="theme-toggle" 
                         aria-label="Toggle theme"
-                        title="Chuyển đổi giao diện"
-                        onclick="if(window.themeManager) { window.themeManager.toggle(); }">
+                        title="Chuyển đổi giao diện">
                     <i class="fas fa-moon"></i>
                 </button>
 
                 <!-- Language Toggle -->
                 <select id="langToggle" 
                         class="lang-toggle"
-                        title="Chọn ngôn ngữ"
-                        onchange="if(window.i18n) { window.i18n.setLanguage(this.value); }">
+                        title="Chọn ngôn ngữ">
                     <option value="vi">🇻🇳 VI</option>
                     <option value="en">🇬🇧 EN</option>
                 </select>
@@ -132,7 +129,7 @@
                                 class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
                                 <i class="fas fa-user mr-2"></i>Hồ sơ
                             </a>
-                            <a href="#" onclick="document.getElementById('userMenuDropdown').classList.add('hidden'); window.location.href='/?page=orders'; return false;"
+                            <a href="/orders.html" onclick="document.getElementById('userMenuDropdown').classList.add('hidden');"
                                 class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
                                 <i class="fas fa-shopping-bag mr-2"></i>Đơn hàng
                             </a>
@@ -145,10 +142,10 @@
                     </div>
                 </div>
                 <div id="navAuth" class="flex items-center gap-2">
-                    <a id="headerLoginLink" href="/login.html"
+                    <a href="/login.html"
                         class="px-4 py-2 text-gray-700 hover:text-red-600 font-medium transition-colors">Đăng
                         nhập</a>
-                    <a id="headerRegisterLink" href="/register.html"
+                    <a href="/register.html"
                         class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium transition-colors">Đăng
                         ký</a>
                 </div>
@@ -158,46 +155,75 @@
         <!-- Navigation Bar -->
         <div class="border-t border-gray-200 py-3">
             <nav class="flex items-center gap-6 flex-wrap">
-                <a href="/" class="nav-link text-gray-700 hover:text-red-600 font-medium transition-colors">Trang Chủ</a>
-
+                <!-- Trang Chủ -->
+                <a href="/"
+                    class="nav-link text-gray-700 hover:text-red-600 font-medium transition-colors"
+                    data-page="home">Trang Chủ</a>
+                
+                <!-- Điện thoại, Tablet -->
                 <div class="relative nav-dropdown group">
                     <a href="/phone-tablet.html"
-                        class="nav-link text-gray-700 hover:text-red-600 font-medium transition-colors flex items-center gap-1">
+                        class="nav-link text-gray-700 hover:text-red-600 font-medium transition-colors flex items-center gap-1"
+                        data-page="phone-tablet">
                         Điện thoại, Tablet
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                         </svg>
                     </a>
                     <div class="nav-dropdown-menu">
-                        <a href="/phone.html" class="nav-link">Điện thoại</a>
-                        <a href="/tablet.html" class="nav-link">Tablet</a>
-                        <a href="/phone-accessories.html" class="nav-link">Phụ kiện điện thoại</a>
+                        <a href="/phone.html" class="nav-link" data-page="phone">Điện thoại</a>
+                        <a href="/tablet.html" class="nav-link" data-page="tablet">Tablet</a>
+                        <a href="/phone-accessories.html" class="nav-link" data-page="phone-accessories">Phụ kiện điện thoại</a>
                     </div>
                 </div>
-
-                <a href="/laptop.html" class="nav-link text-gray-700 hover:text-red-600 font-medium transition-colors">Laptop</a>
-                <a href="/audio.html" class="nav-link text-gray-700 hover:text-red-600 font-medium transition-colors">Âm thanh, Mic thu âm</a>
-                <a href="/watch-camera.html" class="nav-link text-gray-700 hover:text-red-600 font-medium transition-colors">Đồng hồ, Camera</a>
-                <a href="/accessories.html" class="nav-link text-gray-700 hover:text-red-600 font-medium transition-colors">Phụ kiện</a>
-
+                
+                <!-- Laptop -->
+                <a href="/laptop.html"
+                    class="nav-link text-gray-700 hover:text-red-600 font-medium transition-colors"
+                    data-page="laptop">Laptop</a>
+                
+                <!-- Âm thanh, Mic thu âm -->
+                <a href="/audio.html"
+                    class="nav-link text-gray-700 hover:text-red-600 font-medium transition-colors"
+                    data-page="audio">Âm thanh, Mic thu âm</a>
+                
+                <!-- Đồng hồ, Camera -->
+                <a href="/watch-camera.html"
+                    class="nav-link text-gray-700 hover:text-red-600 font-medium transition-colors"
+                    data-page="watch-camera">Đồng hồ, Camera</a>
+                
+                <!-- Phụ kiện -->
+                <a href="/accessories.html"
+                    class="nav-link text-gray-700 hover:text-red-600 font-medium transition-colors"
+                    data-page="accessories">Phụ kiện</a>
+                
+                <!-- PC, Màn hình, Máy in -->
                 <div class="relative nav-dropdown group">
                     <a href="/pc-monitor-printer.html"
-                        class="nav-link text-gray-700 hover:text-red-600 font-medium transition-colors flex items-center gap-1">
+                        class="nav-link text-gray-700 hover:text-red-600 font-medium transition-colors flex items-center gap-1"
+                        data-page="pc-monitor-printer">
                         PC, Màn hình, Máy in
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                         </svg>
                     </a>
                     <div class="nav-dropdown-menu">
-                        <a href="/pc.html" class="nav-link">PC (Máy tính để bàn)</a>
-                        <a href="/monitor.html" class="nav-link">Màn hình</a>
-                        <a href="/printer.html" class="nav-link">Máy in</a>
-                        <a href="/pc-parts.html" class="nav-link">Linh kiện PC</a>
+                        <a href="/pc.html" class="nav-link" data-page="pc">PC (Máy tính để bàn)</a>
+                        <a href="/monitor.html" class="nav-link" data-page="monitor">Màn hình</a>
+                        <a href="/printer.html" class="nav-link" data-page="printer">Máy in</a>
+                        <a href="/pc-parts.html" class="nav-link" data-page="pc-parts">Linh kiện PC</a>
                     </div>
                 </div>
-
-                <a href="/faq.html" class="nav-link text-gray-700 hover:text-red-600 font-medium transition-colors">FAQ</a>
-                <a href="/about.html" class="nav-link text-gray-700 hover:text-red-600 font-medium transition-colors">Về chúng tôi</a>
+                
+                <!-- FAQ -->
+                <a href="/faq.html"
+                    class="nav-link text-gray-700 hover:text-red-600 font-medium transition-colors"
+                    data-page="faq">FAQ</a>
+                
+                <!-- Về chúng tôi -->
+                <a href="/about.html"
+                    class="nav-link text-gray-700 hover:text-red-600 font-medium transition-colors"
+                    data-page="about">Về chúng tôi</a>
             </nav>
         </div>
     </div>
