@@ -1176,9 +1176,9 @@ function renderProducts(products, container) {
 
         return `
         <a href="${productDetailUrl}" 
-           class="product-card animate-fade-in block bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group h-full"
+           class="product-card animate-fade-in block bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group h-full flex flex-col"
            onclick="event.stopPropagation();">
-            <div class="media relative overflow-hidden">
+            <div class="media relative overflow-hidden flex-shrink-0">
                 ${hasDiscount ? `
                     <div class="absolute top-3 left-3 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded z-10 shadow">
                         Giảm ${discountPercent}%
@@ -1202,8 +1202,8 @@ function renderProducts(products, container) {
                     ` : ''}
                 </div>
                 ${product.description ? `
-                    <p class="text-sm text-gray-600 mb-3 line-clamp-2 flex-1">${product.description}</p>
-                ` : '<div class="flex-1"></div>'}
+                    <p class="text-sm text-gray-600 mb-3 line-clamp-2 product-description">${product.description}</p>
+                ` : '<div class="product-description mb-3"></div>'}
                 ${currentUser ? `
                     <div class="flex gap-2 mt-auto flex-nowrap">
                         <button 
