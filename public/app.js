@@ -1181,18 +1181,20 @@ function renderProducts(products, container) {
                     <p class="text-sm text-gray-600 mb-3 line-clamp-2 flex-1">${product.description}</p>
                 ` : '<div class="flex-1"></div>'}
                 ${currentUser ? `
-                    <div class="flex gap-2 mt-auto">
+                    <div class="flex gap-2 mt-auto flex-nowrap">
                         <button 
                             onclick="event.preventDefault(); event.stopPropagation(); addToCart(${product.id}, '${product.name.replace(/'/g, "\\'")}', ${product.price})"
-                            class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2.5 px-4 rounded-lg transition-colors"
+                            class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2.5 px-2 rounded-lg transition-colors whitespace-nowrap flex items-center justify-center text-sm"
                         >
-                            <i class="fas fa-shopping-cart mr-1"></i> Thêm vào giỏ
+                            <i class="fas fa-shopping-cart mr-1"></i> 
+                            <span>Thêm vào giỏ</span>
                         </button>
                         <button 
                             onclick="event.preventDefault(); event.stopPropagation(); buyNow(${product.id}, '${product.name.replace(/'/g, "\\'")}', ${product.price})"
-                            class="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 px-4 rounded-lg transition-colors"
+                            class="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 px-2 rounded-lg transition-colors whitespace-nowrap flex items-center justify-center text-sm"
                         >
-                            <i class="fas fa-bolt mr-1"></i> Mua ngay
+                            <i class="fas fa-bolt mr-1"></i> 
+                            <span>Mua ngay</span>
                         </button>
                     </div>
                 ` : `

@@ -4052,6 +4052,1770 @@ CREATE TABLE order_items (
 
 ---
 
+## 🔍 CHI TIẾT VALIDATION RULES
+
+### 1.1. Đăng Ký (Register) - Validation Chi Tiết
+
+**Request Body Validation:**
+```javascript
+{
+  username: {
+    required: true,
+    type: 'string',
+    minLength: 3,
+    maxLength: 50,
+    pattern: /^[a-zA-Z0-9_]+$/,  // Chỉ cho phép chữ, số, dấu gạch dưới
+    trim: true,
+    unique: true  // Kiểm tra trong database
+  },
+  password: {
+    required: true,
+    type: 'string',
+    minLength: 6,
+    maxLength: 100,
+    // Không có pattern cụ thể, nhưng nên có ít nhất 1 chữ và 1 số
+  },
+  email: {
+    required: false,
+    type: 'string',
+    format: 'email',  // RFC 5322 email format
+    maxLength: 255,
+    unique: true  // Nếu có thì phải unique
+  },
+  role: {
+    required: false,
+    type: 'string',
+    enum: ['user', 'admin'],
+    default: 'user'
+  }
+}
+```
+
+**Validation Flow:**
+```
+1. Kiểm tra required fields:
+   ├─ username: Nếu null/undefined/empty → 400: "Username là bắt buộc"
+   └─ password: Nếu null/undefined/empty → 400: "Password là bắt buộc"
+
+2. Kiểm tra format:
+   ├─ username:
+   │   ├─ Length < 3 → 400: "Username phải có ít nhất 3 ký tự"
+   │   ├─ Length > 50 → 400: "Username không được quá 50 ký tự"
+   │   └─ Pattern không hợp lệ → 400: "Username chỉ được chứa chữ, số và dấu gạch dưới"
+   │
+   ├─ password:
+   │   ├─ Length < 6 → 400: "Password phải có ít nhất 6 ký tự"
+   │   └─ Length > 100 → 400: "Password không được quá 100 ký tự"
+   │
+   └─ email (nếu có):
+       ├─ Format không hợp lệ → 400: "Email không đúng định dạng"
+       └─ Length > 255 → 400: "Email quá dài"
+
+3. Kiểm tra duplicate trong database:
+   ├─ SELECT COUNT(*) FROM users WHERE username = ? → Nếu > 0 → 409: "Username đã tồn tại"
+   └─ SELECT COUNT(*) FROM users WHERE email = ? → Nếu > 0 → 409: "Email đã được sử dụng"
+
+4. Hash password:
+   └─ bcrypt.hash(password, 10) → Lưu vào database
+
+5. Insert vào database:
+   └─ INSERT INTO users (username, password, email, role) VALUES (?, ?, ?, ?)
+```
+
+**Error Codes & Messages:**
+```javascript
+{
+  400: {
+    'MISSING_USERNAME': 'Username là bắt buộc',
+    'MISSING_PASSWORD': 'Password là bắt buộc',
+    'USERNAME_TOO_SHORT': 'Username phải có ít nhất 3 ký tự',
+    'USERNAME_TOO_LONG': 'Username không được quá 50 ký tự',
+    'USERNAME_INVALID_FORMAT': 'Username chỉ được chứa chữ, số và dấu gạch dưới',
+    'PASSWORD_TOO_SHORT': 'Password phải có ít nhất 6 ký tự',
+    'PASSWORD_TOO_LONG': 'Password không được quá 100 ký tự',
+    'EMAIL_INVALID_FORMAT': 'Email không đúng định dạng',
+    'EMAIL_TOO_LONG': 'Email quá dài (tối đa 255 ký tự)'
+  },
+  409: {
+    'USERNAME_EXISTS': 'Username đã tồn tại',
+    'EMAIL_EXISTS': 'Email đã được sử dụng'
+  },
+  500: {
+    'DATABASE_ERROR': 'Lỗi kết nối database',
+    'HASH_ERROR': 'Lỗi khi mã hóa password',
+    'INTERNAL_ERROR': 'Lỗi máy chủ nội bộ'
+  }
+}
+```
+
+### 1.2. Đăng Nhập (Login) - Validation Chi Tiết
+
+**Request Body Validation:**
+```javascript
+{
+  username: {
+    required: true,
+    type: 'string',
+    trim: true,
+    maxLength: 50
+  },
+  password: {
+    required: true,
+    type: 'string',
+    minLength: 1,
+    maxLength: 100
+  }
+}
+```
+
+**Validation Flow:**
+```
+1. Kiểm tra required fields:
+   ├─ username: Nếu null/undefined/empty → 400: "Username là bắt buộc"
+   └─ password: Nếu null/undefined/empty → 400: "Password là bắt buộc"
+
+2. Query database:
+   └─ SELECT * FROM users WHERE username = ? LIMIT 1
+      ├─ Nếu không tìm thấy → 401: "Username hoặc password không đúng" (không tiết lộ username không tồn tại)
+      └─ Nếu tìm thấy → Tiếp tục
+
+3. Verify password:
+   └─ bcrypt.compare(password, user.password)
+      ├─ Nếu false → 401: "Username hoặc password không đúng"
+      └─ Nếu true → Tiếp tục
+
+4. Kiểm tra user status (nếu có):
+   ├─ is_active = false → 403: "Tài khoản đã bị khóa"
+   └─ deleted_at IS NOT NULL → 403: "Tài khoản đã bị xóa"
+
+5. Tạo JWT token:
+   └─ jwt.sign({ id, username, role }, JWT_SECRET, { expiresIn: '100d' })
+
+6. Return response:
+   └─ { message, token, user: { id, username, role } }
+```
+
+**Security Considerations:**
+- Không tiết lộ username có tồn tại hay không (luôn trả về cùng message)
+- Rate limiting: Giới hạn số lần đăng nhập sai (ví dụ: 5 lần/15 phút)
+- Log failed attempts để phát hiện brute force
+
+### 1.3. Quên Mật Khẩu (Forgot Password) - Validation Chi Tiết
+
+**Request Body Validation:**
+```javascript
+{
+  email: {
+    required: true,
+    type: 'string',
+    format: 'email',
+    maxLength: 255,
+    trim: true,
+    toLowerCase: true  // Normalize email
+  }
+}
+```
+
+**Validation Flow:**
+```
+1. Kiểm tra required:
+   └─ email: Nếu null/undefined/empty → 400: "Email là bắt buộc"
+
+2. Validate email format:
+   └─ Regex: /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      ├─ Nếu không hợp lệ → 400: "Email không đúng định dạng"
+      └─ Nếu hợp lệ → Tiếp tục
+
+3. Query database:
+   └─ SELECT id, username, email FROM users WHERE email = ? LIMIT 1
+      ├─ Nếu không tìm thấy:
+      │   └─ Return 200: { message: "Nếu email tồn tại, mã OTP đã được gửi", sent: true }
+      │      (Không tiết lộ email có tồn tại hay không - Security best practice)
+      │
+      └─ Nếu tìm thấy:
+          ├─ Kiểm tra rate limiting:
+          │   ├─ SELECT COUNT(*) FROM otp_attempts WHERE email = ? AND created_at > NOW() - INTERVAL 15 MINUTE
+          │   └─ Nếu >= 3 → 429: "Bạn đã yêu cầu quá nhiều. Vui lòng thử lại sau 15 phút"
+          │
+          ├─ Tạo OTP:
+          │   ├─ Code: Math.floor(100000 + Math.random() * 900000) (6 chữ số)
+          │   ├─ Expires: NOW() + 10 minutes
+          │   └─ Lưu vào database: UPDATE users SET otp_code = ?, otp_expires = ?
+          │
+          ├─ Gửi email:
+          │   └─ sendOTPEmail(email, otpCode, username)
+          │      ├─ Nếu thành công → Log success
+          │      └─ Nếu thất bại → Log error nhưng vẫn return success (không tiết lộ lỗi)
+          │
+          └─ Return 200: { message: "Mã OTP đã được gửi đến email của bạn", sent: true }
+```
+
+**Rate Limiting:**
+- Tối đa 3 lần gửi OTP trong 15 phút cho cùng 1 email
+- Tối đa 10 lần gửi OTP trong 1 giờ cho cùng 1 email
+- Tối đa 50 lần gửi OTP trong 24 giờ cho cùng 1 email
+
+### 1.4. Đặt Lại Mật Khẩu (Reset Password) - Validation Chi Tiết
+
+**Request Body Validation:**
+```javascript
+{
+  email: {
+    required: true,
+    type: 'string',
+    format: 'email',
+    maxLength: 255,
+    trim: true,
+    toLowerCase: true
+  },
+  otp: {
+    required: true,
+    type: 'string',
+    length: 6,
+    pattern: /^\d{6}$/  // Chỉ 6 chữ số
+  },
+  newPassword: {
+    required: true,
+    type: 'string',
+    minLength: 6,
+    maxLength: 100
+  }
+}
+```
+
+**Validation Flow:**
+```
+1. Kiểm tra required fields:
+   ├─ email → 400: "Email là bắt buộc"
+   ├─ otp → 400: "Mã OTP là bắt buộc"
+   └─ newPassword → 400: "Mật khẩu mới là bắt buộc"
+
+2. Validate format:
+   ├─ email: Format hợp lệ → 400: "Email không đúng định dạng"
+   ├─ otp: 6 chữ số → 400: "Mã OTP phải là 6 chữ số"
+   └─ newPassword: Length >= 6 → 400: "Mật khẩu mới phải có ít nhất 6 ký tự"
+
+3. Query database:
+   └─ SELECT id, otp_code, otp_expires FROM users WHERE email = ? LIMIT 1
+      ├─ Nếu không tìm thấy → 404: "Email không tồn tại"
+      └─ Nếu tìm thấy:
+          ├─ Kiểm tra OTP:
+          │   ├─ otp_code IS NULL → 400: "Chưa có mã OTP. Vui lòng yêu cầu mã OTP trước"
+          │   ├─ otp_code !== otp → 401: "Mã OTP không đúng"
+          │   └─ otp_code === otp → Tiếp tục
+          │
+          ├─ Kiểm tra expiration:
+          │   └─ otp_expires < NOW() → 401: "Mã OTP đã hết hạn. Vui lòng yêu cầu mã mới"
+          │
+          ├─ Kiểm tra password mới khác password cũ:
+          │   └─ bcrypt.compare(newPassword, oldPassword)
+          │      ├─ Nếu true → 400: "Mật khẩu mới phải khác mật khẩu cũ"
+          │      └─ Nếu false → Tiếp tục
+          │
+          ├─ Hash password mới:
+          │   └─ bcrypt.hash(newPassword, 10)
+          │
+          └─ Update database:
+              └─ UPDATE users SET password = ?, otp_code = NULL, otp_expires = NULL WHERE id = ?
+                 ├─ Nếu thành công → 200: { message: "Đặt lại mật khẩu thành công" }
+                 └─ Nếu thất bại → 500: "Lỗi máy chủ nội bộ"
+```
+
+**Security Considerations:**
+- OTP chỉ có thể dùng 1 lần (sau khi reset thành công, xóa OTP)
+- OTP hết hạn sau 10 phút
+- Giới hạn số lần nhập sai OTP (ví dụ: 5 lần/15 phút)
+
+---
+
+## 🗄️ DATABASE QUERIES CHI TIẾT
+
+### 2.1. Users Table - Queries Thường Dùng
+
+**1. Tạo User Mới:**
+```sql
+INSERT INTO users (username, password, email, role, created_at)
+VALUES (?, ?, ?, ?, NOW());
+-- Parameters: [username, hashedPassword, email, role]
+-- Returns: { insertId: 123 }
+```
+
+**2. Tìm User Theo Username:**
+```sql
+SELECT id, username, email, password, role, full_name, phone, address, 
+       date_of_birth, avatar_url, loyalty_points, google_id, 
+       otp_code, otp_expires, created_at, updated_at
+FROM users 
+WHERE username = ? 
+LIMIT 1;
+-- Parameters: [username]
+-- Returns: Array với 1 object hoặc []
+```
+
+**3. Tìm User Theo Email:**
+```sql
+SELECT id, username, email, password, role, otp_code, otp_expires
+FROM users 
+WHERE email = ? 
+LIMIT 1;
+-- Parameters: [email]
+-- Returns: Array với 1 object hoặc []
+```
+
+**4. Cập Nhật OTP:**
+```sql
+UPDATE users 
+SET otp_code = ?, 
+    otp_expires = ?,
+    updated_at = NOW()
+WHERE id = ?;
+-- Parameters: [otpCode, otpExpires, userId]
+-- Returns: { affectedRows: 1 }
+```
+
+**5. Cập Nhật Password:**
+```sql
+UPDATE users 
+SET password = ?, 
+    otp_code = NULL,
+    otp_expires = NULL,
+    updated_at = NOW()
+WHERE id = ?;
+-- Parameters: [hashedPassword, userId]
+-- Returns: { affectedRows: 1 }
+```
+
+**6. Lấy User Theo ID (với thông tin đầy đủ):**
+```sql
+SELECT u.id, u.username, u.email, u.role, u.full_name, u.phone, 
+       u.address, u.date_of_birth, u.avatar_url, u.loyalty_points,
+       u.created_at, u.updated_at,
+       (SELECT COUNT(*) FROM orders WHERE user_id = u.id) as total_orders,
+       (SELECT SUM(total) FROM orders WHERE user_id = u.id AND status != 'cancelled') as total_spent
+FROM users u
+WHERE u.id = ?
+LIMIT 1;
+-- Parameters: [userId]
+-- Returns: Array với 1 object hoặc []
+```
+
+### 2.2. Products Table - Queries Thường Dùng
+
+**1. Lấy Danh Sách Sản Phẩm Với Filter:**
+```sql
+SELECT p.id, p.name, p.slug, p.category, p.price, p.original_price,
+       p.description, p.main_image_url, p.stock_quantity,
+       p.created_at, p.updated_at,
+       CASE 
+         WHEN p.original_price IS NOT NULL AND p.original_price > p.price 
+         THEN ROUND(((p.original_price - p.price) / p.original_price) * 100, 0)
+         ELSE 0
+       END as discount_percentage
+FROM products p
+WHERE 1=1
+  AND (? IS NULL OR p.slug = ? OR p.name LIKE ? OR p.description LIKE ? OR p.category LIKE ?)
+  AND (? IS NULL OR p.category = ?)
+  AND (? IS NULL OR p.price >= ?)
+  AND (? IS NULL OR p.price <= ?)
+ORDER BY 
+  CASE WHEN ? = 'price_asc' THEN p.price END ASC,
+  CASE WHEN ? = 'price_desc' THEN p.price END DESC,
+  CASE WHEN ? = 'name_asc' THEN p.name END ASC,
+  CASE WHEN ? = 'name_desc' THEN p.name END DESC,
+  CASE WHEN ? = 'created_desc' THEN p.created_at END DESC,
+  p.id ASC
+LIMIT ? OFFSET ?;
+-- Parameters: [searchTerm, searchTerm, '%searchTerm%', '%searchTerm%', '%searchTerm%',
+--              category, category, minPrice, minPrice, maxPrice, maxPrice,
+--              sort, sort, sort, sort, sort, sort,
+--              limit, offset]
+-- Returns: Array of products
+```
+
+**2. Đếm Tổng Số Sản Phẩm (Với Filter):**
+```sql
+SELECT COUNT(*) as total
+FROM products p
+WHERE 1=1
+  AND (? IS NULL OR p.slug = ? OR p.name LIKE ? OR p.description LIKE ? OR p.category LIKE ?)
+  AND (? IS NULL OR p.category = ?)
+  AND (? IS NULL OR p.price >= ?)
+  AND (? IS NULL OR p.price <= ?);
+-- Parameters: [searchTerm, searchTerm, '%searchTerm%', '%searchTerm%', '%searchTerm%',
+--              category, category, minPrice, minPrice, maxPrice, maxPrice]
+-- Returns: [{ total: 100 }]
+```
+
+**3. Lấy Chi Tiết Sản Phẩm:**
+```sql
+SELECT p.id, p.name, p.slug, p.category, p.price, p.original_price,
+       p.description, p.main_image_url, p.image_url, p.stock_quantity,
+       p.brand, p.specifications, p.created_at, p.updated_at,
+       (SELECT AVG(rating) FROM product_comments WHERE product_id = p.id) as avg_rating,
+       (SELECT COUNT(*) FROM product_comments WHERE product_id = p.id) as review_count
+FROM products p
+WHERE p.id = ? OR p.slug = ?
+LIMIT 1;
+-- Parameters: [idOrSlug, idOrSlug]
+-- Returns: Array với 1 object hoặc []
+```
+
+**4. Kiểm Tra Stock:**
+```sql
+SELECT id, name, stock_quantity, price
+FROM products
+WHERE id = ? AND stock_quantity >= ?;
+-- Parameters: [productId, requiredQuantity]
+-- Returns: Array với 1 object hoặc [] (nếu không đủ stock)
+```
+
+### 2.3. Cart & Cart Items - Queries Thường Dùng
+
+**1. Lấy Hoặc Tạo Cart:**
+```sql
+-- Tìm cart active
+SELECT id, user_id, status, created_at
+FROM carts
+WHERE user_id = ? AND status = 'active'
+LIMIT 1;
+
+-- Nếu không có, tạo mới
+INSERT INTO carts (user_id, status, created_at)
+VALUES (?, 'active', NOW());
+-- Returns: { insertId: 123 }
+```
+
+**2. Lấy Cart Items Với Thông Tin Sản Phẩm:**
+```sql
+SELECT ci.id, ci.cart_id, ci.product_id, ci.quantity, ci.price,
+       p.name as product_name, p.slug as product_slug, 
+       p.category as product_category, p.main_image_url as product_image,
+       p.stock_quantity as product_stock,
+       (ci.price * ci.quantity) as subtotal
+FROM cart_items ci
+JOIN products p ON ci.product_id = p.id
+WHERE ci.cart_id = ?
+ORDER BY ci.created_at DESC;
+-- Parameters: [cartId]
+-- Returns: Array of cart items
+```
+
+**3. Tính Tổng Tiền Cart:**
+```sql
+SELECT SUM(price * quantity) as total, COUNT(*) as item_count
+FROM cart_items
+WHERE cart_id = ?;
+-- Parameters: [cartId]
+-- Returns: [{ total: 15000000, item_count: 3 }]
+```
+
+**4. Kiểm Tra Item Đã Có Trong Cart:**
+```sql
+SELECT id, quantity, price
+FROM cart_items
+WHERE cart_id = ? AND product_id = ?
+LIMIT 1;
+-- Parameters: [cartId, productId]
+-- Returns: Array với 1 object hoặc []
+```
+
+**5. Cập Nhật Quantity:**
+```sql
+UPDATE cart_items
+SET quantity = ?, updated_at = NOW()
+WHERE id = ?;
+-- Parameters: [newQuantity, itemId]
+-- Returns: { affectedRows: 1 }
+```
+
+### 2.4. Orders & Order Items - Queries Thường Dùng
+
+**1. Tạo Đơn Hàng (Transaction):**
+```sql
+BEGIN;
+
+-- Tạo order
+INSERT INTO orders (user_id, total, shipping_address, shipping_phone, 
+                    payment_method, payment_details, status, created_at)
+VALUES (?, ?, ?, ?, ?, ?, 'pending', NOW());
+-- Returns: { insertId: 123 }
+
+-- Tạo order items
+INSERT INTO order_items (order_id, product_id, quantity, price)
+VALUES (?, ?, ?, ?);
+-- Repeat cho mỗi item
+
+-- Cập nhật stock (giảm số lượng)
+UPDATE products
+SET stock_quantity = stock_quantity - ?
+WHERE id = ? AND stock_quantity >= ?;
+-- Repeat cho mỗi product
+
+COMMIT;
+-- Nếu có lỗi: ROLLBACK;
+```
+
+**2. Lấy Danh Sách Đơn Hàng Của User:**
+```sql
+SELECT o.id, o.order_number, o.total, o.status, o.shipping_address,
+       o.shipping_phone, o.payment_method, o.created_at, o.updated_at,
+       (SELECT COUNT(*) FROM order_items WHERE order_id = o.id) as item_count,
+       (SELECT status FROM order_tracking WHERE order_id = o.id ORDER BY created_at DESC LIMIT 1) as latest_status
+FROM orders o
+WHERE o.user_id = ?
+ORDER BY o.created_at DESC
+LIMIT ? OFFSET ?;
+-- Parameters: [userId, limit, offset]
+-- Returns: Array of orders
+```
+
+**3. Lấy Chi Tiết Đơn Hàng:**
+```sql
+SELECT o.id, o.order_number, o.user_id, o.total, o.status,
+       o.shipping_address, o.shipping_phone, o.payment_method,
+       o.payment_details, o.created_at, o.updated_at,
+       u.username, u.email, u.phone as user_phone
+FROM orders o
+JOIN users u ON o.user_id = u.id
+WHERE o.id = ?
+LIMIT 1;
+
+-- Lấy order items
+SELECT oi.id, oi.product_id, oi.quantity, oi.price,
+       p.name as product_name, p.slug as product_slug,
+       p.main_image_url as product_image,
+       (oi.price * oi.quantity) as subtotal
+FROM order_items oi
+JOIN products p ON oi.product_id = p.id
+WHERE oi.order_id = ?;
+-- Parameters: [orderId]
+-- Returns: Array of order items
+```
+
+---
+
+## ⚠️ EDGE CASES & EXCEPTION HANDLING
+
+### 3.1. Edge Cases - Đăng Ký
+
+**Case 1: Username có ký tự đặc biệt**
+```
+Input: username = "user@123"
+Validation: Pattern check fails
+Response: 400 - "Username chỉ được chứa chữ, số và dấu gạch dưới"
+```
+
+**Case 2: Username quá dài**
+```
+Input: username = "a".repeat(100)
+Validation: Length check fails
+Response: 400 - "Username không được quá 50 ký tự"
+```
+
+**Case 3: Password trùng với username**
+```
+Input: username = "user123", password = "user123"
+Validation: (Optional) Check if password === username
+Response: 400 - "Mật khẩu không được trùng với username"
+```
+
+**Case 4: Email đã được sử dụng bởi user khác**
+```
+Input: email = "existing@example.com"
+Database: SELECT COUNT(*) FROM users WHERE email = ? → 1
+Response: 409 - "Email đã được sử dụng"
+```
+
+**Case 5: Database connection timeout**
+```
+Error: ECONNREFUSED hoặc ETIMEDOUT
+Response: 500 - "Lỗi kết nối database. Vui lòng thử lại sau"
+Log: Error details vào log file
+```
+
+### 3.2. Edge Cases - Đăng Nhập
+
+**Case 1: User đã bị xóa (soft delete)**
+```
+Database: SELECT * FROM users WHERE username = ? AND deleted_at IS NULL
+If deleted_at IS NOT NULL:
+Response: 401 - "Tài khoản không tồn tại hoặc đã bị xóa"
+```
+
+**Case 2: User bị khóa (is_active = false)**
+```
+Database: SELECT * FROM users WHERE username = ? AND is_active = TRUE
+If is_active = FALSE:
+Response: 403 - "Tài khoản đã bị khóa. Vui lòng liên hệ admin"
+```
+
+**Case 3: Quá nhiều lần đăng nhập sai (Rate Limiting)**
+```
+Check: SELECT COUNT(*) FROM login_attempts 
+       WHERE username = ? AND created_at > NOW() - INTERVAL 15 MINUTE
+If count >= 5:
+Response: 429 - "Bạn đã đăng nhập sai quá nhiều lần. Vui lòng thử lại sau 15 phút"
+```
+
+**Case 4: JWT_SECRET không được set**
+```
+Error: JWT_SECRET is undefined
+Response: 500 - "Lỗi cấu hình server"
+Log: Critical error - JWT_SECRET missing
+```
+
+### 3.3. Edge Cases - Cart
+
+**Case 1: Thêm sản phẩm đã hết hàng**
+```
+Database: SELECT stock_quantity FROM products WHERE id = ?
+If stock_quantity < quantity:
+Response: 400 - "Sản phẩm không đủ số lượng. Số lượng còn lại: {stock_quantity}"
+```
+
+**Case 2: Thêm sản phẩm không tồn tại**
+```
+Database: SELECT * FROM products WHERE id = ?
+If not found:
+Response: 404 - "Sản phẩm không tồn tại"
+```
+
+**Case 3: Quantity vượt quá stock khi cập nhật**
+```
+Current cart quantity: 5
+Request update quantity: 10
+Product stock: 8
+Validation: 5 + (10 - 5) = 10 > 8
+Response: 400 - "Số lượng vượt quá tồn kho. Số lượng tối đa: 8"
+```
+
+**Case 4: Cart của user khác (Security)**
+```
+Request: DELETE /api/cart/items/123
+Database: SELECT cart_id, user_id FROM cart_items WHERE id = 123
+Check: cart.user_id !== req.user.id
+Response: 403 - "Bạn không có quyền xóa item này"
+```
+
+### 3.4. Edge Cases - Orders
+
+**Case 1: Cart rỗng khi tạo order**
+```
+Cart Service: GET /cart → { items: [] }
+Response: 400 - "Giỏ hàng không có sản phẩm"
+```
+
+**Case 2: Sản phẩm hết hàng giữa lúc checkout**
+```
+Step 1: Lấy cart items (có stock)
+Step 2: User nhập thông tin (mất 5 phút)
+Step 3: Tạo order → Product đã hết hàng
+Validation: Check stock trước khi tạo order
+Response: 400 - "Sản phẩm '{product_name}' đã hết hàng"
+```
+
+**Case 3: Coupon đã hết lượt sử dụng**
+```
+Database: SELECT * FROM coupons WHERE code = ?
+Check: current_usage >= max_usage
+Response: 400 - "Mã giảm giá đã hết lượt sử dụng"
+```
+
+**Case 4: Coupon đã hết hạn**
+```
+Database: SELECT * FROM coupons WHERE code = ? AND expires_at > NOW()
+If expires_at < NOW():
+Response: 400 - "Mã giảm giá đã hết hạn"
+```
+
+**Case 5: Loyalty points không đủ**
+```
+Request: use_loyalty_points = 1000
+Database: SELECT balance FROM loyalty_points WHERE user_id = ?
+If balance < 1000:
+Response: 400 - "Bạn không đủ điểm thưởng. Số điểm hiện có: {balance}"
+```
+
+**Case 6: Payment account không đủ số dư**
+```
+Request: payment_method = "bank_transfer", account_number = "9704151234567890"
+Database: SELECT balance FROM payment_demo_accounts WHERE account_number = ?
+Check: balance < order_total
+Response: 400 - "Số dư tài khoản không đủ. Số dư hiện có: {balance} VNĐ"
+```
+
+**Case 7: Transaction rollback khi có lỗi**
+```
+BEGIN TRANSACTION;
+  INSERT INTO orders ... → Success
+  INSERT INTO order_items ... → Success
+  UPDATE products SET stock_quantity ... → Error (constraint violation)
+ROLLBACK;
+Response: 500 - "Lỗi khi tạo đơn hàng. Vui lòng thử lại"
+```
+
+---
+
+## 📊 RESPONSE FORMATS CHI TIẾT
+
+### 4.1. Success Response Formats
+
+**Standard Success (200 OK):**
+```json
+{
+  "message": "Thông báo thành công",
+  "data": {
+    // Response data
+  }
+}
+```
+
+**Created Success (201 Created):**
+```json
+{
+  "message": "Tạo thành công",
+  "id": 123,
+  "data": {
+    // Created resource
+  }
+}
+```
+
+**List Response (200 OK):**
+```json
+{
+  "items": [
+    {
+      "id": 1,
+      "name": "...",
+      // ... other fields
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 20,
+    "total": 100,
+    "totalPages": 5,
+    "hasNext": true,
+    "hasPrev": false
+  }
+}
+```
+
+**Detail Response (200 OK):**
+```json
+{
+  "id": 123,
+  "name": "...",
+  // ... all fields
+  "related": {
+    // Related data (optional)
+  }
+}
+```
+
+### 4.2. Error Response Formats
+
+**Validation Error (400 Bad Request):**
+```json
+{
+  "message": "Dữ liệu đầu vào không hợp lệ",
+  "errors": [
+    {
+      "field": "username",
+      "message": "Username phải có ít nhất 3 ký tự"
+    },
+    {
+      "field": "email",
+      "message": "Email không đúng định dạng"
+    }
+  ],
+  "error": "VALIDATION_ERROR"
+}
+```
+
+**Authentication Error (401 Unauthorized):**
+```json
+{
+  "message": "Token không hợp lệ hoặc đã hết hạn",
+  "error": "UNAUTHORIZED",
+  "errorCode": "TOKEN_EXPIRED" | "TOKEN_INVALID" | "TOKEN_MISSING"
+}
+```
+
+**Authorization Error (403 Forbidden):**
+```json
+{
+  "message": "Bạn không có quyền truy cập tài nguyên này",
+  "error": "FORBIDDEN",
+  "requiredRole": "admin"
+}
+```
+
+**Not Found Error (404 Not Found):**
+```json
+{
+  "message": "Không tìm thấy tài nguyên",
+  "error": "NOT_FOUND",
+  "resource": "product",
+  "id": 123
+}
+```
+
+**Conflict Error (409 Conflict):**
+```json
+{
+  "message": "Username đã tồn tại",
+  "error": "CONFLICT",
+  "field": "username",
+  "value": "user123"
+}
+```
+
+**Server Error (500 Internal Server Error):**
+```json
+{
+  "message": "Lỗi máy chủ nội bộ",
+  "error": "INTERNAL_SERVER_ERROR"
+  // Không trả về stack trace trong production
+}
+```
+
+**Service Unavailable (502 Bad Gateway):**
+```json
+{
+  "message": "Service không phản hồi",
+  "error": "SERVICE_UNAVAILABLE",
+  "service": "auth-service"
+}
+```
+
+---
+
+## 🔒 SECURITY DETAILS
+
+### 5.1. Password Security
+
+**Hashing Algorithm:**
+- Algorithm: bcrypt
+- Salt Rounds: 10
+- Example: `$2b$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy`
+
+**Password Requirements:**
+- Minimum length: 6 characters
+- Maximum length: 100 characters
+- Recommended: At least 1 uppercase, 1 lowercase, 1 number, 1 special character
+- Not allowed: Same as username, common passwords (123456, password, etc.)
+
+**Password Storage:**
+- Never store plain text passwords
+- Always hash before storing
+- Never log passwords (even hashed) in production
+
+### 5.2. JWT Token Security
+
+**Token Structure:**
+```json
+{
+  "header": {
+    "alg": "HS256",
+    "typ": "JWT"
+  },
+  "payload": {
+    "id": 123,
+    "username": "user123",
+    "role": "user",
+    "iat": 1704067200,
+    "exp": 1735689600
+  },
+  "signature": "HMACSHA256(base64UrlEncode(header) + '.' + base64UrlEncode(payload), secret)"
+}
+```
+
+**Token Expiration:**
+- Default: 100 days
+- Refresh token: Not implemented (future enhancement)
+- Token blacklist: Not implemented (future enhancement)
+
+**Token Storage:**
+- Client: localStorage (vulnerable to XSS)
+- Alternative: httpOnly cookies (more secure, but requires CORS setup)
+
+**Token Validation:**
+1. Check signature với JWT_SECRET
+2. Check expiration (exp claim)
+3. Check user still exists in database
+4. Check user is_active = true
+
+### 5.3. SQL Injection Prevention
+
+**Parameterized Queries:**
+```javascript
+// ✅ CORRECT - Parameterized
+const [rows] = await pool.query(
+  'SELECT * FROM users WHERE username = ?',
+  [username]
+);
+
+// ❌ WRONG - String concatenation (vulnerable)
+const query = `SELECT * FROM users WHERE username = '${username}'`;
+```
+
+**Always Use:**
+- `pool.query(sql, [params])` với parameterized queries
+- Never concatenate user input vào SQL string
+- Validate and sanitize input before querying
+
+### 5.4. XSS Prevention
+
+**Input Sanitization:**
+- Sanitize user input (username, email, comments)
+- Use libraries: `validator`, `sanitize-html`
+- Escape HTML in output
+
+**Example:**
+```javascript
+const validator = require('validator');
+const sanitizeHtml = require('sanitize-html');
+
+// Sanitize username
+const sanitizedUsername = validator.escape(username);
+
+// Sanitize HTML content
+const sanitizedContent = sanitizeHtml(content, {
+  allowedTags: ['b', 'i', 'em', 'strong', 'a', 'p'],
+  allowedAttributes: { 'a': ['href'] }
+});
+```
+
+### 5.5. CORS Configuration
+
+**Gateway CORS Setup:**
+```javascript
+const cors = require('cors');
+
+app.use(cors({
+  origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+```
+
+**Security Headers:**
+```javascript
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  next();
+});
+```
+
+---
+
+## ⚡ PERFORMANCE CONSIDERATIONS
+
+### 6.1. Database Optimization
+
+**Indexes:**
+```sql
+-- Users table
+CREATE INDEX idx_username ON users(username);
+CREATE INDEX idx_email ON users(email);
+CREATE INDEX idx_role ON users(role);
+
+-- Products table
+CREATE INDEX idx_category ON products(category);
+CREATE INDEX idx_slug ON products(slug);
+CREATE INDEX idx_price ON products(price);
+CREATE INDEX idx_created_at ON products(created_at);
+
+-- Orders table
+CREATE INDEX idx_user_id ON orders(user_id);
+CREATE INDEX idx_status ON orders(status);
+CREATE INDEX idx_created_at ON orders(created_at);
+
+-- Cart items
+CREATE INDEX idx_cart_id ON cart_items(cart_id);
+CREATE INDEX idx_product_id ON cart_items(product_id);
+```
+
+**Query Optimization:**
+- Use `LIMIT` và `OFFSET` cho pagination
+- Use `SELECT` chỉ các fields cần thiết (không dùng `SELECT *`)
+- Use `JOIN` thay vì multiple queries khi có thể
+- Cache frequently accessed data (Redis - future)
+
+### 6.2. Connection Pooling
+
+**Configuration:**
+```javascript
+const pool = mysql.createPool({
+  host: process.env.DB_HOST || 'localhost',
+  user: process.env.DB_USER || 'root',
+  password: process.env.DB_PASSWORD || '',
+  database: process.env.DB_NAME || 'tttn2025',
+  waitForConnections: true,
+  connectionLimit: 10,        // Max connections in pool
+  queueLimit: 0,              // Unlimited queue
+  enableKeepAlive: true,
+  keepAliveInitialDelay: 0
+});
+```
+
+**Best Practices:**
+- Reuse connections từ pool
+- Release connections sau khi dùng xong
+- Monitor pool usage và adjust `connectionLimit` nếu cần
+
+### 6.3. API Response Time
+
+**Target Response Times:**
+- Simple queries: < 100ms
+- Complex queries với JOIN: < 500ms
+- External API calls: < 2000ms (with timeout)
+
+**Optimization:**
+- Use pagination cho large datasets
+- Implement caching cho static data (categories, FAQs)
+- Use async/await properly (không block event loop)
+- Monitor slow queries và optimize
+
+---
+
+## 🧪 TESTING SCENARIOS
+
+### 7.1. Unit Test Scenarios - Register
+
+**Test Case 1: Successful Registration**
+```
+Input: { username: "newuser", password: "password123" }
+Expected: 201 - { message: "Đăng ký thành công! Vui lòng đăng nhập." }
+Database: User được tạo với password đã hash
+```
+
+**Test Case 2: Duplicate Username**
+```
+Input: { username: "existinguser", password: "password123" }
+Expected: 409 - { message: "Username đã tồn tại" }
+Database: Không có user mới được tạo
+```
+
+**Test Case 3: Invalid Username Format**
+```
+Input: { username: "user@123", password: "password123" }
+Expected: 400 - { message: "Username chỉ được chứa chữ, số và dấu gạch dưới" }
+```
+
+**Test Case 4: Password Too Short**
+```
+Input: { username: "newuser", password: "123" }
+Expected: 400 - { message: "Password phải có ít nhất 6 ký tự" }
+```
+
+### 7.2. Integration Test Scenarios - Order Flow
+
+**Test Case 1: Complete Order Flow**
+```
+1. User đăng nhập → Get token
+2. Add products to cart → Cart có items
+3. Apply coupon → Discount calculated
+4. Use loyalty points → Points deducted
+5. Create order → Order created với status 'pending'
+6. Verify cart cleared → Cart empty
+7. Verify stock reduced → Product stock updated
+8. Verify loyalty points earned → Points added
+```
+
+**Test Case 2: Order với Cart Rỗng**
+```
+1. User đăng nhập → Get token
+2. Cart empty
+3. Create order → 400 - "Giỏ hàng không có sản phẩm"
+```
+
+**Test Case 3: Order với Sản Phẩm Hết Hàng**
+```
+1. User đăng nhập → Get token
+2. Add product to cart (stock = 5)
+3. Admin reduces stock to 0
+4. User creates order → 400 - "Sản phẩm '{name}' đã hết hàng"
+```
+
+---
+
+## 📈 MONITORING & LOGGING
+
+### 8.1. Logging Levels
+
+**Error Logging:**
+```javascript
+console.error('ERROR:', {
+  timestamp: new Date().toISOString(),
+  level: 'ERROR',
+  message: error.message,
+  stack: error.stack,
+  request: {
+    method: req.method,
+    path: req.path,
+    body: req.body,
+    user: req.user?.id
+  }
+});
+```
+
+**Info Logging:**
+```javascript
+console.log('INFO:', {
+  timestamp: new Date().toISOString(),
+  level: 'INFO',
+  message: 'User logged in',
+  userId: user.id,
+  username: user.username
+});
+```
+
+**Warning Logging:**
+```javascript
+console.warn('WARN:', {
+  timestamp: new Date().toISOString(),
+  level: 'WARN',
+  message: 'Failed to send email, but continuing',
+  error: error.message
+});
+```
+
+### 8.2. Metrics to Monitor
+
+**API Metrics:**
+- Request count per endpoint
+- Response time per endpoint
+- Error rate per endpoint
+- 4xx vs 5xx errors
+
+**Database Metrics:**
+- Connection pool usage
+- Query execution time
+- Slow queries (> 1 second)
+- Deadlocks và timeouts
+
+**Service Metrics:**
+- Service uptime
+- Memory usage
+- CPU usage
+- Request queue length
+
+---
+
+## 🔄 TRANSACTION HANDLING CHI TIẾT
+
+### 9.1. Order Creation Transaction
+
+**Transaction Flow:**
+```javascript
+const connection = await pool.getConnection();
+await connection.beginTransaction();
+
+try {
+  // Step 1: Validate cart
+  const cartResponse = await axios.get(`${CART_SERVICE_URL}/cart`, {
+    headers: { 'Authorization': req.headers['authorization'] }
+  });
+  const cartData = cartResponse.data.cart;
+  
+  if (!cartData.items || cartData.items.length === 0) {
+    await connection.rollback();
+    return res.status(400).json({ message: 'Giỏ hàng không có sản phẩm' });
+  }
+  
+  // Step 2: Validate và lock products (SELECT FOR UPDATE)
+  for (const item of cartData.items) {
+    const [products] = await connection.query(
+      'SELECT id, name, stock_quantity, price FROM products WHERE id = ? FOR UPDATE',
+      [item.product_id]
+    );
+    
+    if (products.length === 0) {
+      await connection.rollback();
+      return res.status(404).json({ 
+        message: `Sản phẩm ID ${item.product_id} không tồn tại` 
+      });
+    }
+    
+    const product = products[0];
+    if (product.stock_quantity < item.quantity) {
+      await connection.rollback();
+      return res.status(400).json({ 
+        message: `Sản phẩm "${product.name}" không đủ số lượng. Còn lại: ${product.stock_quantity}` 
+      });
+    }
+  }
+  
+  // Step 3: Calculate totals
+  let subtotal = parseFloat(cartData.total || 0);
+  let shippingFee = calculateShippingFee(req.body.shipping_method);
+  let discountAmount = 0;
+  let loyaltyDiscount = 0;
+  
+  // Step 4: Apply coupon (nếu có)
+  if (req.body.coupon_code) {
+    const [coupons] = await connection.query(
+      'SELECT * FROM coupons WHERE code = ? AND is_active = TRUE AND expires_at > NOW()',
+      [req.body.coupon_code]
+    );
+    
+    if (coupons.length > 0) {
+      const coupon = coupons[0];
+      if (coupon.current_usage < coupon.max_usage && subtotal >= coupon.min_order_amount) {
+        if (coupon.discount_type === 'percentage') {
+          discountAmount = subtotal * (coupon.discount_value / 100);
+        } else {
+          discountAmount = coupon.discount_value;
+        }
+        discountAmount = Math.min(discountAmount, coupon.max_discount || discountAmount);
+        
+        // Increment usage
+        await connection.query(
+          'UPDATE coupons SET current_usage = current_usage + 1 WHERE id = ?',
+          [coupon.id]
+        );
+      }
+    }
+  }
+  
+  // Step 5: Apply loyalty points (nếu có)
+  if (req.body.use_loyalty_points && req.body.use_loyalty_points > 0) {
+    const [points] = await connection.query(
+      'SELECT balance FROM loyalty_points WHERE user_id = ? FOR UPDATE',
+      [userId]
+    );
+    
+    if (points.length > 0 && points[0].balance >= req.body.use_loyalty_points) {
+      loyaltyDiscount = req.body.use_loyalty_points * 1000; // 1 point = 1000 VNĐ
+      
+      // Deduct points
+      await connection.query(
+        'UPDATE loyalty_points SET balance = balance - ? WHERE user_id = ?',
+        [req.body.use_loyalty_points, userId]
+      );
+    }
+  }
+  
+  const finalTotal = Math.max(0, subtotal + shippingFee - discountAmount - loyaltyDiscount);
+  
+  // Step 6: Create order
+  const [orderResult] = await connection.query(
+    `INSERT INTO orders (user_id, total, shipping_address, shipping_phone, 
+                         payment_method, payment_details, status, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, 'pending', NOW())`,
+    [
+      userId,
+      finalTotal,
+      req.body.shipping_address,
+      req.body.phone,
+      req.body.payment_method,
+      JSON.stringify(req.body.payment_details || {})
+    ]
+  );
+  const orderId = orderResult.insertId;
+  
+  // Step 7: Create order items và update stock
+  for (const item of cartData.items) {
+    // Insert order item
+    await connection.query(
+      'INSERT INTO order_items (order_id, product_id, quantity, price) VALUES (?, ?, ?, ?)',
+      [orderId, item.product_id, item.quantity, item.price]
+    );
+    
+    // Update stock
+    await connection.query(
+      'UPDATE products SET stock_quantity = stock_quantity - ? WHERE id = ?',
+      [item.quantity, item.product_id]
+    );
+  }
+  
+  // Step 8: Earn loyalty points
+  const earnedPoints = Math.floor(finalTotal / 10000); // 1 point per 10,000 VNĐ
+  if (earnedPoints > 0) {
+    await connection.query(
+      'INSERT INTO loyalty_points (user_id, balance) VALUES (?, ?) ON DUPLICATE KEY UPDATE balance = balance + ?',
+      [userId, earnedPoints, earnedPoints]
+    );
+    
+    await connection.query(
+      'INSERT INTO loyalty_points_history (user_id, order_id, points, type, description) VALUES (?, ?, ?, ?, ?)',
+      [userId, orderId, earnedPoints, 'earned', `Tích điểm từ đơn hàng #${orderId}`]
+    );
+  }
+  
+  // Step 9: Clear cart
+  const [carts] = await connection.query(
+    'SELECT id FROM carts WHERE user_id = ? AND status = ?',
+    [userId, 'active']
+  );
+  if (carts.length > 0) {
+    const cartId = carts[0].id;
+    await connection.query('DELETE FROM cart_items WHERE cart_id = ?', [cartId]);
+    await connection.query('UPDATE carts SET status = ? WHERE id = ?', ['completed', cartId]);
+  }
+  
+  // Step 10: Create tracking
+  await connection.query(
+    'INSERT INTO order_tracking (order_id, status, note, created_at) VALUES (?, ?, ?, NOW())',
+    [orderId, 'pending', 'Đơn hàng đã được tạo']
+  );
+  
+  // Commit transaction
+  await connection.commit();
+  
+  res.status(201).json({
+    message: 'Đặt hàng thành công',
+    order: {
+      id: orderId,
+      total: finalTotal,
+      status: 'pending'
+    }
+  });
+  
+} catch (error) {
+  // Rollback on any error
+  await connection.rollback();
+  console.error('Order creation error:', error);
+  res.status(500).json({ message: 'Lỗi khi tạo đơn hàng' });
+} finally {
+  // Always release connection
+  connection.release();
+}
+```
+
+**Transaction Isolation Level:**
+- Default: `REPEATABLE READ` (MySQL default)
+- For order creation: Use `SELECT FOR UPDATE` để lock rows và tránh race condition
+
+**Deadlock Handling:**
+```javascript
+let retries = 3;
+while (retries > 0) {
+  try {
+    await connection.beginTransaction();
+    // ... transaction code ...
+    await connection.commit();
+    break; // Success
+  } catch (error) {
+    if (error.code === 'ER_LOCK_DEADLOCK' && retries > 0) {
+      retries--;
+      await new Promise(resolve => setTimeout(resolve, 100 * (4 - retries))); // Exponential backoff
+      continue;
+    }
+    await connection.rollback();
+    throw error;
+  }
+}
+```
+
+---
+
+## 🛠️ TROUBLESHOOTING GUIDE
+
+### 10.1. Common Issues & Solutions
+
+**Issue 1: Service không khởi động được**
+
+**Symptoms:**
+- Service không listen trên port
+- Error: `EADDRINUSE: address already in use`
+
+**Solutions:**
+```bash
+# Kiểm tra port đang được sử dụng
+netstat -ano | findstr :5001  # Windows
+lsof -i :5001                 # Linux/Mac
+
+# Kill process đang dùng port
+taskkill /PID <pid> /F         # Windows
+kill -9 <pid>                  # Linux/Mac
+
+# Hoặc đổi port trong .env
+PORT=5006
+```
+
+**Issue 2: Database Connection Error**
+
+**Symptoms:**
+- Error: `ECONNREFUSED` hoặc `ETIMEDOUT`
+- Error: `Access denied for user`
+
+**Solutions:**
+```bash
+# 1. Kiểm tra MySQL đang chạy
+mysql -u root -p -e "SELECT 1"
+
+# 2. Kiểm tra credentials trong .env
+DB_HOST=localhost
+DB_USER=root
+DB_PASSWORD=your_password
+DB_NAME=tttn2025
+
+# 3. Kiểm tra database tồn tại
+mysql -u root -p -e "SHOW DATABASES LIKE 'tttn2025'"
+
+# 4. Kiểm tra connection pool limit
+# Tăng connectionLimit trong pool config nếu cần
+```
+
+**Issue 3: JWT Token Invalid**
+
+**Symptoms:**
+- Error: `Token không hợp lệ`
+- Error: `TokenExpiredError`
+
+**Solutions:**
+```javascript
+// 1. Kiểm tra JWT_SECRET được set
+console.log('JWT_SECRET:', process.env.JWT_SECRET ? 'SET' : 'NOT SET');
+
+// 2. Kiểm tra token format
+const token = req.headers['authorization']?.replace('Bearer ', '');
+console.log('Token:', token?.substring(0, 20) + '...');
+
+// 3. Verify token manually
+const decoded = jwt.verify(token, JWT_SECRET);
+console.log('Decoded:', decoded);
+
+// 4. Kiểm tra expiration
+if (decoded.exp < Date.now() / 1000) {
+  // Token expired
+}
+```
+
+**Issue 4: Cart Items Không Hiển Thị**
+
+**Symptoms:**
+- GET /api/cart trả về items rỗng
+- Items không được lưu vào database
+
+**Solutions:**
+```sql
+-- 1. Kiểm tra cart tồn tại
+SELECT * FROM carts WHERE user_id = ? AND status = 'active';
+
+-- 2. Kiểm tra cart_items
+SELECT * FROM cart_items WHERE cart_id = ?;
+
+-- 3. Kiểm tra foreign key constraints
+SHOW CREATE TABLE cart_items;
+
+-- 4. Kiểm tra product_id tồn tại
+SELECT * FROM products WHERE id IN (SELECT product_id FROM cart_items WHERE cart_id = ?);
+```
+
+**Issue 5: Order Không Được Tạo**
+
+**Symptoms:**
+- POST /api/orders trả về 500
+- Transaction rollback
+
+**Solutions:**
+```javascript
+// 1. Kiểm tra cart có items không
+const cart = await getCart(userId);
+if (!cart.items || cart.items.length === 0) {
+  return res.status(400).json({ message: 'Giỏ hàng không có sản phẩm' });
+}
+
+// 2. Kiểm tra stock
+for (const item of cart.items) {
+  const product = await getProduct(item.product_id);
+  if (product.stock_quantity < item.quantity) {
+    return res.status(400).json({ 
+      message: `Sản phẩm "${product.name}" không đủ số lượng` 
+    });
+  }
+}
+
+// 3. Kiểm tra transaction
+try {
+  await connection.beginTransaction();
+  // ... transaction code ...
+  await connection.commit();
+} catch (error) {
+  await connection.rollback();
+  console.error('Transaction error:', error);
+  // Log full error để debug
+}
+```
+
+**Issue 6: Email Không Gửi Được**
+
+**Symptoms:**
+- OTP email không đến
+- Error: `Invalid login` hoặc `Authentication failed`
+
+**Solutions:**
+```javascript
+// 1. Kiểm tra email config
+console.log('EMAIL_USER:', process.env.EMAIL_USER);
+console.log('EMAIL_PASS:', process.env.EMAIL_PASS ? 'SET' : 'NOT SET');
+
+// 2. Test email connection
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS
+  }
+});
+
+transporter.verify((error, success) => {
+  if (error) {
+    console.error('Email config error:', error);
+  } else {
+    console.log('Email server ready');
+  }
+});
+
+// 3. Sử dụng App Password (không phải Gmail password)
+// Tạo App Password tại: https://myaccount.google.com/apppasswords
+```
+
+---
+
+## 🚀 DEPLOYMENT CHECKLIST
+
+### 11.1. Pre-Deployment Checklist
+
+**Environment Variables:**
+- [ ] `DB_HOST` - Database host
+- [ ] `DB_USER` - Database user
+- [ ] `DB_PASSWORD` - Database password
+- [ ] `DB_NAME` - Database name
+- [ ] `JWT_SECRET` - JWT secret key (strong, random)
+- [ ] `EMAIL_USER` - Gmail address
+- [ ] `EMAIL_PASS` - Gmail App Password
+- [ ] `PORT` - Service port (5001-5005, 5000 for gateway)
+- [ ] `NODE_ENV` - `production` hoặc `development`
+
+**Database:**
+- [ ] Database `tttn2025` đã được tạo
+- [ ] Tất cả tables đã được tạo (run migration scripts)
+- [ ] Indexes đã được tạo
+- [ ] Foreign keys đã được set
+- [ ] Test data đã được seed (nếu cần)
+
+**Services:**
+- [ ] Tất cả services đã được test locally
+- [ ] Health check endpoints hoạt động
+- [ ] Services có thể communicate với nhau
+- [ ] Gateway có thể route đến tất cả services
+
+**Security:**
+- [ ] JWT_SECRET là strong và random
+- [ ] Database password là strong
+- [ ] CORS đã được config đúng
+- [ ] Rate limiting đã được implement (nếu có)
+- [ ] Input validation đã được implement
+
+**Monitoring:**
+- [ ] Logging đã được setup
+- [ ] Error tracking đã được setup (nếu có)
+- [ ] Health check endpoints accessible
+
+### 11.2. Deployment Steps
+
+**Step 1: Prepare Environment**
+```bash
+# 1. Clone repository
+git clone <repository-url>
+cd TTTN2025
+
+# 2. Install dependencies
+cd gateway && npm install
+cd ../services/auth-service && npm install
+cd ../product-service && npm install
+cd ../cart-service && npm install
+cd ../order-service && npm install
+cd ../news-service && npm install
+
+# 3. Create .env file
+cp .env.example .env
+# Edit .env với production values
+```
+
+**Step 2: Database Setup**
+```bash
+# 1. Create database
+mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS tttn2025 CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+
+# 2. Run migration scripts
+mysql -u root -p tttn2025 < database/schema.sql
+
+# 3. Seed initial data (optional)
+node database/seed_data.js
+```
+
+**Step 3: Start Services**
+```bash
+# Option 1: Manual (Development)
+# Terminal 1
+cd services/auth-service && node server.js
+
+# Terminal 2
+cd services/product-service && node server.js
+
+# Terminal 3
+cd services/cart-service && node server.js
+
+# Terminal 4
+cd services/order-service && node server.js
+
+# Terminal 5
+cd services/news-service && node server.js
+
+# Terminal 6
+cd gateway && node server.js
+
+# Option 2: Docker Compose (Production)
+docker-compose up -d
+
+# Option 3: PM2 (Production)
+pm2 start ecosystem.config.js
+```
+
+**Step 4: Verify Deployment**
+```bash
+# 1. Check all services health
+curl http://localhost:5001/health  # Auth
+curl http://localhost:5002/health  # Product
+curl http://localhost:5003/health  # Cart
+curl http://localhost:5004/health  # Order
+curl http://localhost:5005/health  # News
+curl http://localhost:5000/health  # Gateway
+
+# 2. Test API endpoints
+curl -X POST http://localhost:5000/api/register \
+  -H "Content-Type: application/json" \
+  -d '{"username":"testuser","password":"test123"}'
+
+# 3. Check logs
+docker-compose logs -f  # Docker
+pm2 logs                # PM2
+```
+
+### 11.3. Post-Deployment Verification
+
+**Functional Tests:**
+- [ ] User có thể đăng ký
+- [ ] User có thể đăng nhập
+- [ ] User có thể xem sản phẩm
+- [ ] User có thể thêm vào giỏ hàng
+- [ ] User có thể tạo đơn hàng
+- [ ] Admin có thể quản lý sản phẩm
+- [ ] Admin có thể quản lý đơn hàng
+
+**Performance Tests:**
+- [ ] API response time < 500ms (average)
+- [ ] Database queries < 100ms (average)
+- [ ] No memory leaks
+- [ ] Connection pool hoạt động đúng
+
+**Security Tests:**
+- [ ] JWT token validation hoạt động
+- [ ] SQL injection prevention hoạt động
+- [ ] XSS prevention hoạt động
+- [ ] CORS hoạt động đúng
+- [ ] Admin routes được protect
+
+---
+
+## 📚 APPENDIX
+
+### A.1. Database Schema Reference
+
+**Complete Table List:**
+1. `users` - User accounts
+2. `products` - Product catalog
+3. `categories` - Product categories
+4. `carts` - Shopping carts
+5. `cart_items` - Cart items
+6. `orders` - Orders
+7. `order_items` - Order items
+8. `order_tracking` - Order status tracking
+9. `coupons` - Discount coupons
+10. `loyalty_points` - User loyalty points
+11. `loyalty_points_history` - Loyalty points transaction history
+12. `product_comments` - Product reviews/comments
+13. `news` - News/blog posts
+14. `shipments` - Shipment records
+15. `shipment_events` - Shipment tracking events
+16. `payment_demo_accounts` - Demo payment accounts
+
+### A.2. API Endpoint Reference
+
+**Auth Endpoints:**
+- `POST /api/register` - Đăng ký
+- `POST /api/login` - Đăng nhập
+- `GET /api/me` - Lấy thông tin user
+- `PUT /api/profile` - Cập nhật profile
+- `POST /api/forgot-password` - Quên mật khẩu
+- `POST /api/reset-password` - Đặt lại mật khẩu
+
+**Product Endpoints:**
+- `GET /api/products` - Danh sách sản phẩm
+- `GET /api/products/:id` - Chi tiết sản phẩm
+- `POST /api/products` - Tạo sản phẩm (admin)
+- `PUT /api/products/:id` - Cập nhật sản phẩm (admin)
+- `DELETE /api/products/:id` - Xóa sản phẩm (admin)
+
+**Cart Endpoints:**
+- `GET /api/cart` - Lấy giỏ hàng
+- `POST /api/cart/items` - Thêm vào giỏ
+- `PUT /api/cart/items/:id` - Cập nhật số lượng
+- `DELETE /api/cart/items/:id` - Xóa item
+
+**Order Endpoints:**
+- `POST /api/orders` - Tạo đơn hàng
+- `GET /api/orders` - Danh sách đơn hàng
+- `GET /api/orders/:id` - Chi tiết đơn hàng
+- `PUT /api/orders/:id/status` - Cập nhật trạng thái (admin)
+
+### A.3. Error Code Reference
+
+**HTTP Status Codes:**
+- `200` - Success
+- `201` - Created
+- `400` - Bad Request (validation error)
+- `401` - Unauthorized (authentication error)
+- `403` - Forbidden (authorization error)
+- `404` - Not Found
+- `409` - Conflict (duplicate entry)
+- `429` - Too Many Requests (rate limit)
+- `500` - Internal Server Error
+- `502` - Bad Gateway (service unavailable)
+- `504` - Gateway Timeout
+
+**Custom Error Codes:**
+- `VALIDATION_ERROR` - Input validation failed
+- `TOKEN_EXPIRED` - JWT token expired
+- `TOKEN_INVALID` - JWT token invalid
+- `TOKEN_MISSING` - JWT token not provided
+- `USER_NOT_FOUND` - User không tồn tại
+- `PRODUCT_NOT_FOUND` - Product không tồn tại
+- `CART_EMPTY` - Cart không có items
+- `INSUFFICIENT_STOCK` - Không đủ stock
+- `INSUFFICIENT_BALANCE` - Không đủ số dư
+- `COUPON_INVALID` - Coupon không hợp lệ
+- `COUPON_EXPIRED` - Coupon đã hết hạn
+
+---
+
+**Cập nhật lần cuối:** 2025-01-15  
+**Phiên bản:** 3.0 (Ultra Detailed)  
+**Tác giả:** TechStore Development Team  
+**Trạng thái:** ✅ Cực kỳ chi tiết và cẩn kỹ
+
+---
+
 ## 📊 DATA FLOW DIAGRAMS
 
 ### 1. Tổng Quan Luồng Dữ Liệu

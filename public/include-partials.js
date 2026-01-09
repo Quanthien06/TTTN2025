@@ -51,21 +51,38 @@
 
     const loginLink = document.getElementById('headerLoginLink');
     const registerLink = document.getElementById('headerRegisterLink');
-    const userMenu = document.getElementById('headerUserMenu');
-    const usernameEl = document.getElementById('headerUsername');
-    const logoutBtn = document.getElementById('headerLogoutBtn');
+    const navAuth = document.getElementById('navAuth');
+    const navUser = document.getElementById('navUser');
+    const userName = document.getElementById('userName');
+    const userAvatar = document.getElementById('userAvatar');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const adminMenuLink = document.getElementById('adminMenuLink');
 
     const loggedIn = !!token;
 
-    if (loginLink) loginLink.classList.toggle('hidden', loggedIn);
-    if (registerLink) registerLink.classList.toggle('hidden', loggedIn);
-    if (userMenu) userMenu.classList.toggle('hidden', !loggedIn);
+    // Show/hide auth buttons vs user menu
+    if (navAuth) navAuth.classList.toggle('hidden', loggedIn);
+    if (navUser) navUser.classList.toggle('hidden', !loggedIn);
 
-    if (loggedIn && usernameEl) {
-      const name = cachedUser?.username || cachedUser?.full_name || 'User';
-      usernameEl.textContent = name;
+    if (loggedIn) {
+      // Set user info
+      if (userName) {
+        const name = cachedUser?.username || cachedUser?.full_name || 'User';
+        userName.textContent = name;
+      }
+      if (userAvatar && cachedUser?.avatar_url) {
+        userAvatar.src = cachedUser.avatar_url;
+      } else if (userAvatar) {
+        userAvatar.src = '/img/default-avatar.png';
+      }
+
+      // Show admin link if admin
+      if (adminMenuLink && cachedUser?.role === 'admin') {
+        adminMenuLink.classList.remove('hidden');
+      }
     }
 
+    // Logout handler
     if (logoutBtn) {
       logoutBtn.onclick = (e) => {
         e.preventDefault();
@@ -73,6 +90,79 @@
         localStorage.removeItem('user_info');
         window.location.href = '/';
       };
+    }
+  }
+
+  function setupUserMenuDropdown() {
+    const userMenuBtn = document.getElementById('userMenuBtn');
+    const userMenuDropdown = document.getElementById('userMenuDropdown');
+
+    if (!userMenuBtn || !userMenuDropdown) return;
+
+    userMenuBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      userMenuDropdown.classList.toggle('hidden');
+    });
+
+    // Close when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!userMenuBtn.contains(e.target) && !userMenuDropdown.contains(e.target)) {
+        userMenuDropdown.classList.add('hidden');
+      }
+    });
+  }
+
+  function setupNotificationDropdown() {
+    const notificationBtn = document.getElementById('notificationBtn');
+    const notificationDropdown = document.getElementById('notificationDropdown');
+
+    if (!notificationBtn || !notificationDropdown) return;
+
+    notificationBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      notificationDropdown.classList.toggle('hidden');
+    });
+
+    // Close when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!notificationBtn.contains(e.target) && !notificationDropdown.contains(e.target)) {
+        notificationDropdown.classList.add('hidden');
+      }
+    });
+  }
+
+  function setupSearch() {
+    const mainSearchInput = document.getElementById('mainSearchInput');
+    const mainSearchButton = document.getElementById('mainSearchButton');
+    const searchSuggestions = document.getElementById('searchSuggestions');
+
+    if (mainSearchButton) {
+      mainSearchButton.addEventListener('click', () => {
+        const query = mainSearchInput?.value?.trim() || '';
+        if (query) {
+          window.location.href = `/?page=products&q=${encodeURIComponent(query)}`;
+        }
+      });
+    }
+
+    if (mainSearchInput) {
+      mainSearchInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          const query = mainSearchInput.value.trim();
+          if (query) {
+            window.location.href = `/?page=products&q=${encodeURIComponent(query)}`;
+          }
+        }
+      });
+
+      // Close suggestions when clicking outside
+      document.addEventListener('click', (e) => {
+        if (searchSuggestions && !mainSearchInput.contains(e.target) && 
+            !searchSuggestions.contains(e.target) && 
+            !mainSearchButton?.contains(e.target)) {
+          searchSuggestions.classList.add('hidden');
+        }
+      });
     }
   }
 
@@ -110,9 +200,12 @@
     adjustForFixedHeader();
     window.addEventListener('resize', adjustForFixedHeader);
 
-    // After header is loaded
+    // After header is loaded, setup event handlers
     syncHeaderAuthUI();
     syncCartBadge();
+    setupUserMenuDropdown();
+    setupNotificationDropdown();
+    setupSearch();
     
     // Initialize theme and language selectors
     if (window.themeManager) {

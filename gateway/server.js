@@ -7,22 +7,7 @@ const axios = require('axios');
 const mysql = require('mysql2/promise');
 const fs = require('fs');
 const path = require('path');
-const cookieParser = require('cookie-parser');
 const app = express();
-
-// Security Middlewares
-const { helmetConfig, customSecurityHeaders } = require('./middleware/securityHeaders');
-const { sanitizeRequestBody } = require('./middleware/sanitizer');
-const { apiLimiter, authLimiter, otpLimiter, passwordResetLimiter, orderLimiter } = require('./middleware/rateLimiter');
-const { 
-    validateRegister, 
-    validateLogin, 
-    validateForgotPassword, 
-    validateResetPassword,
-    validateOrder,
-    validateCartItem,
-    validateComment
-} = require('./middleware/validators');
 
 // Cấu hình các services
 // Trong Docker, dùng tên service; ngoài Docker, dùng localhost
@@ -36,27 +21,8 @@ const SERVICES = {
 
 const JWT_SECRET = process.env.JWT_SECRET || 'HhGg78@!kYpQzXcVbNmL1o2P3oI4U5yT6rE7wQ8aZ9sX0cVkGjH';
 
-// Security Headers (apply first)
-app.use(helmetConfig);
-app.use(customSecurityHeaders);
-
-// Cookie Parser (for CSRF tokens)
-app.use(cookieParser());
-
-// Body Parser
-app.use(express.json({ limit: '10mb' })); // Limit request size
-
-// XSS Prevention - Sanitize request body (skip for static files)
-app.use((req, res, next) => {
-    // Skip sanitization for static files and GET requests
-    if (req.method === 'GET' || req.path.startsWith('/css/') || req.path.startsWith('/js/') || req.path.startsWith('/img/') || req.path.startsWith('/fonts/')) {
-        return next();
-    }
-    sanitizeRequestBody(req, res, next);
-});
-
-// General Rate Limiting (apply to all API routes)
-app.use('/api', apiLimiter);
+// Middleware
+app.use(express.json());
 
 // Prevent caching for HTML, CSS, JS files in development
 app.use((req, res, next) => {
@@ -318,7 +284,7 @@ app.get('/api/stats/revenue', async (req, res) => {
 // AUTH ENDPOINTS → Auth Service
 // ============================================
 
-app.post('/api/register', authLimiter, validateRegister, async (req, res) => {
+app.post('/api/register', async (req, res) => {
     try {
         const response = await axios.post(`${SERVICES.auth}/register`, req.body);
         res.json(response.data);
@@ -329,7 +295,7 @@ app.post('/api/register', authLimiter, validateRegister, async (req, res) => {
     }
 });
 
-app.post('/api/login', authLimiter, validateLogin, async (req, res) => {
+app.post('/api/login', async (req, res) => {
     try {
         const response = await axios.post(`${SERVICES.auth}/login`, req.body);
         res.json(response.data);
@@ -393,7 +359,7 @@ app.post('/api/logout', async (req, res) => {
 });
 
 // POST /api/forgot-password - Gửi mã OTP
-app.post('/api/forgot-password', otpLimiter, validateForgotPassword, async (req, res) => {
+app.post('/api/forgot-password', async (req, res) => {
     try {
         const response = await axios.post(`${SERVICES.auth}/forgot-password`, req.body);
         res.json(response.data);
@@ -405,7 +371,7 @@ app.post('/api/forgot-password', otpLimiter, validateForgotPassword, async (req,
 });
 
 // POST /api/reset-password - Đặt lại mật khẩu với OTP
-app.post('/api/reset-password', passwordResetLimiter, validateResetPassword, async (req, res) => {
+app.post('/api/reset-password', async (req, res) => {
     try {
         const response = await axios.post(`${SERVICES.auth}/reset-password`, req.body);
         res.json(response.data);
@@ -529,31 +495,7 @@ app.use('/api/cart', async (req, res) => {
 // ORDER ENDPOINTS → Order Service
 // ============================================
 
-// Order routes với rate limiting và validation
-app.post('/api/orders', orderLimiter, validateOrder, async (req, res) => {
-    try {
-        const url = `${SERVICES.order}/orders`;
-        const response = await axios.post(url, req.body, {
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': req.headers['authorization']
-            }
-        });
-        res.json(response.data);
-    } catch (error) {
-        res.status(error.response?.status || 500).json(
-            error.response?.data || { message: 'Lỗi server' }
-        );
-    }
-});
-
-// Other order routes (GET, PUT, DELETE) - no special validation needed
 app.use('/api/orders', async (req, res) => {
-    // Skip POST as it's handled above
-    if (req.method === 'POST') {
-        return; // POST already handled above
-    }
-    
     try {
         const url = `${SERVICES.order}/orders${req.url}`;
         const method = req.method.toLowerCase();
