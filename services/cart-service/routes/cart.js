@@ -58,9 +58,10 @@ router.get('/', async (req, res) => {
                 p.image_url as product_image,
                 p.description as product_description,
                 p.brand as product_brand,
+                p.deleted_at as product_deleted_at,
                 (ci.price * ci.quantity) as subtotal
             FROM cart_items ci
-            JOIN products p ON ci.product_id = p.id
+            LEFT JOIN products p ON ci.product_id = p.id
             WHERE ci.cart_id = ?
             ORDER BY ci.created_at DESC`,
             [cartId]
@@ -79,9 +80,18 @@ router.get('/', async (req, res) => {
             subtotal: parseFloat(item.subtotal)
         }));
 
+        // Calculate item count
+        const itemCount = formattedItems.reduce((sum, item) => sum + item.quantity, 0);
+
         res.json({
-            items: formattedItems,
-            total: parseFloat(total)
+            cart: {
+                id: cart.id,
+                user_id: cart.user_id,
+                status: cart.status,
+                items: formattedItems,
+                total: parseFloat(total),
+                item_count: itemCount
+            }
         });
     } catch (error) {
         console.error('Lỗi khi lấy giỏ hàng:', error);

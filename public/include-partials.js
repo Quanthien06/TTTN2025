@@ -154,15 +154,22 @@
     });
   }
 
-  function setupNotificationDropdown() {
+  // Initialize notifications system
+  function initNotificationsSystem() {
     const notificationBtn = document.getElementById('notificationBtn');
     const notificationDropdown = document.getElementById('notificationDropdown');
+    const markAllReadBtn = document.getElementById('markAllReadBtn');
+    const notificationList = document.getElementById('notificationList');
+    const notificationBadge = document.getElementById('notificationBadge');
 
-    if (!notificationBtn || !notificationDropdown) return;
+    if (!notificationBtn || !notificationDropdown) return false;
 
+    // Setup click handler for notification button
     notificationBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       notificationDropdown.classList.toggle('hidden');
+      // Update notification UI when dropdown is opened
+      updateNotificationsUI();
     });
 
     // Close when clicking outside
@@ -171,6 +178,138 @@
         notificationDropdown.classList.add('hidden');
       }
     });
+
+    // Setup mark all as read button
+    if (markAllReadBtn) {
+      markAllReadBtn.addEventListener('click', () => {
+        if (window.markAllNotificationsRead && typeof window.markAllNotificationsRead === 'function') {
+          window.markAllNotificationsRead();
+        } else {
+          // Fallback: mark all as read manually
+          const notifications = getNotificationsFromStorage();
+          notifications.forEach(n => n.read = true);
+          saveNotificationsToStorage(notifications);
+          updateNotificationsUI();
+        }
+      });
+    }
+
+    // Try to use app.js functions, otherwise use fallback
+    if (window.initNotifications && typeof window.initNotifications === 'function') {
+      window.initNotifications();
+      return true;
+    } else {
+      // Fallback: initialize our own notification system
+      updateNotificationsUI();
+      return true;
+    }
+  }
+
+  // Fallback functions for notifications (if app.js not loaded)
+  function getNotificationsFromStorage() {
+    try {
+      const stored = localStorage.getItem('notifications');
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  function saveNotificationsToStorage(notifications) {
+    try {
+      localStorage.setItem('notifications', JSON.stringify(notifications));
+    } catch (e) {
+      console.warn('Failed to save notifications:', e);
+    }
+  }
+
+  function updateNotificationsUI() {
+    // Try to use app.js function first
+    if (window.updateNotificationUI && typeof window.updateNotificationUI === 'function') {
+      window.updateNotificationUI();
+      return;
+    }
+
+    // Fallback: update UI manually
+    const notificationList = document.getElementById('notificationList');
+    const notificationBadge = document.getElementById('notificationBadge');
+    
+    if (!notificationList) return;
+
+    const notifications = getNotificationsFromStorage();
+    const unreadCount = notifications.filter(n => !n.read).length;
+
+    // Update badge
+    if (notificationBadge) {
+      if (unreadCount > 0) {
+        notificationBadge.textContent = unreadCount > 10 ? '10+' : unreadCount;
+        notificationBadge.classList.remove('hidden');
+      } else {
+        notificationBadge.classList.add('hidden');
+      }
+    }
+
+    // Update list
+    if (notifications.length === 0) {
+      notificationList.innerHTML = '<div class="p-4 text-center text-gray-500">Không có thông báo nào</div>';
+      return;
+    }
+
+    notificationList.innerHTML = notifications.map(notif => {
+      const date = new Date(notif.timestamp);
+      const timeAgo = getTimeAgoString(date);
+      const bgColor = notif.read ? 'bg-white' : 'bg-red-50';
+      
+      return `
+        <div class="notification-item ${bgColor} border-b border-gray-100 p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+             onclick="if(window.markNotificationRead) { window.markNotificationRead(${notif.id}); } else { const notifs = JSON.parse(localStorage.getItem('notifications') || '[]'); const n = notifs.find(n => n.id === ${notif.id}); if(n) { n.read = true; localStorage.setItem('notifications', JSON.stringify(notifs)); window.location.reload(); } }">
+          <div class="flex items-start gap-3">
+            <div class="flex-1 min-w-0">
+              <p class="text-sm text-gray-800 ${notif.read ? '' : 'font-semibold'}">${notif.message}</p>
+              <p class="text-xs text-gray-500 mt-1">${timeAgo}</p>
+            </div>
+            ${!notif.read ? '<div class="flex-shrink-0 w-2 h-2 bg-red-600 rounded-full mt-2"></div>' : ''}
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function getTimeAgoString(date) {
+    const now = new Date();
+    const diff = now - date;
+    const seconds = Math.floor(diff / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+    
+    if (days > 0) return `${days} ngày trước`;
+    if (hours > 0) return `${hours} giờ trước`;
+    if (minutes > 0) return `${minutes} phút trước`;
+    return 'Vừa xong';
+  }
+
+  function setupNotificationDropdown() {
+    // Try to initialize notifications system
+    let attempts = 0;
+    const maxAttempts = 10;
+    
+    function tryInit() {
+      attempts++;
+      if (initNotificationsSystem()) {
+        return true;
+      }
+      if (attempts < maxAttempts) {
+        setTimeout(tryInit, 200);
+      } else {
+        // Final attempt with fallback
+        initNotificationsSystem();
+      }
+      return false;
+    }
+
+    // Start trying
+    setTimeout(tryInit, 100);
   }
 
   function setupSearch() {
@@ -208,7 +347,38 @@
     }
   }
 
+  // Inject CSS for cart badge animation
+  function injectCartBadgeAnimationCSS() {
+    if (document.getElementById('cartBadgeAnimationStyle')) return;
+    
+    const style = document.createElement('style');
+    style.id = 'cartBadgeAnimationStyle';
+    style.textContent = `
+      @keyframes badgePulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.2); }
+        100% { transform: scale(1); }
+      }
+      @keyframes badgeBounce {
+        0%, 100% { transform: translateY(0) scale(1); }
+        50% { transform: translateY(-5px) scale(1.1); }
+      }
+      .cart-badge-update {
+        animation: badgePulse 0.3s ease-in-out;
+      }
+      .cart-badge-bounce {
+        animation: badgeBounce 0.5s ease-in-out;
+      }
+      #cartBadgeHeader {
+        transition: transform 0.2s ease-in-out;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
   async function syncCartBadge() {
+    // Inject CSS animation on first call
+    injectCartBadgeAnimationCSS();
     const badge = document.getElementById('cartBadgeHeader');
     if (!badge) return;
 
@@ -224,15 +394,53 @@
       const res = await fetch('http://localhost:5000/api/cart', {
         headers: { Authorization: `Bearer ${token}` }
       });
-      if (!res.ok) throw new Error('cart fetch failed');
+      if (!res.ok) {
+        if (res.status === 401) {
+          // Not logged in
+          badge.classList.add('hidden');
+          badge.textContent = '0';
+          return;
+        }
+        throw new Error('cart fetch failed');
+      }
       const data = await res.json();
-      const items = data?.cart?.items || [];
-      const count = items.reduce((sum, it) => sum + Number(it.quantity || 0), 0);
-      badge.textContent = String(count);
-      badge.classList.toggle('hidden', count <= 0);
-    } catch {
+      
+      // Handle both response formats (backward compatibility)
+      const cart = data.cart || data;
+      const items = cart?.items || [];
+      
+      // Calculate total quantity (sum of all item quantities)
+      const newCount = items.reduce((sum, it) => sum + Number(it.quantity || 0), 0);
+      const oldCount = parseInt(badge.textContent || '0') || 0;
+      
+      // Update badge with animation if count changed
+      if (newCount !== oldCount) {
+        // Remove previous animation classes
+        badge.classList.remove('cart-badge-update', 'cart-badge-bounce');
+        
+        // Trigger reflow to restart animation
+        void badge.offsetWidth;
+        
+        // Add animation class based on whether count increased or decreased
+        if (newCount > oldCount) {
+          badge.classList.add('cart-badge-bounce');
+        } else {
+          badge.classList.add('cart-badge-update');
+        }
+        
+        // Remove animation class after animation completes
+        setTimeout(() => {
+          badge.classList.remove('cart-badge-update', 'cart-badge-bounce');
+        }, 500);
+      }
+      
+      badge.textContent = String(newCount);
+      badge.classList.toggle('hidden', newCount <= 0);
+    } catch (error) {
+      console.warn('Failed to sync cart badge:', error);
       // Silent: don't break pages if cart API fails
       badge.classList.add('hidden');
+      badge.textContent = '0';
     }
   }
 
@@ -246,6 +454,14 @@
           syncCartBadge();
         }, 100);
       }
+      
+      // Listen for cart updates
+      if (e.key === 'cart_updated') {
+        // Reload cart badge when cart is updated from another tab/page
+        setTimeout(() => {
+          syncCartBadge();
+        }, 100);
+      }
     });
     
     // Also listen for custom events (for same-tab updates)
@@ -253,11 +469,29 @@
       setTimeout(() => {
         syncHeaderAuthUI();
         syncCartBadge();
+        // Update notifications when auth state changes
+        setTimeout(() => {
+          if (window.updateNotificationUI && typeof window.updateNotificationUI === 'function') {
+            window.updateNotificationUI();
+          } else {
+            updateNotificationsUI();
+          }
+        }, 100);
+      }, 100);
+    });
+    
+    // Listen for cart updated event (same-tab)
+    window.addEventListener('cartUpdated', () => {
+      setTimeout(() => {
+        syncCartBadge();
       }, 100);
     });
   }
 
   async function init() {
+    // Inject CSS animation for cart badge early
+    injectCartBadgeAnimationCSS();
+    
     await loadPartial('#site-header', '/components/header.html');
     await loadPartial('#site-footer', '/components/footer.html');
     adjustForFixedHeader();
@@ -273,6 +507,15 @@
       setupUserMenuDropdown();
       setupNotificationDropdown();
       setupSearch();
+      
+      // Update notifications UI - try both methods
+      setTimeout(() => {
+        if (window.updateNotificationUI && typeof window.updateNotificationUI === 'function') {
+          window.updateNotificationUI();
+        } else {
+          updateNotificationsUI();
+        }
+      }, 300);
     }
 
     // Setup immediately after header loads
@@ -306,8 +549,9 @@
     }
   }
 
-  // Make syncHeaderAuthUI available globally so other scripts can call it
+  // Make functions available globally so other scripts can call them
   window.syncHeaderAuthUI = syncHeaderAuthUI;
+  window.syncCartBadge = syncCartBadge;
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);

@@ -396,6 +396,30 @@ app.get('/api/user-by-email', async (req, res) => {
     }
 });
 
+// POST /api/verify-email - Xác thực email bằng OTP
+app.post('/api/verify-email', async (req, res) => {
+    try {
+        const response = await axios.post(`${SERVICES.auth}/verify-email`, req.body);
+        res.json(response.data);
+    } catch (error) {
+        res.status(error.response?.status || 500).json(
+            error.response?.data || { message: 'Lỗi server' }
+        );
+    }
+});
+
+// POST /api/resend-verification - Gửi lại mã OTP
+app.post('/api/resend-verification', async (req, res) => {
+    try {
+        const response = await axios.post(`${SERVICES.auth}/resend-verification`, req.body);
+        res.json(response.data);
+    } catch (error) {
+        res.status(error.response?.status || 500).json(
+            error.response?.data || { message: 'Lỗi server' }
+        );
+    }
+});
+
 // ============================================
 // PRODUCT ENDPOINTS → Product Service
 // ============================================

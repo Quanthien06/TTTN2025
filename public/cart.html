@@ -58,11 +58,28 @@
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
+        
+        /* Cart badge animation */
+        @keyframes badgePulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+        @keyframes badgeBounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+        .cart-badge-update {
+            animation: badgePulse 0.3s ease-in-out;
+        }
+        .cart-badge-bounce {
+            animation: badgeBounce 0.5s ease-in-out;
+        }
     </style>
 </head>
 <body class="bg-gray-50 font-sans min-h-screen">
     <div id="site-header"></div>
-    <script src="/include-partials.js?v=2.0" defer></script>
+    <script src="/include-partials.js?v=2.1" defer></script>
 
     <!-- Main Content -->
     <div class="container mx-auto p-4 max-w-6xl py-8">
@@ -340,15 +357,40 @@
                 document.getElementById('emptyCart').classList.add('hidden');
 
                 const data = await apiCall('/cart');
-                cartData = data.cart;
-
-                if (!cartData.items || cartData.items.length === 0) {
+                
+                // Handle both response formats (backward compatibility)
+                // Backend trả về: { cart: { items: [...], total: ..., item_count: ... } }
+                // Hoặc: { items: [...], total: ... } (old format)
+                const responseData = data.cart || data;
+                
+                if (!responseData) {
+                    console.error('Invalid cart response:', data);
+                    showEmptyCart();
+                    return;
+                }
+                
+                cartData = {
+                    id: responseData.id,
+                    user_id: responseData.user_id,
+                    status: responseData.status,
+                    items: Array.isArray(responseData.items) ? responseData.items : [],
+                    total: parseFloat(responseData.total || 0),
+                    item_count: responseData.item_count || (responseData.items || []).length
+                };
+                
+                // Ensure items array exists and has items
+                if (!Array.isArray(cartData.items) || cartData.items.length === 0) {
                     showEmptyCart();
                     return;
                 }
 
                 renderCart();
                 updateOrderSummary();
+                
+                // Cập nhật cart badge trong header sau khi load cart
+                if (typeof window.syncCartBadge === 'function') {
+                    window.syncCartBadge();
+                }
                 
             } catch (error) {
                 console.error('Error loading cart:', error);
@@ -370,7 +412,11 @@
         function renderCart() {
             document.getElementById('cartContent').classList.remove('hidden');
             document.getElementById('emptyCart').classList.add('hidden');
-            document.getElementById('cartItemCount').textContent = cartData.items.length;
+            
+            // Calculate total item count (sum of quantities)
+            const itemCount = cartData.items ? 
+                cartData.items.reduce((sum, item) => sum + (item.quantity || 1), 0) : 0;
+            document.getElementById('cartItemCount').textContent = itemCount;
 
             // Render mobile view
             renderMobileView();
@@ -383,19 +429,23 @@
         function renderMobileView() {
             const container = document.getElementById('cartMobileView');
             container.innerHTML = cartData.items.map(item => {
+                // Handle deleted products
+                const isProductDeleted = item.product_deleted_at || !item.product_name;
+                const productName = item.product_name || 'Sản phẩm đã bị xóa';
                 const imageData = getProductImage(item);
                 return `
-                <div class="bg-white rounded-lg shadow-md p-4">
+                <div class="bg-white rounded-lg shadow-md p-4 ${isProductDeleted ? 'opacity-60' : ''}">
                     <div class="flex justify-between items-start mb-4">
                         <div class="flex items-start space-x-3 flex-1">
                             <img 
                                 src="${imageData.primary}" 
-                                alt="${item.product_name}"
+                                alt="${productName}"
                                 class="w-20 h-20 object-cover rounded"
                                 onerror="this.src='${imageData.fallback}'; this.onerror=null;"
                             >
                             <div class="flex-1">
-                                <h3 class="font-semibold text-lg">${item.product_name}</h3>
+                                <h3 class="font-semibold text-lg ${isProductDeleted ? 'text-gray-500' : ''}">${productName}</h3>
+                                ${isProductDeleted ? '<p class="text-xs text-red-600">Sản phẩm không còn khả dụng</p>' : ''}
                                 ${item.product_brand ? `<p class="text-sm text-gray-600">${item.product_brand}</p>` : ''}
                                 <p class="text-red-600 font-bold mt-1">${formatPrice(item.price)}</p>
                             </div>
@@ -439,19 +489,23 @@
         function renderDesktopView() {
             const tbody = document.getElementById('cartTableBody');
             tbody.innerHTML = cartData.items.map(item => {
+                // Handle deleted products
+                const isProductDeleted = item.product_deleted_at || !item.product_name;
+                const productName = item.product_name || 'Sản phẩm đã bị xóa';
                 const imageData = getProductImage(item);
                 return `
-                <tr class="border-t border-gray-200 hover:bg-gray-50 transition">
+                <tr class="border-t border-gray-200 hover:bg-gray-50 transition ${isProductDeleted ? 'opacity-60' : ''}">
                     <td class="py-4 px-4">
                         <div class="flex items-center space-x-3">
                             <img 
                                 src="${imageData.primary}" 
-                                alt="${item.product_name}"
+                                alt="${productName}"
                                 class="w-20 h-20 object-cover rounded"
                                 onerror="this.src='${imageData.fallback}'; this.onerror=null;"
                             >
                             <div>
-                                <h3 class="font-medium">${item.product_name}</h3>
+                                <h3 class="font-medium ${isProductDeleted ? 'text-gray-500' : ''}">${productName}</h3>
+                                ${isProductDeleted ? '<p class="text-xs text-red-600">Sản phẩm không còn khả dụng</p>' : ''}
                                 ${item.product_brand ? `<p class="text-sm text-gray-600">${item.product_brand}</p>` : ''}
                                 ${item.product_category ? `<p class="text-xs text-gray-500">${item.product_category}</p>` : ''}
                             </div>
@@ -506,6 +560,16 @@
                     body: JSON.stringify({ quantity })
                 });
                 showToast('Đã cập nhật số lượng', 'success');
+                
+                // Cập nhật cart badge trong header
+                if (typeof window.syncCartBadge === 'function') {
+                    window.syncCartBadge();
+                }
+                
+                // Trigger cart updated event
+                localStorage.setItem('cart_updated', Date.now().toString());
+                window.dispatchEvent(new CustomEvent('cartUpdated'));
+                
                 loadCart();
             } catch (error) {
                 showToast(error.message, 'error');
@@ -520,6 +584,16 @@
             try {
                 await apiCall(`/cart/items/${itemId}`, { method: 'DELETE' });
                 showToast('Đã xóa sản phẩm khỏi giỏ hàng', 'success');
+                
+                // Cập nhật cart badge trong header
+                if (typeof window.syncCartBadge === 'function') {
+                    window.syncCartBadge();
+                }
+                
+                // Trigger cart updated event
+                localStorage.setItem('cart_updated', Date.now().toString());
+                window.dispatchEvent(new CustomEvent('cartUpdated'));
+                
                 loadCart();
             } catch (error) {
                 showToast(error.message, 'error');
@@ -533,6 +607,16 @@
             try {
                 await apiCall('/cart', { method: 'DELETE' });
                 showToast('Đã xóa toàn bộ giỏ hàng', 'success');
+                
+                // Cập nhật cart badge trong header
+                if (typeof window.syncCartBadge === 'function') {
+                    window.syncCartBadge();
+                }
+                
+                // Trigger cart updated event
+                localStorage.setItem('cart_updated', Date.now().toString());
+                window.dispatchEvent(new CustomEvent('cartUpdated'));
+                
                 loadCart();
             } catch (error) {
                 showToast(error.message, 'error');
@@ -634,8 +718,39 @@
             window.location.href = '/checkout.html';
         }
 
+        // Listen for cart updates from other tabs/pages
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'cart_updated') {
+                // Reload cart khi có thay đổi từ tab/window khác
+                loadCart();
+            }
+        });
+        
+        // Listen for custom event (same-tab updates)
+        window.addEventListener('cartUpdated', () => {
+            loadCart();
+        });
+
         // Event listeners
         document.addEventListener('DOMContentLoaded', () => {
+            // Clear service worker cache for JS files if in development
+            if (window.location.hostname === 'localhost' && 'caches' in window) {
+                caches.keys().then(function(cacheNames) {
+                    cacheNames.forEach(function(cacheName) {
+                        caches.open(cacheName).then(function(cache) {
+                            cache.keys().then(function(keys) {
+                                keys.forEach(function(request) {
+                                    if (request.url.includes('.js') || request.url.includes('include-partials')) {
+                                        cache.delete(request);
+                                        console.log('Cleared cached JS file:', request.url);
+                                    }
+                                });
+                            });
+                        });
+                    });
+                });
+            }
+            
             if (!checkAuth()) return;
             
             loadCart();
@@ -644,6 +759,14 @@
             document.querySelectorAll('input[name="shippingMethod"]').forEach(radio => {
                 radio.addEventListener('change', updateOrderSummary);
             });
+            
+            // Check if cart was updated when page loaded
+            const cartUpdated = localStorage.getItem('cart_updated');
+            if (cartUpdated) {
+                // Clear the flag và reload
+                localStorage.removeItem('cart_updated');
+                loadCart();
+            }
         });
     </script>
     <div id="site-footer"></div>

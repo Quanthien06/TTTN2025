@@ -688,7 +688,28 @@
                 }
                 
                 // Cập nhật số lượng trong giỏ hàng
-                loadCartCount();
+                if (typeof loadCartCount === 'function') {
+                    loadCartCount();
+                }
+                
+                // Nếu đang ở trang cart, reload cart để hiển thị sản phẩm mới
+                if (window.location.pathname === '/cart.html' || window.location.pathname.includes('cart.html')) {
+                    if (typeof loadCart === 'function') {
+                        loadCart();
+                    } else {
+                        // Reload trang nếu hàm loadCart không tồn tại
+                        window.location.reload();
+                    }
+                }
+                
+                // Trigger cart reload event để các tab/window khác cũng reload
+                localStorage.setItem('cart_updated', Date.now().toString());
+                window.dispatchEvent(new CustomEvent('cartUpdated'));
+                
+                // Reload cart badge trong header
+                if (typeof window.syncCartBadge === 'function') {
+                    window.syncCartBadge();
+                }
                 
             } catch (error) {
                 console.error('Error adding to cart:', error);

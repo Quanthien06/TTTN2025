@@ -1473,7 +1473,13 @@ async function loadCartCount() {
         const data = await apiCall('/cart');
         const badge = document.getElementById('cartBadge');
         const badgeHeader = document.getElementById('cartBadgeHeader');
-        const count = data.cart.items?.length || 0;
+        
+        // Handle both response formats (backward compatibility)
+        const cart = data.cart || data;
+        const items = cart?.items || [];
+        
+        // Calculate total quantity (sum of all item quantities)
+        const count = items.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
         
         if (badge) {
             badge.textContent = count;
@@ -1489,6 +1495,11 @@ async function loadCartCount() {
         }
     } catch (error) {
         console.error('Error loading cart count:', error);
+        // Hide badge on error
+        const badge = document.getElementById('cartBadge');
+        const badgeHeader = document.getElementById('cartBadgeHeader');
+        if (badge) badge.style.display = 'none';
+        if (badgeHeader) badgeHeader.classList.add('hidden');
     }
 }
 
@@ -1501,12 +1512,36 @@ async function addToCart(productId, productName, price) {
         });
         showToast(`Đã thêm "${productName}" vào giỏ hàng`, 'success');
         // Add notification
-        addNotification(
-            NOTIFICATION_TYPES.CART_ADDED,
-            `Đã thêm "${productName}" vào giỏ hàng`,
-            { productId, productName }
-        );
-        loadCartCount();
+        if (typeof addNotification !== 'undefined' && typeof NOTIFICATION_TYPES !== 'undefined') {
+            addNotification(
+                NOTIFICATION_TYPES.CART_ADDED,
+                `Đã thêm "${productName}" vào giỏ hàng`,
+                { productId, productName }
+            );
+        }
+        // Reload cart count
+        if (typeof loadCartCount === 'function') {
+            loadCartCount();
+        }
+        
+        // Update cart badge in header
+        if (typeof window.syncCartBadge === 'function') {
+            window.syncCartBadge();
+        }
+        
+        // Trigger cart updated event
+        window.dispatchEvent(new Event('cartUpdated'));
+        localStorage.setItem('cart_updated', Date.now().toString());
+        
+        // If on cart page, reload cart to show new item
+        if (window.location.pathname === '/cart.html' || window.location.pathname.includes('cart.html')) {
+            // Use setTimeout để đảm bảo event đã được dispatch
+            setTimeout(() => {
+                if (typeof loadCart === 'function') {
+                    loadCart();
+                }
+            }, 200);
+        }
     } catch (error) {
         showToast(error.message, 'error');
     } finally {
@@ -3092,4 +3127,11 @@ window.showChangePassword = showChangePassword;
 window.closePasswordModal = closePasswordModal;
 window.applyFilters = applyFilters;
 window.resetFilters = resetFilters;
+
+// Make notification functions available globally
+window.initNotifications = initNotifications;
+window.updateNotificationUI = updateNotificationUI;
+window.markAllNotificationsRead = markAllNotificationsRead;
+window.markNotificationRead = markNotificationRead;
+window.addNotification = addNotification;
 

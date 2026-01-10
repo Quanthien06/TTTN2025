@@ -1,6 +1,6 @@
 // Service Worker for PWA and Offline Support
-const CACHE_NAME = 'techstore-v3'; // Updated version to force cache refresh
-const RUNTIME_CACHE = 'techstore-runtime-v3';
+const CACHE_NAME = 'techstore-v4'; // Updated version to force cache refresh
+const RUNTIME_CACHE = 'techstore-runtime-v4';
 const DEV_MODE = true; // Set to false in production
 
 // Assets to cache on install (excluding CSS for development)
@@ -145,26 +145,49 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
+    // For JS files, use Network First strategy in DEV_MODE (bypass cache)
+    if (url.pathname.endsWith('.js')) {
+        if (DEV_MODE) {
+            // In development, always fetch from network (no cache)
+            event.respondWith(
+                fetch(request, { cache: 'no-store' }).then((response) => {
+                    return response;
+                }).catch(() => {
+                    // Fallback to cache only if network fails
+                    return caches.match(request);
+                })
+            );
+            return;
+        }
+    }
+
     // For other files, use Cache First strategy
     event.respondWith(
         caches.match(request).then((cachedResponse) => {
-            if (cachedResponse) {
+            if (cachedResponse && !DEV_MODE) {
                 return cachedResponse;
             }
 
-            return fetch(request).then((response) => {
+            return fetch(request, { cache: DEV_MODE ? 'no-store' : 'default' }).then((response) => {
                 // Don't cache if not a valid response
                 if (!response || response.status !== 200 || response.type !== 'basic') {
+                    return response;
+                }
+
+                // In DEV_MODE, don't cache JS files
+                if (DEV_MODE && url.pathname.endsWith('.js')) {
                     return response;
                 }
 
                 // Clone the response
                 const responseToCache = response.clone();
 
-                // Cache the response
-                caches.open(RUNTIME_CACHE).then((cache) => {
-                    cache.put(request, responseToCache);
-                });
+                // Cache the response only if not in DEV_MODE or not a JS file
+                if (!DEV_MODE || !url.pathname.endsWith('.js')) {
+                    caches.open(RUNTIME_CACHE).then((cache) => {
+                        cache.put(request, responseToCache);
+                    });
+                }
 
                 return response;
             }).catch(() => {
