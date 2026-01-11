@@ -31,6 +31,13 @@ router.post('/', async (req, res) => {
                 headers: { 'Authorization': req.headers['authorization'] }
             });
             cartData = cartResponse.data;
+            
+            // Handle both response formats (backward compatibility)
+            // Cart service trả về: { cart: { items: [...], total: ... } }
+            // Hoặc: { items: [...], total: ... } (old format)
+            if (cartData.cart) {
+                cartData = cartData.cart;
+            }
         } catch (error) {
             if (error.response?.status === 404) {
                 return res.status(404).json({ message: 'Giỏ hàng trống' });

@@ -45,6 +45,18 @@ UPDATE users SET role='admin' WHERE username='kevinhere';
 
 Option B: Insert directly (hash password with bcrypt first).
 
+## Development Guidelines
+
+**⚠️ Important:** Để tránh các lỗi thường gặp, vui lòng đọc [PREVENTION_CHECKLIST.md](./PREVENTION_CHECKLIST.md) trước khi code:
+
+- ✅ API Response Format Handling
+- ✅ Cache Busting Best Practices
+- ✅ Navigation (SPA vs Standalone pages)
+- ✅ Service Communication Patterns
+- ✅ UI Updates (Cart badge, etc.)
+
+**Quick Reference:** Xem checklist trong `PREVENTION_CHECKLIST.md` trước mỗi commit.
+
 ## Environment variables (OAuth2 + Email)
 
 Some features require environment variables (Google OAuth2, email OTP).

@@ -382,21 +382,7 @@ app.post('/api/reset-password', async (req, res) => {
     }
 });
 
-// GET /api/user-by-email - Lấy username từ email
-app.get('/api/user-by-email', async (req, res) => {
-    try {
-        const response = await axios.get(`${SERVICES.auth}/user-by-email`, {
-            params: req.query
-        });
-        res.json(response.data);
-    } catch (error) {
-        res.status(error.response?.status || 500).json(
-            error.response?.data || { message: 'Lỗi server' }
-        );
-    }
-});
-
-// POST /api/verify-email - Xác thực email bằng OTP
+// POST /api/verify-email - Xác thực email với OTP
 app.post('/api/verify-email', async (req, res) => {
     try {
         const response = await axios.post(`${SERVICES.auth}/verify-email`, req.body);
@@ -408,10 +394,24 @@ app.post('/api/verify-email', async (req, res) => {
     }
 });
 
-// POST /api/resend-verification - Gửi lại mã OTP
+// POST /api/resend-verification - Gửi lại mã OTP xác thực email
 app.post('/api/resend-verification', async (req, res) => {
     try {
         const response = await axios.post(`${SERVICES.auth}/resend-verification`, req.body);
+        res.json(response.data);
+    } catch (error) {
+        res.status(error.response?.status || 500).json(
+            error.response?.data || { message: 'Lỗi server' }
+        );
+    }
+});
+
+// GET /api/user-by-email - Lấy username từ email
+app.get('/api/user-by-email', async (req, res) => {
+    try {
+        const response = await axios.get(`${SERVICES.auth}/user-by-email`, {
+            params: req.query
+        });
         res.json(response.data);
     } catch (error) {
         res.status(error.response?.status || 500).json(

@@ -58,7 +58,6 @@ router.get('/', async (req, res) => {
                 p.image_url as product_image,
                 p.description as product_description,
                 p.brand as product_brand,
-                p.deleted_at as product_deleted_at,
                 (ci.price * ci.quantity) as subtotal
             FROM cart_items ci
             LEFT JOIN products p ON ci.product_id = p.id
@@ -76,12 +75,13 @@ router.get('/', async (req, res) => {
 
         const formattedItems = items.map(item => ({
             ...item,
-            price: parseFloat(item.price),
-            subtotal: parseFloat(item.subtotal)
+            price: parseFloat(item.price || 0),
+            subtotal: parseFloat(item.subtotal || 0),
+            quantity: parseInt(item.quantity || 0)
         }));
 
         // Calculate item count
-        const itemCount = formattedItems.reduce((sum, item) => sum + item.quantity, 0);
+        const itemCount = formattedItems.reduce((sum, item) => sum + (item.quantity || 0), 0);
 
         res.json({
             cart: {
@@ -89,13 +89,21 @@ router.get('/', async (req, res) => {
                 user_id: cart.user_id,
                 status: cart.status,
                 items: formattedItems,
-                total: parseFloat(total),
+                total: parseFloat(total || 0),
                 item_count: itemCount
             }
         });
     } catch (error) {
         console.error('Lỗi khi lấy giỏ hàng:', error);
-        res.status(500).json({ message: 'Lỗi máy chủ nội bộ' });
+        console.error('Error details:', {
+            message: error.message,
+            stack: error.stack,
+            userId: req.user?.id
+        });
+        res.status(500).json({ 
+            message: 'Lỗi máy chủ nội bộ',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
     }
 });
 

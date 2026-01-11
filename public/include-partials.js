@@ -500,31 +500,6 @@
     // Setup storage listener first
     setupStorageListener();
 
-    // Function to setup navigation handlers for non-SPA pages
-    function setupNavigation() {
-      // Check if this is a SPA page (has .page containers)
-      const isSpa = !!document.querySelector('.page');
-      
-      // Only setup navigation handler for non-SPA pages
-      if (!isSpa) {
-        document.querySelectorAll('.nav-link[data-page]').forEach(link => {
-          // Check if already has our handler (avoid duplicates)
-          if (link.dataset.navHandler === 'true') return;
-          link.dataset.navHandler = 'true';
-          
-          link.addEventListener('click', (e) => {
-            const page = link.dataset.page;
-            if (page) {
-              e.preventDefault();
-              e.stopPropagation();
-              // Redirect to index.html with page query param
-              window.location.href = `/?page=${page}`;
-            }
-          });
-        });
-      }
-    }
-
     // Function to setup all header functionality
     function setupHeader() {
       syncHeaderAuthUI();
@@ -532,7 +507,6 @@
       setupUserMenuDropdown();
       setupNotificationDropdown();
       setupSearch();
-      setupNavigation(); // Setup navigation handlers
       
       // Update notifications UI - try both methods
       setTimeout(() => {
@@ -557,6 +531,9 @@
       setupHeader();
     }, 200);
     
+    // Setup navigation for standalone pages (not SPA)
+    setupStandaloneNavigation();
+    
     // Initialize theme and language selectors
     if (window.themeManager) {
       window.themeManager.init();
@@ -573,6 +550,75 @@
         langToggle.addEventListener('change', (e) => window.i18n.setLanguage(e.target.value));
       }
     }
+  }
+
+  // Setup navigation for standalone pages
+  function setupStandaloneNavigation() {
+    // Check if we're in SPA (has .page containers)
+    const isSpa = !!document.querySelector('.page');
+    if (isSpa) {
+      // If in SPA, navigation is handled by app.js
+      return;
+    }
+
+    // Map page names to URLs
+    function getPageUrl(page) {
+      const pageMap = {
+        'home': '/',
+        'products': '/?page=products',
+        'categories': '/?page=categories',
+        'cart': '/cart.html',
+        'orders': '/orders.html',
+        'profile': '/profile.html',
+        'phone-tablet': '/?page=products&category=Điện thoại, Tablet',
+        'phone': '/?page=products&category=Điện thoại',
+        'tablet': '/?page=products&category=Tablet',
+        'phone-accessories': '/?page=products&category=Phụ kiện điện thoại',
+        'laptop': '/?page=products&category=Laptop',
+        'audio': '/?page=products&category=Âm thanh, Mic thu âm',
+        'watch-camera': '/?page=products&category=Đồng hồ, Camera',
+        'accessories': '/?page=products&category=Phụ kiện',
+        'pc-monitor-printer': '/?page=products&category=PC, Màn hình, Máy in',
+        'pc': '/?page=products&category=PC',
+        'monitor': '/?page=products&category=Màn hình',
+        'printer': '/?page=products&category=Máy in',
+        'pc-parts': '/?page=products&category=Linh kiện PC',
+        'faq': '/faq.html',
+        'about': '/about.html'
+      };
+      return pageMap[page] || '/';
+    }
+
+    // Setup navigation links
+    const navLinks = document.querySelectorAll('.nav-link[data-page]');
+    navLinks.forEach(link => {
+      const page = link.getAttribute('data-page');
+      const url = getPageUrl(page);
+      
+      // Update href
+      if (url) {
+        link.setAttribute('href', url);
+      }
+
+      // Add click handler for auth-protected pages
+      link.addEventListener('click', (e) => {
+        const targetPage = link.getAttribute('data-page');
+        const href = link.getAttribute('href') || '/';
+
+        // Check if page requires auth
+        if (targetPage === 'cart' || targetPage === 'orders' || targetPage === 'profile') {
+          const token = getToken();
+          if (!token) {
+            e.preventDefault();
+            window.location.href = `/login.html?redirect=${encodeURIComponent(href)}`;
+            return;
+          }
+        }
+
+        // Let browser navigate normally
+        // No preventDefault needed
+      });
+    });
   }
 
   // Make functions available globally so other scripts can call them

@@ -2,8 +2,7 @@
 const CACHE_NAME = 'techstore-v4'; // Updated version to force cache refresh
 const RUNTIME_CACHE = 'techstore-runtime-v4';
 const DEV_MODE = true; // Set to false in production
-
-// Assets to cache on install (excluding CSS for development)
+ 
 const STATIC_ASSETS = [
     '/',
     '/index.html',
