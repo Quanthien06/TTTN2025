@@ -120,17 +120,22 @@ router.post('/login', async (req, res) => {
         }
 
         // Kiểm tra email đã được verify chưa
-        // Nếu user có email nhưng chưa verify, không cho phép đăng nhập
-        if (user.email && user.email_verified !== null && user.email_verified !== undefined) {
-            const isEmailVerified = Boolean(user.email_verified);
-            if (!isEmailVerified) {
-                return res.status(403).json({ 
-                    message: 'Vui lòng xác thực email trước khi đăng nhập. Kiểm tra hộp thư của bạn!',
-                    requiresVerification: true,
-                    email: user.email
-                });
+        // Chỉ yêu cầu verify cho tài khoản mới đăng ký (có OTP)
+        // Tài khoản cũ (không có OTP) không cần verify
+        if (user.otp_code) {
+            // Chỉ check verify cho tài khoản có OTP (tài khoản mới đăng ký)
+            if (user.email && user.email_verified !== null && user.email_verified !== undefined) {
+                const isEmailVerified = Boolean(user.email_verified);
+                if (!isEmailVerified) {
+                    return res.status(403).json({ 
+                        message: 'Vui lòng xác thực email trước khi đăng nhập. Kiểm tra hộp thư của bạn!',
+                        requiresVerification: true,
+                        email: user.email
+                    });
+                }
             }
         }
+        // Tài khoản cũ (không có OTP) sẽ bỏ qua check này
 
         const token = jwt.sign(
             { id: user.id, username: user.username, role: user.role },

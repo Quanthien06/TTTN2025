@@ -500,6 +500,31 @@
     // Setup storage listener first
     setupStorageListener();
 
+    // Function to setup navigation handlers for non-SPA pages
+    function setupNavigation() {
+      // Check if this is a SPA page (has .page containers)
+      const isSpa = !!document.querySelector('.page');
+      
+      // Only setup navigation handler for non-SPA pages
+      if (!isSpa) {
+        document.querySelectorAll('.nav-link[data-page]').forEach(link => {
+          // Check if already has our handler (avoid duplicates)
+          if (link.dataset.navHandler === 'true') return;
+          link.dataset.navHandler = 'true';
+          
+          link.addEventListener('click', (e) => {
+            const page = link.dataset.page;
+            if (page) {
+              e.preventDefault();
+              e.stopPropagation();
+              // Redirect to index.html with page query param
+              window.location.href = `/?page=${page}`;
+            }
+          });
+        });
+      }
+    }
+
     // Function to setup all header functionality
     function setupHeader() {
       syncHeaderAuthUI();
@@ -507,6 +532,7 @@
       setupUserMenuDropdown();
       setupNotificationDropdown();
       setupSearch();
+      setupNavigation(); // Setup navigation handlers
       
       // Update notifications UI - try both methods
       setTimeout(() => {
