@@ -3132,4 +3132,3 @@ window.updateNotificationUI = updateNotificationUI;
 window.markAllNotificationsRead = markAllNotificationsRead;
 window.markNotificationRead = markNotificationRead;
 window.addNotification = addNotification;
-

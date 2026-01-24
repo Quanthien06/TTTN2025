@@ -2,6 +2,9 @@
 // API Gateway - Điểm vào chính của ứng dụng
 // Gateway sẽ route requests đến các microservices tương ứng
 
+// Load environment variables
+require('dotenv').config();
+
 const express = require('express');
 const axios = require('axios');
 const mysql = require('mysql2/promise');
@@ -374,30 +377,6 @@ app.post('/api/forgot-password', async (req, res) => {
 app.post('/api/reset-password', async (req, res) => {
     try {
         const response = await axios.post(`${SERVICES.auth}/reset-password`, req.body);
-        res.json(response.data);
-    } catch (error) {
-        res.status(error.response?.status || 500).json(
-            error.response?.data || { message: 'Lỗi server' }
-        );
-    }
-});
-
-// POST /api/verify-email - Xác thực email với OTP
-app.post('/api/verify-email', async (req, res) => {
-    try {
-        const response = await axios.post(`${SERVICES.auth}/verify-email`, req.body);
-        res.json(response.data);
-    } catch (error) {
-        res.status(error.response?.status || 500).json(
-            error.response?.data || { message: 'Lỗi server' }
-        );
-    }
-});
-
-// POST /api/resend-verification - Gửi lại mã OTP xác thực email
-app.post('/api/resend-verification', async (req, res) => {
-    try {
-        const response = await axios.post(`${SERVICES.auth}/resend-verification`, req.body);
         res.json(response.data);
     } catch (error) {
         res.status(error.response?.status || 500).json(
@@ -854,7 +833,7 @@ app.get('/api/faqs', (req, res) => {
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
-    
+
     try {
         const faqsPath = path.join(__dirname, '..', 'config', 'faqs.json');
         const faqsData = JSON.parse(fs.readFileSync(faqsPath, 'utf8'));
@@ -867,6 +846,139 @@ app.get('/api/faqs', (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Không thể tải FAQs'
+        });
+    }
+});
+
+// ============================================
+// CHATBOT ENDPOINTS → Claude AI Integration
+// ============================================
+
+// GET /api/chatbot/faqs - Alias for /api/faqs for chatbot
+app.get('/api/chatbot/faqs', (req, res) => {
+    // Prevent caching for API responses
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+
+    try {
+        const faqsPath = path.join(__dirname, '..', 'config', 'faqs.json');
+        const faqsData = JSON.parse(fs.readFileSync(faqsPath, 'utf8'));
+        res.json({
+            success: true,
+            data: faqsData
+        });
+    } catch (error) {
+        console.error('Lỗi khi đọc FAQs:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Không thể tải FAQs'
+        });
+    }
+});
+
+// POST /api/chatbot/chat - Chat with Claude Opus 4.5 Thinking
+app.post('/api/chatbot/chat', async (req, res) => {
+    try {
+        const { message } = req.body;
+
+        if (!message || message.trim() === '') {
+            return res.status(400).json({
+                success: false,
+                message: 'Message is required'
+            });
+        }
+
+        // Load FAQs for context
+        const faqsPath = path.join(__dirname, '..', 'config', 'faqs.json');
+        const faqsData = JSON.parse(fs.readFileSync(faqsPath, 'utf8'));
+
+        // Prepare context from FAQs
+        const faqContext = faqsData.faqs.map(faq =>
+            `Q: ${faq.question}\nA: ${faq.answer}`
+        ).join('\n\n');
+
+        // System prompt for Claude
+        const systemPrompt = `Bạn là trợ lý AI thông minh của TechStore, một cửa hàng bán lẻ công nghệ hàng đầu Việt Nam.
+
+Thông tin về TechStore:
+- Chuyên bán các sản phẩm công nghệ: laptop, điện thoại, phụ kiện gaming, camera, âm thanh, v.v.
+- Giao hàng toàn quốc, miễn phí vận chuyển cho đơn từ 300.000đ
+- Chính sách đổi trả trong 30 ngày
+- Bảo hành chính hãng
+- Hỗ trợ thanh toán COD, chuyển khoản, ví điện tử, thẻ tín dụng
+
+Hãy trả lời câu hỏi của khách hàng một cách:
+- Thân thiện, chuyên nghiệp và hữu ích
+- Súc tích nhưng đầy đủ thông tin
+- Sử dụng tiếng Việt
+- Tập trung vào giải quyết vấn đề của khách hàng
+
+Nếu câu hỏi liên quan đến sản phẩm cụ thể, hãy gợi ý xem thêm thông tin hoặc liên hệ hỗ trợ.
+Nếu câu hỏi không liên quan đến TechStore, hãy lịch sự chuyển hướng về chủ đề mua sắm công nghệ.
+
+Dưới đây là một số câu hỏi thường gặp và câu trả lời để bạn tham khảo:
+
+${faqContext}
+
+Hãy trả lời câu hỏi: "${message}"`;
+
+        // Call OpenAI-compatible API (Gemini 3 Pro Low)
+        const aiServiceUrl = process.env.AI_SERVICE_URL || 'http://127.0.0.1:8045/v1';
+        const apiKey = process.env.GEMINI_API_KEY || process.env.AI_API_KEY || 'sk-640434c127414d4f8ff37809858cb0c5';
+
+        const response = await axios.post(`${aiServiceUrl}/chat/completions`, {
+            model: 'gemini-3-pro-low',
+            messages: [
+                {
+                    role: 'system',
+                    content: systemPrompt
+                },
+                {
+                    role: 'user',
+                    content: message
+                }
+            ],
+            max_tokens: 1000,
+            temperature: 0.7
+        }, {
+            headers: {
+                'Authorization': `Bearer ${apiKey}`,
+                'Content-Type': 'application/json'
+            },
+            timeout: 30000
+        });
+
+        const aiResponse = response.data.choices[0].message.content;
+
+        // Simple keyword matching for confidence (optional)
+        const keywords = faqsData.faqs.flatMap(faq => faq.keywords);
+        const messageWords = message.toLowerCase().split(/\s+/);
+        const matchedKeywords = keywords.filter(keyword =>
+            messageWords.some(word => word.includes(keyword.toLowerCase()) || keyword.toLowerCase().includes(word))
+        );
+        const confidence = Math.min(matchedKeywords.length * 20 + 30, 95); // Rough confidence calculation
+
+        res.json({
+            success: true,
+            data: {
+                type: 'answer',
+                answer: aiResponse,
+                confidence: confidence
+            }
+        });
+
+    } catch (error) {
+        console.error('Chatbot error:', error.response?.data || error.message);
+
+        // Fallback response
+        res.json({
+            success: true,
+            data: {
+                type: 'answer',
+                answer: 'Xin lỗi, tôi đang gặp sự cố kỹ thuật. Vui lòng liên hệ hotline 0905 884 303 để được hỗ trợ trực tiếp.',
+                confidence: 0
+            }
         });
     }
 });
