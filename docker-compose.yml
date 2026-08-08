@@ -36,7 +36,7 @@ services:
     environment:
       DB_HOST: host.docker.internal
       DB_USER: root
-      DB_PASSWORD: ""
+      DB_PASSWORD: "tttn2025"
       DB_NAME: tttn2025
       JWT_SECRET: HhGg78@!kYpQzXcVbNmL1o2P3oI4U5yT6rE7wQ8aZ9sX0cVkGjH
       # Email Configuration (Gmail SMTP)
@@ -63,7 +63,7 @@ services:
     environment:
       DB_HOST: host.docker.internal
       DB_USER: root
-      DB_PASSWORD: ""
+      DB_PASSWORD: "tttn2025"
       DB_NAME: tttn2025
       JWT_SECRET: HhGg78@!kYpQzXcVbNmL1o2P3oI4U5yT6rE7wQ8aZ9sX0cVkGjH
     ports:
@@ -83,7 +83,7 @@ services:
     environment:
       DB_HOST: host.docker.internal
       DB_USER: root
-      DB_PASSWORD: ""
+      DB_PASSWORD: "tttn2025"
       DB_NAME: tttn2025
       JWT_SECRET: HhGg78@!kYpQzXcVbNmL1o2P3oI4U5yT6rE7wQ8aZ9sX0cVkGjH
     ports:
@@ -103,7 +103,7 @@ services:
     environment:
       DB_HOST: host.docker.internal
       DB_USER: root
-      DB_PASSWORD: ""
+      DB_PASSWORD: "tttn2025"
       DB_NAME: tttn2025
       JWT_SECRET: HhGg78@!kYpQzXcVbNmL1o2P3oI4U5yT6rE7wQ8aZ9sX0cVkGjH
       CART_SERVICE_URL: http://cart-service:5003
@@ -127,7 +127,7 @@ services:
     environment:
       DB_HOST: host.docker.internal
       DB_USER: root
-      DB_PASSWORD: ""
+      DB_PASSWORD: "tttn2025"
       DB_NAME: tttn2025
     ports:
       - "5005:5005"
@@ -151,7 +151,7 @@ services:
       NEWS_SERVICE_URL: http://news-service:5005
       DB_HOST: host.docker.internal
       DB_USER: root
-      DB_PASSWORD: ""
+      DB_PASSWORD: "tttn2025"
       DB_NAME: tttn2025
       JWT_SECRET: HhGg78@!kYpQzXcVbNmL1o2P3oI4U5yT6rE7wQ8aZ9sX0cVkGjH
     ports:

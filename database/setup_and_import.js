@@ -6,7 +6,7 @@ const mysql = require('mysql2/promise');
 const dbConfig = {
     host: 'localhost',
     user: 'root',
-    password: '', // Điền password nếu có
+    password: 'tttn2025', // Điền password nếu có
     database: 'tttn2025',
     multipleStatements: true
 };
